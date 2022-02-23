@@ -34,9 +34,19 @@ public:
         m_data[linearIndex(index)].setU(value);
     }
 
+    inline void setU(int i, int j, double value)
+    {
+        m_data[linearIndex(i,j)].setU(value);
+    }
+
     inline void setV(Index2d index, double value)
     {
         m_data[linearIndex(index)].setV(value);
+    }
+
+    inline void setV(int i, int j, double value)
+    {
+        m_data[linearIndex(i,j)].setV(value);
     }
 
     inline double getU(Index2d index) const
@@ -44,15 +54,30 @@ public:
         return m_data[linearIndex(index)].getU();
     }
 
+    inline double getU(int i, int j) const
+    {
+        return m_data[linearIndex(i,j)].getU();
+    }
+
     inline double getV(Index2d index) const
     {
         return m_data[linearIndex(index)].getV();
+    }
+
+    inline double getV(int i, int j) const
+    {
+        return m_data[linearIndex(i,j)].getV();
     }
 
     inline void getSize(int& sizeI, int& sizeJ) const
     {
         sizeI = m_sizeI;
         sizeJ = m_sizeJ;
+    }
+
+    inline FluidCell& at(int i, int j)
+    {
+        return m_data[linearIndex(i,j)];
     }
 
 };

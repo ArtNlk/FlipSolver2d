@@ -15,7 +15,7 @@ public:
 protected:
     void applyICPrecond(const SparseMatrix &matrix, std::vector<double> &vector, MACFluidGrid &grid);
     void calcPrecond(const SparseMatrix &matrix, MACFluidGrid &grid);
-    double precond(const SparseMatrix &matrix, int i, int j, int k);
+    double precond(const SparseMatrix &matrix, int i, int j);
 
     std::vector<double> m_residual;
     std::vector<double> m_aux;

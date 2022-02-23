@@ -64,10 +64,52 @@ public:
         return m_velocityV;
     }
 
+    inline void setKnownStatusU(bool status)
+    {
+        m_knownU = status;
+    }
+
+    inline void setKnownU()
+    {
+        m_knownU = true;
+    }
+
+    inline void setUnknownU()
+    {
+        m_knownU = false;
+    }
+
+    inline bool isKnownU() const
+    {
+        return m_knownU;
+    }
+
+    inline void setKnownStatusV(bool status)
+    {
+        m_knownV = status;
+    }
+
+    inline void setKnownV()
+    {
+        m_knownV = true;
+    }
+
+    inline void setUnknownV()
+    {
+        m_knownV = false;
+    }
+
+    inline bool isKnownV() const
+    {
+        return m_knownV;
+    }
+
 protected:
     FluidCellMaterial m_material;
     double m_velocityU;
     double m_velocityV;
+    bool m_knownU;
+    bool m_knownV;
 };
 
 #endif // FLUIDCELL_H

@@ -7,24 +7,24 @@ class SimSettings
 public:
     SimSettings();
 
-    inline SimSettings& i()
+    static inline SimSettings& i()
     {
         return m_instance;
     }
 
-    inline double& dt()
+    static inline double& dt()
     {
-        return m_dt;
+        return m_instance.m_dt;
     }
 
-    inline double& dx()
+    static inline double& dx()
     {
-        return m_dx;
+        return m_instance.m_dx;
     }
 
-    inline double& density()
+    static inline double& density()
     {
-        return m_density;
+        return m_instance.m_density;
     }
 
 protected:

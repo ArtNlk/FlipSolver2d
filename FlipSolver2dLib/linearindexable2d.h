@@ -7,7 +7,11 @@
 class LinearIndexable2d
 {
 public:
-    LinearIndexable2d(int sizeI, int sizeJ);
+    LinearIndexable2d(int sizeI, int sizeJ) :
+        m_sizeI(sizeI),
+        m_sizeJ(sizeJ)
+    {
+    }
 
 public:
     inline int sizeI() const

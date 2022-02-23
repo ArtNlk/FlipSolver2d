@@ -1,10 +1,21 @@
-#ifndef FLIPSOLVER2D_H
-#define FLIPSOLVER2D_H
+#ifndef FLIPSOLVER_H
+#define FLIPSOLVER_H
 
-class FlipSolver2d
+#include "pcgsolver.h"
+#include "fluidgrid.h"
+
+class FlipSolver
 {
 public:
-    FlipSolver2d();
+    FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize, double sideLength);
+
+protected:
+    void project();
+
+    void calcRhs(std::vector<double> &rhs);
+
+    MACFluidGrid m_grid;
+    PCGSolver m_pcgSolver;
 };
 
-#endif // FLIPSOLVER2D_H
+#endif // FLIPSOLVER_H
