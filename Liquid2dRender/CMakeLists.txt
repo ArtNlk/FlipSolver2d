@@ -5,12 +5,20 @@ include_directories(include/KHR)
 
 set(HEADERS
     include/glad/glad.h
-    liquidrenderapp.h)
+    liquidrenderapp.h
+    fluidrenderer.h
+    texture2d.h
+    color.h
+    vertex.h)
 
 set(SOURCES
     src/glad.c
     main.cpp
-    liquidrenderapp.cpp)
+    liquidrenderapp.cpp
+    fluidrenderer.cpp
+    texture2d.cpp
+    color.cpp
+    vertex.cpp)
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)

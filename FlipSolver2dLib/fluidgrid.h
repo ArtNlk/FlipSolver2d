@@ -75,6 +75,11 @@ public:
         sizeJ = m_sizeJ;
     }
 
+    inline int cellCount() const
+    {
+        return m_sizeI * m_sizeJ;
+    }
+
     inline FluidCell& at(int i, int j)
     {
         return m_data[linearIndex(i,j)];

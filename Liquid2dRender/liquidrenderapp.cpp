@@ -4,8 +4,9 @@
 #include "linearindexable2d.h"
 
 LiquidRenderApp::LiquidRenderApp() :
-    window(nullptr),
-    solver(10,10,1,0.01,2)
+    m_window(nullptr),
+    m_solver(new FlipSolver(120,250,1,0.01,2)),
+    m_fluidRenderer(m_solver)
 {
 
 }
@@ -17,13 +18,13 @@ void LiquidRenderApp::init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
+    m_window = glfwCreateWindow(800, 600, "Flip fluid 2d", NULL, NULL);
+    if (m_window == NULL)
     {
         glfwTerminate();
         throw std::runtime_error("Failed to create GLFW window");
     }
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(m_window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -32,14 +33,17 @@ void LiquidRenderApp::init()
 
     glViewport(0, 0, 800, 600);
 
-    glfwSetFramebufferSizeCallback(window,resizeCallback);
+    glfwSetFramebufferSizeCallback(m_window,resizeCallback);
+
+    m_fluidRenderer.init();
 }
 
 void LiquidRenderApp::run()
 {
-    while(!glfwWindowShouldClose(window))
+    while(!glfwWindowShouldClose(m_window))
     {
-        glfwSwapBuffers(window);
+        m_fluidRenderer.render();
+        glfwSwapBuffers(m_window);
         glfwPollEvents();
     }
 

@@ -9,6 +9,8 @@ class FlipSolver
 public:
     FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize, double sideLength);
 
+    inline MACFluidGrid grid() {return m_grid;}
+
 protected:
     void project();
 
