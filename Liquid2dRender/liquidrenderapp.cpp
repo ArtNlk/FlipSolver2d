@@ -5,10 +5,11 @@
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(120,250,1,0.01,2)),
+    m_solver(new FlipSolver(50,75,1,0.01,2)),
     m_fluidRenderer(m_solver)
 {
-
+    m_solver->grid().setMaterial(10,10,FluidCellMaterial::SOLID);
+    m_solver->grid().setMaterial(10,11,FluidCellMaterial::FLUID);
 }
 
 void LiquidRenderApp::init()
@@ -34,6 +35,7 @@ void LiquidRenderApp::init()
     glViewport(0, 0, 800, 600);
 
     glfwSetFramebufferSizeCallback(m_window,resizeCallback);
+    glfwSetKeyCallback(m_window, keyCallback);
 
     m_fluidRenderer.init();
 }
@@ -53,4 +55,14 @@ void LiquidRenderApp::run()
 void LiquidRenderApp::resizeCallback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    switch(action)
+    {
+        case GLFW_PRESS:
+
+        break;
+    }
 }

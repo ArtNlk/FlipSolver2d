@@ -1,9 +1,11 @@
 #include "fluidrenderer.h"
 
 #include <iostream>
-#include <random>
-#include <ctime>
 #include <cmath>
+
+const Color FluidRenderer::m_emptyColor = Color(255,255,255);
+const Color FluidRenderer::m_fluidColor = Color(44, 95, 150);
+const Color FluidRenderer::m_solidColor = Color(94,94,94);
 
 const char *FluidRenderer::m_vertexShaderSource =
         "#version 330 core\n"
@@ -34,16 +36,12 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver) :
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
     float cellSize = 2.f / std::max(gridWidth,gridHeight);
-    std::mt19937 rand;
-    rand.seed(std::time(nullptr));
 
     for (int i = 0; i < gridHeight; i++)
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            addQuad(Vertex(cellSize*j - 1,1 - cellSize*i),Vertex(cellSize*(j+1) - 1,1 - cellSize*(i+1)),Color(static_cast<int>(rand() % 255),
-                                                                                                              static_cast<int>(rand() % 255),
-                                                                                                              static_cast<int>(rand() % 255)));
+            addQuad(Vertex(cellSize*j - 1,1 - cellSize*i),Vertex(cellSize*(j+1) - 1,1 - cellSize*(i+1)),Color(255,0,0));
         }
     }
 }
@@ -51,6 +49,8 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver) :
 void FluidRenderer::init()
 {
     setupGl();
+    updateGrid();
+    updateVerts();
 }
 
 void FluidRenderer::render()
@@ -129,8 +129,7 @@ void FluidRenderer::setupGl()
 void FluidRenderer::updateBuffers()
 {
     glBindVertexArray(m_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    glBufferData(GL_ARRAY_BUFFER,sizeof(float) * m_verts.size(),m_verts.data(),GL_DYNAMIC_DRAW);
+    updateVerts();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(int) * m_indices.size(), m_indices.data(),GL_DYNAMIC_DRAW);
 
@@ -138,6 +137,42 @@ void FluidRenderer::updateBuffers()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(float) * 6, reinterpret_cast<void*>(sizeof(float)*3));
     glEnableVertexAttribArray(1);
+}
+
+void FluidRenderer::updateVerts()
+{
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER,sizeof(float) * m_verts.size(),m_verts.data(),GL_DYNAMIC_DRAW);
+}
+
+void FluidRenderer::updateGrid()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            switch(m_solver->grid().getMaterial(i,j))
+            {
+                case FluidCellMaterial::EMPTY:
+                    setColor(i,j,m_emptyColor);
+                break;
+
+                case FluidCellMaterial::FLUID:
+                    setColor(i,j,m_fluidColor);
+                break;
+
+                case FluidCellMaterial::SOLID:
+                    setColor(i,j,m_solidColor);
+                break;
+
+                default:
+                    std::cout << "Unknown material " << m_solver->grid().getMaterial(i,j) << "at i,j " << i << "," << j;
+                break;
+            }
+        }
+    }
 }
 
 void FluidRenderer::setVertexColor(int vIndex, Color c)

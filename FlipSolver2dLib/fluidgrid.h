@@ -29,6 +29,11 @@ public:
         m_data[linearIndex(index)].setMatrial(m);
     }
 
+    inline void setMaterial(int i, int j, FluidCellMaterial m)
+    {
+        m_data[linearIndex(i,j)].setMatrial(m);
+    }
+
     inline void setU(Index2d index, double value)
     {
         m_data[linearIndex(index)].setU(value);

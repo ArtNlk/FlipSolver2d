@@ -25,5 +25,7 @@ find_package(glfw3 REQUIRED)
 
 add_executable(LiquidRenderApp ${HEADERS} ${SOURCES})
 
+message(${GLFW3_LIBRARY})
+
 target_link_libraries(LiquidRenderApp FlipSolver2d)
 target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} ${GLFW3_LIBRARY})

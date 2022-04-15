@@ -9,9 +9,10 @@ template<class T>
 class Grid2d : public LinearIndexable2d
 {
 public:
-    Grid2d(int sizeI, int sizeJ) :
+    Grid2d(int sizeI, int sizeJ, T initValue = T()) :
         LinearIndexable2d(sizeI,sizeJ)
     {
+        m_data.assign(sizeI*sizeJ,initValue);
     }
 
     inline T& at(int i, int j)
@@ -41,6 +42,11 @@ public:
         {
             m_data[i] = value;
         }
+    }
+
+    inline std::vector<T> &data()
+    {
+        return m_data;
     }
 
 protected:

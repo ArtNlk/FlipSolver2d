@@ -18,6 +18,7 @@ public:
 
 protected:
     static void resizeCallback(GLFWwindow* window, int width, int height);
+    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
     GLFWwindow* m_window;
     std::shared_ptr<FlipSolver> m_solver;

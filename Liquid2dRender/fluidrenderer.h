@@ -20,6 +20,8 @@ protected:
     void addQuad(Vertex topLeft, Vertex bottomRight, Color C);
     void setupGl();
     void updateBuffers();
+    void updateVerts();
+    void updateGrid();
     void setVertexColor(int vIndex, Color c);
     void setColor(int x, int y, Color c);
 
@@ -37,6 +39,10 @@ protected:
 
     static const char *m_vertexShaderSource;
     static const char *m_fragShaderSource;
+
+    static const Color m_emptyColor;
+    static const Color m_fluidColor;
+    static const Color m_solidColor;
 
     std::vector<float> m_verts;
     std::vector<unsigned int> m_indices;
