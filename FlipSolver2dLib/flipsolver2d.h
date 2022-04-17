@@ -7,15 +7,24 @@
 class FlipSolver
 {
 public:
-    FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize, double sideLength);
+    FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize, double sideLength, int extrapRadius = 1, bool vonNeumannNeighbors = false);
 
     inline MACFluidGrid &grid() {return m_grid;}
+
+    inline void setExrapolationRadius(int radius)
+    {
+        m_extrapolationRadius = radius;
+    }
+
+    void extrapolateVelocityField();
 
 protected:
     void project();
 
     void calcRhs(std::vector<double> &rhs);
 
+    int m_extrapolationRadius;
+    bool m_useVonNeumannNeighborhood;
     MACFluidGrid m_grid;
     PCGSolver m_pcgSolver;
 };

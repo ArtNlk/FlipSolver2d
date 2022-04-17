@@ -9,8 +9,8 @@
 class MACFluidGrid : public Grid2d<FluidCell>
 {
 public:
-    MACFluidGrid(int sizeI, int sizeJ) :
-        Grid2d(sizeI,sizeJ)
+    MACFluidGrid(int sizeI, int sizeJ, FluidCell defaultCell = FluidCell()) :
+        Grid2d(sizeI,sizeJ, defaultCell)
     {
     }
 
@@ -34,24 +34,28 @@ public:
         m_data[linearIndex(i,j)].setMatrial(m);
     }
 
-    inline void setU(Index2d index, double value)
+    inline void setU(Index2d index, double value, bool setAsKnown = false)
     {
         m_data[linearIndex(index)].setU(value);
+        m_data[linearIndex(index)].setKnownStatusU(setAsKnown);
     }
 
-    inline void setU(int i, int j, double value)
+    inline void setU(int i, int j, double value, bool setAsKnown = false)
     {
         m_data[linearIndex(i,j)].setU(value);
+        m_data[linearIndex(i,j)].setKnownStatusU(setAsKnown);
     }
 
-    inline void setV(Index2d index, double value)
+    inline void setV(Index2d index, double value, bool setAsKnown = false)
     {
         m_data[linearIndex(index)].setV(value);
+        m_data[linearIndex(index)].setKnownStatusV(setAsKnown);
     }
 
-    inline void setV(int i, int j, double value)
+    inline void setV(int i, int j, double value, bool setAsKnown = false)
     {
         m_data[linearIndex(i,j)].setV(value);
+        m_data[linearIndex(i,j)].setKnownStatusV(setAsKnown);
     }
 
     inline double getU(Index2d index) const
@@ -88,6 +92,11 @@ public:
     inline FluidCell& at(int i, int j)
     {
         return m_data[linearIndex(i,j)];
+    }
+
+    inline FluidCell& at(Index2d index)
+    {
+        return m_data[linearIndex(index)];
     }
 
 };

@@ -11,13 +11,14 @@ enum FluidCellMaterial : char
 class FluidCell
 {
 public:
-    FluidCell() :
-        m_material(EMPTY),
-        m_velocityU(0.0),
-        m_velocityV(0.0)
+    FluidCell(FluidCellMaterial material = EMPTY, double u = 0.0, double v = 0.0, bool uKnown = false, bool vKnown = false) :
+        m_material(material),
+        m_velocityU(u),
+        m_velocityV(v),
+        m_knownU(uKnown),
+        m_knownV(vKnown)
     {
     }
-
 
     inline void setMatrial(FluidCellMaterial m)
     {

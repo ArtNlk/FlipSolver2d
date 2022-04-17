@@ -1,9 +1,14 @@
 #include "flipsolver2d.h"
 
+#include <limits>
+#include <queue>
+
 #include "simsettings.h"
 
-FlipSolver::FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize,  double sideLength) :
-    m_grid(sizeX, sizeY)
+FlipSolver::FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize,  double sideLength, int extrapRadius, bool vonNeumannNeighbors) :
+    m_grid(sizeX, sizeY),
+    m_extrapolationRadius(extrapRadius),
+    m_useVonNeumannNeighborhood(vonNeumannNeighbors)
 {
     SimSettings::density() = fluidDensity;
     SimSettings::dt() = timestepSize;
@@ -14,7 +19,7 @@ void FlipSolver::project()
 {
     std::vector<double> rhs(0,m_grid.sizeI() * m_grid.sizeJ());
     calcRhs(rhs);
-    SparseMatrix mat = DynamicSparseMatrix(DynamicSparseMatrix(m_grid));
+    SparseMatrix mat = SparseMatrix(DynamicSparseMatrix(m_grid));
     std::vector<double> pressures(0,m_grid.sizeI() * m_grid.sizeJ());
     if(!m_pcgSolver.solve(mat,m_grid,pressures,rhs))
     {
@@ -61,6 +66,123 @@ void FlipSolver::project()
                 m_grid.at(i,j).setUnknownV();
             }
         }
+    }
+}
+
+void FlipSolver::extrapolateVelocityField()
+{
+    Grid2d<int> markers(m_grid.sizeI(),m_grid.sizeJ(),INT_MAX);
+    std::queue<Index2d> wavefront;
+    //Extrapolate U
+    for(int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(m_grid.at(i,j).isKnownU())
+            {
+                markers.at(i,j) = 0;
+            }
+        }
+    }
+
+    for(int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(markers.at(i,j) != 0)
+            {
+                for(Index2d& neighborIndex : m_grid.getNeighborhood(i,j,m_extrapolationRadius,m_useVonNeumannNeighborhood))
+                {
+                    if(markers.at(neighborIndex) == 0)
+                    {
+                        markers.at(i,j) = 1;
+                        wavefront.push(Index2d(i,j));
+                    }
+                }
+            }
+        }
+    }
+
+    while(!wavefront.empty())
+    {
+        Index2d index = wavefront.front();
+        std::vector<Index2d> neighbors = m_grid.getNeighborhood(index,m_extrapolationRadius,m_useVonNeumannNeighborhood);
+        double avg = 0;
+        int count = 0;
+        for(Index2d& neighborIndex : neighbors)
+        {
+            if(markers.at(neighborIndex) < markers.at(index))
+            {
+                avg += m_grid.at(neighborIndex).U();
+                count++;
+            }
+            if(markers.at(neighborIndex) == INT_MAX)
+            {
+                markers.at(neighborIndex) = markers.at(index) + 1;
+                wavefront.push(neighborIndex);
+            }
+        }
+        m_grid.at(index).setU(avg / count);
+        m_grid.at(index).setKnownU();
+
+        wavefront.pop();
+    }
+
+    markers.fill(INT_MAX);
+
+    //Extrapolate V
+    for(int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(m_grid.at(i,j).isKnownV())
+            {
+                markers.at(i,j) = 0;
+            }
+        }
+    }
+
+    for(int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(markers.at(i,j) != 0)
+            {
+                for(Index2d& neighborIndex : m_grid.getNeighborhood(i,j,m_extrapolationRadius,m_useVonNeumannNeighborhood))
+                {
+                    if(markers.at(neighborIndex) == 0)
+                    {
+                        markers.at(i,j) = 1;
+                        wavefront.push(Index2d(i,j));
+                    }
+                }
+            }
+        }
+    }
+
+    while(!wavefront.empty())
+    {
+        Index2d index = wavefront.front();
+        std::vector<Index2d> neighbors = m_grid.getNeighborhood(index,m_extrapolationRadius,m_useVonNeumannNeighborhood);
+        double avg = 0;
+        int count = 0;
+        for(Index2d& neighborIndex : neighbors)
+        {
+            if(markers.at(neighborIndex) < markers.at(index))
+            {
+                avg += m_grid.at(neighborIndex).V();
+                count++;
+            }
+            if(markers.at(neighborIndex) == INT_MAX)
+            {
+                markers.at(neighborIndex) = markers.at(index) + 1;
+                wavefront.push(neighborIndex);
+            }
+        }
+        m_grid.at(index).setV(avg / count);
+        m_grid.at(index).setKnownV();
+
+        wavefront.pop();
     }
 }
 

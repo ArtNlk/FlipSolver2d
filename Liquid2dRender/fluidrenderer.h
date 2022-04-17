@@ -8,12 +8,35 @@
 #include "color.h"
 #include "vertex.h"
 
+enum FluidRenderMode : int {RENDER_MATERIAL,RENDER_VELOCITY,RENDER_U,RENDER_V,RENDER_ITER_END};
+inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
+    const int i = static_cast<int>(state)+1;
+    state = static_cast<FluidRenderMode>((i) % RENDER_ITER_END);
+    return state;
+}
+
 class FluidRenderer
 {
 public:
     FluidRenderer(std::shared_ptr<FlipSolver> solver);
     void init();
     void render();
+    void updateGrid();
+
+    inline void setRenderMode(FluidRenderMode mode)
+    {
+        m_renderMode = mode;
+    }
+
+    inline FluidRenderMode getRenderMode()
+    {
+        return m_renderMode;
+    }
+
+    inline FluidRenderMode& renderMode()
+    {
+        return m_renderMode;
+    }
 
 protected:
     void addVertex(Vertex v, Color c = Color());
@@ -21,7 +44,10 @@ protected:
     void setupGl();
     void updateBuffers();
     void updateVerts();
-    void updateGrid();
+    void updateGridFromMaterial();
+    void updateGridFromVelocity();
+    void updateGridFromUComponent();
+    void updateGridFromVComponent();
     void setVertexColor(int vIndex, Color c);
     void setColor(int x, int y, Color c);
 
@@ -46,6 +72,7 @@ protected:
 
     std::vector<float> m_verts;
     std::vector<unsigned int> m_indices;
+    FluidRenderMode m_renderMode;
 
     std::shared_ptr<FlipSolver> m_solver;
 };

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 const Color FluidRenderer::m_emptyColor = Color(255,255,255);
 const Color FluidRenderer::m_fluidColor = Color(44, 95, 150);
@@ -147,6 +148,30 @@ void FluidRenderer::updateVerts()
 
 void FluidRenderer::updateGrid()
 {
+    switch(m_renderMode)
+    {
+    case FluidRenderMode::RENDER_MATERIAL:
+        updateGridFromMaterial();
+        break;
+    case FluidRenderMode::RENDER_VELOCITY:
+        updateGridFromVelocity();
+        break;
+    case FluidRenderMode::RENDER_U:
+        updateGridFromUComponent();
+        break;
+    case FluidRenderMode::RENDER_V:
+        updateGridFromVComponent();
+        break;
+
+    default:
+        std::cout << "Bad render mode";
+        break;
+    }
+    updateVerts();
+}
+
+void FluidRenderer::updateGridFromMaterial()
+{
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
     for (int i = 0; i < gridHeight; i++)
@@ -171,6 +196,69 @@ void FluidRenderer::updateGrid()
                     std::cout << "Unknown material " << m_solver->grid().getMaterial(i,j) << "at i,j " << i << "," << j;
                 break;
             }
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromVelocity()
+{
+    float min = -10;
+    float max = 10;
+    float diff = max - min;
+
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float r = (m_solver->grid().getU(i,j) - min) / diff;
+            float g = (m_solver->grid().getV(i,j) - min) / diff;
+            setColor(i,j,Color(r,g,0.0));
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromUComponent()
+{
+//    auto minMaxValues = std::minmax_element(m_solver->grid().data().begin(),
+//                                            m_solver->grid().data().end(),
+//                                            [] (const FluidCell& a, const FluidCell& b)
+//                                            {
+//                                                return a.getU() < b.getU();
+//                                            });
+//    float min = minMaxValues.first->getU();
+//    float max = minMaxValues.second->getU();
+    float min = -10;
+    float max = 10;
+    float diff = max - min;
+
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = (m_solver->grid().getU(i,j) - min) / diff;
+            setColor(i,j,Color(brightness,brightness,brightness));
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromVComponent()
+{
+    float min = -10;
+    float max = 10;
+    float diff = max - min;
+
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = (m_solver->grid().getV(i,j) - min) / diff;
+            setColor(i,j,Color(brightness,brightness,brightness));
         }
     }
 }

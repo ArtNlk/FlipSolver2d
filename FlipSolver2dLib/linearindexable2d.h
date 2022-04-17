@@ -33,17 +33,17 @@ public:
 
     inline int linearIndex(Index2d index) const
     {
-        ASSERT_BETWEEN(index.i,0,m_sizeJ);
-        ASSERT_BETWEEN(index.j,0,m_sizeJ);
-        return index.i * m_sizeJ + index.j;
+        ASSERT_BETWEEN(index.m_i,0,m_sizeJ);
+        ASSERT_BETWEEN(index.m_j,0,m_sizeJ);
+        return index.m_i * m_sizeJ + index.m_j;
     }
 
     inline Index2d index2d(int linearIndex) const
     {
         ASSERT_BETWEEN(linearIndex,0,m_sizeJ*m_sizeI);
         Index2d index;
-        index.i = linearIndex / m_sizeJ;
-        index.j = linearIndex - index.i*m_sizeJ;
+        index.m_i = linearIndex / m_sizeJ;
+        index.m_j = linearIndex - index.m_i*m_sizeJ;
 
         return index;
     }

@@ -1,15 +1,25 @@
 #include "liquidrenderapp.h"
 #include <stdexcept>
+#include <cstdlib>
 
 #include "linearindexable2d.h"
 
+LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
+
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(50,75,1,0.01,2)),
+    m_solver(new FlipSolver(100,200,1,0.01,2,1,false)),
     m_fluidRenderer(m_solver)
 {
     m_solver->grid().setMaterial(10,10,FluidCellMaterial::SOLID);
     m_solver->grid().setMaterial(10,11,FluidCellMaterial::FLUID);
+    for(int i = 0; i < 1000; i++)
+    {
+        m_solver->grid().setU(rand() % 50, rand() % 200, rand() % 21 - 10,true);
+        m_solver->grid().setV(rand() % 50, rand() % 200, rand() % 21 - 10,true);
+    }
+    LiquidRenderApp::GLFWCallbackWrapper::SetApplication(this);
+    m_fluidRenderer.setRenderMode(FluidRenderMode::RENDER_V);
 }
 
 void LiquidRenderApp::init()
@@ -34,8 +44,8 @@ void LiquidRenderApp::init()
 
     glViewport(0, 0, 800, 600);
 
-    glfwSetFramebufferSizeCallback(m_window,resizeCallback);
-    glfwSetKeyCallback(m_window, keyCallback);
+    glfwSetFramebufferSizeCallback(m_window,LiquidRenderApp::GLFWCallbackWrapper::ResizeCallback);
+    glfwSetKeyCallback(m_window, LiquidRenderApp::GLFWCallbackWrapper::KeyboardCallback);
 
     m_fluidRenderer.init();
 }
@@ -62,7 +72,18 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
     switch(action)
     {
         case GLFW_PRESS:
+            switch(key)
+            {
+                case GLFW_KEY_P:
+                    m_solver->extrapolateVelocityField();
+                    m_fluidRenderer.updateGrid();
+                break;
 
+                case GLFW_KEY_T:
+                    m_fluidRenderer.renderMode()++;
+                    m_fluidRenderer.updateGrid();
+                break;
+            }
         break;
     }
 }
