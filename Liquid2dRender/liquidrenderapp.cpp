@@ -8,15 +8,15 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(100,200,1,0.01,2,1,false)),
+    m_solver(new FlipSolver(50,75,1,0.01,2,1,false)),
     m_fluidRenderer(m_solver)
 {
     m_solver->grid().setMaterial(10,10,FluidCellMaterial::SOLID);
     m_solver->grid().setMaterial(10,11,FluidCellMaterial::FLUID);
     for(int i = 0; i < 1000; i++)
     {
-        m_solver->grid().setU(rand() % 50, rand() % 200, rand() % 21 - 10,true);
-        m_solver->grid().setV(rand() % 50, rand() % 200, rand() % 21 - 10,true);
+        m_solver->grid().setU(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), rand() % 20 - 10,true);
+        m_solver->grid().setV(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), rand() % 20 - 10,true);
     }
     LiquidRenderApp::GLFWCallbackWrapper::SetApplication(this);
     m_fluidRenderer.setRenderMode(FluidRenderMode::RENDER_V);
