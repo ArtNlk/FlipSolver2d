@@ -2,127 +2,153 @@
 
 #include <algorithm>
 
+#include <sstream>
+
 #include "vmath.h"
 #include "cmath"
+#include "simsettings.h"
+#include "logger.h"
 
-const double PCGSolver::m_tol = 1.0e-6;
+const double PCGSolver::m_tol = 1.0e-12;
 
 PCGSolver::PCGSolver() :
-    m_precondCache(1,1)
+    m_precondCache()
 {
 
 }
 
-bool PCGSolver::solve(const SparseMatrix &matrix, MACFluidGrid &grid, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
+bool PCGSolver::solve(const UpperTriangularMatrix &matrix, MACFluidGrid &grid, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
 {
-    result.assign(matrix.rowCount(),0);
+    result.assign(result.size(),0);
     if (vmath::isZero(vec))
     {
         return false;
     }
-    calcPrecond(matrix,grid);
     m_residual = vec;
-    m_aux = m_residual;
-    applyICPrecond(matrix,m_aux,grid);
+    m_aux = vec;
+    applyICPrecond(matrix,m_residual,m_aux,grid);
     m_search = m_aux;
     double sigma = vmath::dot(m_aux,m_residual);
-
+    double err = 0.0;
     for (int i = 0; i < iterLimit; i++)
     {
         m_aux = matrix * m_search;
         double alpha = sigma/vmath::dot(m_aux,m_search);
         vmath::addMul(result,result,m_search,alpha);
         vmath::subMul(m_residual,m_residual,m_aux,alpha);
-        if (vmath::maxAbs(m_residual) <= m_tol)
+        err = vmath::maxAbs(m_residual);
+        if(i % 5 == 0)
         {
+            std::cout << "Solver: " << i << " : " << err << "\n";
+            debug() << "Solver: " << i << " : " << err;
+        }
+        if (err <= m_tol)
+        {
+            debug() << "Solver done, i = " << i << " err = " << err;
             return true;
         }
         m_aux = m_residual;
-        applyICPrecond(matrix,m_aux,grid);
+        applyICPrecond(matrix,m_residual,m_aux,grid);
         double newSigma = vmath::dot(m_aux,m_residual);
         double beta = newSigma/sigma;
         vmath::addMul(m_search,m_aux,m_search,beta);
         sigma = newSigma;
     }
 
+    debug() << "Solver iter exhaustion, err = " << err;
     return false;
 }
 
-void PCGSolver::applyICPrecond(const SparseMatrix &matrix, std::vector<double> &vector, MACFluidGrid &grid)
+void PCGSolver::applyICPrecond(const UpperTriangularMatrix &matrix, std::vector<double> &in, std::vector<double> &out, MACFluidGrid &grid)
 {
     double t = 0;
-    std::vector<double> temp(vector.size(),0);
-    for (int i = 1; i < grid.sizeI(); i++)
+    std::vector<double> temp(in.size(),0);
+    for (int i = 0; i < grid.sizeI(); i++)
     {
-        for (int j = 1; j < grid.sizeJ(); j++)
+        for (int j = 0; j < grid.sizeJ(); j++)
         {
             if (grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
             {
-                t = vector[matrix.linearIndex(i-1,j)] - (matrix.Ax(i-1,j) * precond(matrix,i-1,j) * temp[matrix.linearIndex(i-1,j)])
-                                                        - (matrix.Ax(i,j-1) * precond(matrix,i,j-1) * temp[matrix.linearIndex(i,j-1)]);
-                temp[matrix.linearIndex(i,j)] = t*precond(matrix,i,j);
+                double v1 = grid.linearFluidIndex(i-1,j) == -1? 0.0 : matrix.Ax(i-1,j,grid) * precond(matrix,i-1,j,grid) * temp[grid.linearFluidIndex(i-1,j)];
+                double v2 = grid.linearFluidIndex(i,j-1) == -1? 0.0 : matrix.Ay(i,j-1,grid) * precond(matrix,i,j-1,grid) * temp[grid.linearFluidIndex(i,j-1)];
+
+                t = in[grid.linearFluidIndex(i,j)] - v1 - v2;
+                temp[grid.linearFluidIndex(i,j)] = t*precond(matrix,i,j,grid);
             }
         }
     }
 
-    for (int i = grid.sizeI(); i >= 1; i--)
+    debug() << "mineq = " << temp;
+
+    for (int i = grid.sizeI() - 1; i >= 0; i--)
     {
-        for (int j = grid.sizeJ(); j >= 1; j--)
+        for (int j = grid.sizeJ() - 1; j >= 0; j--)
         {
             if (grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
             {
-                t = temp[matrix.linearIndex(i,j)] - (matrix.Ax(i,j) * precond(matrix,i,j) * temp[matrix.linearIndex(i+1,j)])
-                                                    - (matrix.Ax(i,j) * precond(matrix,i,j) * temp[matrix.linearIndex(i,j+1)]);
-                vector[matrix.linearIndex(i,j)] = t*precond(matrix,i,j);
+                double v1 = grid.linearFluidIndex(i+1,j) == -1? 0.0 : matrix.Ax(i,j,grid) * precond(matrix,i,j,grid) * out[grid.linearFluidIndex(i+1,j)];
+                double v2 = grid.linearFluidIndex(i,j+1) == -1? 0.0 : matrix.Ay(i,j,grid) * precond(matrix,i,j,grid) * out[grid.linearFluidIndex(i,j+1)];
+
+                t = temp[grid.linearFluidIndex(i,j)] - v1 - v2;
+                out[grid.linearFluidIndex(i,j)] = t*precond(matrix,i,j,grid);
             }
         }
     }
 }
 
-void PCGSolver::calcPrecond(const SparseMatrix &matrix, MACFluidGrid &grid)
+void PCGSolver::calcPrecond(const UpperTriangularMatrix &matrix, MACFluidGrid &grid)
 {
-    m_precondCache = DynamicSparseMatrix(1);
-    m_precondCache.setGridSize(matrix);
-    for (int i = 1; i < grid.sizeI(); i++)
+    m_precondCache.clear();
+    for (int i = 0; i < grid.sizeI(); i++)
     {
-        for (int j = 1; j < grid.sizeJ(); j++)
+        for (int j = 0; j < grid.sizeJ(); j++)
         {
-
             if (grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
             {
-                precond(matrix,i,j);
+                precond(matrix,i,j,grid);
             }
 
         }
     }
 }
 
-double PCGSolver::precond(const SparseMatrix &m, int i, int j)
+double PCGSolver::precond(const UpperTriangularMatrix &m, int i, int j, MACFluidGrid& grid)
 {
+    if(i < 0 || j < 0)
+    {
+        return 0.0;
+    }
     double temp;
-    if (m_precondCache.getValue(0,m_precondCache.linearIndex(i,j),temp))
+    std::unordered_map<int,double>::iterator iter = m_precondCache.find(grid.linearFluidIndex(i,j));
+    if(iter != m_precondCache.end())
     {
-        return temp;
+        return iter->second;
     }
 
     const double tuning = 0.97;
     const double safety = 0.25;
 
-    temp = m.Adiag(i,j)
-            - (m.Ax(i-1,j)*precond(m,i-1,j))*(m.Ax(i-1,j)*precond(m,i-1,j))
-            - (m.Ay(i,j-1)*precond(m,i,j-1))*(m.Ay(i,j-1)*precond(m,i,j-1))
+    temp = m.Adiag(i,j,grid)
+            - (m.Ax(i-1,j,grid)*precond(m,i-1,j,grid))*(m.Ax(i-1,j,grid)*precond(m,i-1,j,grid))
+            - (m.Ay(i,j-1,grid)*precond(m,i,j-1,grid))*(m.Ay(i,j-1,grid)*precond(m,i,j-1,grid))
 
-            - tuning*(m.Ax(i-1,j)*(m.Ay(i-1,j))*precond(m,i-1,j)*precond(m,i-1,j)
-                      + m.Ay(i,j-1)*(m.Ax(i,j-1))*precond(m,i,j-1)*precond(m,i,j-1));
+            - tuning*(m.Ax(i-1,j,grid)*(m.Ay(i-1,j,grid))*precond(m,i-1,j,grid)*precond(m,i-1,j,grid)
+                      + m.Ay(i,j-1,grid)*(m.Ax(i,j-1,grid))*precond(m,i,j-1,grid)*precond(m,i,j-1,grid));
 
-    if(temp < safety*m.Adiag(i,j))
+    if(temp < safety*m.Adiag(i,j,grid))
     {
-        temp = m.Adiag(i,j);
+        temp = m.Adiag(i,j,grid);
     }
 
-    temp = 1/std::sqrt(temp);
-
-    m_precondCache.setValue(0,m_precondCache.linearIndex(i,j),temp);
+    if(std::abs(temp) > 10e-10)
+    {
+        temp = 1/std::sqrt(temp);
+    }
+    else
+    {
+        temp = 0.0;
+    }
+    m_precondCache[grid.linearFluidIndex(i,j)] = temp;
 
     return temp;
 }

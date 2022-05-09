@@ -3,6 +3,7 @@
 
 #include "pcgsolver.h"
 #include "fluidgrid.h"
+#include "uppertriangularmatrix.h"
 
 class FlipSolver
 {
@@ -17,9 +18,9 @@ public:
     }
 
     void extrapolateVelocityField();
+    void project();
 
 protected:
-    void project();
 
     void calcRhs(std::vector<double> &rhs);
 

@@ -10,7 +10,10 @@ set(HEADERS
     dynamicsparsematrix.h
     sparsematrix.h
     pcgsolver.h
-    vmath.h)
+    vmath.h
+    uppertriangularmatrix.h
+    dynamicuppertriangularsparsematrix.h
+    logger.h)
 
 set(SOURCES
     flipsolver2d.cpp
@@ -23,7 +26,12 @@ set(SOURCES
     dynamicsparsematrix.cpp
     sparsematrix.cpp
     pcgsolver.cpp
-    vmath.cpp)
+    vmath.cpp
+    uppertriangularmatrix.cpp
+    dynamicuppertriangularsparsematrix.cpp
+    logger.cpp)
+
+add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 
 add_library(FlipSolver2d STATIC
   ${HEADERS}

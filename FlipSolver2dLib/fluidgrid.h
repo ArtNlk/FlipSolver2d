@@ -1,104 +1,133 @@
 #ifndef FLUIDGRID_H
 #define FLUIDGRID_H
 
+#include <unordered_map>
+
 #include "fluidcell.h"
 #include "grid2d.h"
 #include "customassert.h"
 #include "index2d.h"
+#include "logger.h"
 
-class MACFluidGrid : public Grid2d<FluidCell>
+class MACFluidGrid : public LinearIndexable2d
 {
 public:
-    MACFluidGrid(int sizeI, int sizeJ, FluidCell defaultCell = FluidCell()) :
-        Grid2d(sizeI,sizeJ, defaultCell)
-    {
-    }
+    MACFluidGrid(int sizeI, int sizeJ);
 
-    inline FluidCellMaterial getMaterial(Index2d index) const
-    {
-        return m_data[linearIndex(index)].getMaterial();
-    }
+    void fill(FluidCellMaterial m = FluidCellMaterial::EMPTY,
+                     float velocityU = 0.f,
+                     float velocityV = 0.f,
+                     bool knownFlagU = false,
+                     bool knownFlagV = false);
 
-    inline FluidCellMaterial getMaterial(int i, int j) const
-    {
-        return m_data[linearIndex(i, j)].getMaterial();
-    }
+    void fillMaterial(FluidCellMaterial m);
 
-    inline void setMaterial(Index2d index, FluidCellMaterial m)
-    {
-        m_data[linearIndex(index)].setMatrial(m);
-    }
+    void fillMaterialRect(FluidCellMaterial value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
 
-    inline void setMaterial(int i, int j, FluidCellMaterial m)
-    {
-        m_data[linearIndex(i,j)].setMatrial(m);
-    }
+    void fillMaterialRect(FluidCellMaterial value, Index2d topLeft, Index2d bottomRight);
 
-    inline void setU(Index2d index, double value, bool setAsKnown = false)
-    {
-        m_data[linearIndex(index)].setU(value);
-        m_data[linearIndex(index)].setKnownStatusU(setAsKnown);
-    }
+    void fillVelocityU(float value);
 
-    inline void setU(int i, int j, double value, bool setAsKnown = false)
-    {
-        m_data[linearIndex(i,j)].setU(value);
-        m_data[linearIndex(i,j)].setKnownStatusU(setAsKnown);
-    }
+    void fillVelocityURect(double value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
 
-    inline void setV(Index2d index, double value, bool setAsKnown = false)
-    {
-        m_data[linearIndex(index)].setV(value);
-        m_data[linearIndex(index)].setKnownStatusV(setAsKnown);
-    }
+    void fillVelocityURect(double value, Index2d topLeft, Index2d bottomRight);
 
-    inline void setV(int i, int j, double value, bool setAsKnown = false)
-    {
-        m_data[linearIndex(i,j)].setV(value);
-        m_data[linearIndex(i,j)].setKnownStatusV(setAsKnown);
-    }
+    void fillVelocityV(float value);
 
-    inline double getU(Index2d index) const
-    {
-        return m_data[linearIndex(index)].getU();
-    }
+    void fillVelocityVRect(double value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
 
-    inline double getU(int i, int j) const
-    {
-        return m_data[linearIndex(i,j)].getU();
-    }
+    void fillVelocityVRect(double value, Index2d topLeft, Index2d bottomRight);
 
-    inline double getV(Index2d index) const
-    {
-        return m_data[linearIndex(index)].getV();
-    }
+    void fillKnownFlagsU(bool value);
 
-    inline double getV(int i, int j) const
-    {
-        return m_data[linearIndex(i,j)].getV();
-    }
+    void fillKnownFlagURect(bool value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
 
-    inline void getSize(int& sizeI, int& sizeJ) const
-    {
-        sizeI = m_sizeI;
-        sizeJ = m_sizeJ;
-    }
+    void fillKnownFlagURect(bool value, Index2d topLeft, Index2d bottomRight);
 
-    inline int cellCount() const
-    {
-        return m_sizeI * m_sizeJ;
-    }
+    void fillKnownFlagsV(bool value);
 
-    inline FluidCell& at(int i, int j)
-    {
-        return m_data[linearIndex(i,j)];
-    }
+    void fillKnownFlagVRect(bool value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
 
-    inline FluidCell& at(Index2d index)
-    {
-        return m_data[linearIndex(index)];
-    }
+    void fillKnownFlagVRect(bool value, Index2d topLeft, Index2d bottomRight);
 
+    FluidCellMaterial getMaterial(Index2d index) const;
+
+    FluidCellMaterial getMaterial(int i, int j) const;
+
+    void setMaterial(Index2d index, FluidCellMaterial m);
+
+    void setMaterial(int i, int j, FluidCellMaterial m);
+
+    void setU(Index2d index, double value, bool knownStatus);
+
+    void setU(Index2d index, double value);
+
+    void setU(int i, int j, double value, bool knownStatus);
+
+    void setU(int i, int j, double value);
+
+    void setV(Index2d index, double value, bool knownStatus);
+
+    void setV(Index2d index, double value);
+
+    void setV(int i, int j, double value, bool knownStatus);
+
+    void setV(int i, int j, double value);
+
+    double getU(Index2d index) const;
+
+    double getU(int i, int j) const;
+
+    double getV(Index2d index) const;
+
+    double getV(int i, int j) const;
+
+    void getSize(int& sizeI, int& sizeJ) const;
+
+    int cellCount() const;
+
+    int fluidCellCount() const;
+
+//    inline FluidCell at(int i, int j)
+//    {
+//        return FluidCell(m_materialGrid.at(i,j),
+//                         m_velocityGridU.at(i,j),
+//                         m_velocityGridV.at(i,j),
+//                         m_knownFlagsU.at(i,j),
+//                         m_knownFlagsV.at(i,j));
+//    }
+
+//    inline FluidCell at(Index2d index)
+//    {
+//        return FluidCell(m_materialGrid.at(index),
+//                         m_velocityGridU.at(index),
+//                         m_velocityGridV.at(index),
+//                         m_knownFlagsU.at(index),
+//                         m_knownFlagsV.at(index));
+//    }
+
+    const Grid2d<FluidCellMaterial> &materialGrid();
+
+    Grid2d<float> &velocityGridU();
+
+    Grid2d<float> &velocityGridV();
+
+    Grid2d<bool> &knownFlagsGridU();
+
+    Grid2d<bool> &knownFlagsGridV();
+
+    void updateLinearToFluidMapping();
+
+    int linearFluidIndex(int i, int j);
+
+protected:
+    Grid2d<FluidCellMaterial> m_materialGrid;
+    Grid2d<float> m_velocityGridU;
+    Grid2d<float> m_velocityGridV;
+    Grid2d<bool> m_knownFlagsU;
+    Grid2d<bool> m_knownFlagsV;
+    std::unordered_map<int,int> m_linearToFluidCellIndexMap;
+    int m_fluidCellCount;
 };
 
 #endif // FLUIDGRID_H

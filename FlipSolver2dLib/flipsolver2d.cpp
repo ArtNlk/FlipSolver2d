@@ -4,6 +4,8 @@
 #include <queue>
 
 #include "simsettings.h"
+#include "dynamicuppertriangularsparsematrix.h"
+#include "logger.h"
 
 FlipSolver::FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize,  double sideLength, int extrapRadius, bool vonNeumannNeighbors) :
     m_grid(sizeX, sizeY),
@@ -17,36 +19,44 @@ FlipSolver::FlipSolver(int sizeX, int sizeY, double fluidDensity, double timeste
 
 void FlipSolver::project()
 {
-    std::vector<double> rhs(0,m_grid.sizeI() * m_grid.sizeJ());
+    m_grid.updateLinearToFluidMapping();
+    std::vector<double> rhs(m_grid.fluidCellCount(),0.0);
     calcRhs(rhs);
-    SparseMatrix mat = SparseMatrix(DynamicSparseMatrix(m_grid));
-    std::vector<double> pressures(0,m_grid.sizeI() * m_grid.sizeJ());
-    if(!m_pcgSolver.solve(mat,m_grid,pressures,rhs))
+    debug() << "Calculated rhs: " << rhs;
+    DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix(m_grid);
+    UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
+    std::vector<double> pressures(m_grid.fluidCellCount(),0.0);
+    if(!m_pcgSolver.solve(mat,m_grid,pressures,rhs,200))
     {
-        //TODO report iteration limit exhaustion
+        std::cout << "PCG Solver: Iteration limit exhaustion!\n";
     }
+
+    debug() << "pressures = " << pressures;
 
     double scale = SimSettings::dt() / (SimSettings::density() * SimSettings::dx());
 
-    for (int i = m_grid.sizeI(); i >= 1; i--)
+    for (int i = m_grid.sizeI() - 1; i >= 0; i--)
     {
-        for (int j = m_grid.sizeJ(); j >= 1; j--)
+        for (int j = m_grid.sizeJ() - 1; j >= 0; j--)
         {
+            int fluidIndex = m_grid.linearFluidIndex(i,j);
+            int fluidIndexIM1 = m_grid.linearFluidIndex(i-1,j);
+            int fluidIndexJM1 = m_grid.linearFluidIndex(i,j-1);
             //U part
             if(m_grid.getMaterial(i-1,j) == FluidCellMaterial::FLUID || m_grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
             {
                 if(m_grid.getMaterial(i-1,j) == FluidCellMaterial::SOLID || m_grid.getMaterial(i,j) == FluidCellMaterial::SOLID)
                 {
-                    m_grid.at(i,j).setU(0);//Solids are stationary
+                    m_grid.setU(i,j,0);//Solids are stationary
                 }
                 else
                 {
-                    m_grid.at(i,j).U() -= scale * (pressures[m_grid.linearIndex(i,j)] - pressures[m_grid.linearIndex(i-1,j)]);
+                    m_grid.velocityGridU().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexIM1 == -1 ? 0.0 : pressures[fluidIndexIM1]));
                 }
             }
             else
             {
-                m_grid.at(i,j).setUnknownU();
+                m_grid.knownFlagsGridU().at(i,j) = false;
             }
 
             //V part
@@ -54,16 +64,16 @@ void FlipSolver::project()
             {
                 if(m_grid.getMaterial(i,j-1) == FluidCellMaterial::SOLID || m_grid.getMaterial(i,j) == FluidCellMaterial::SOLID)
                 {
-                    m_grid.at(i,j).setV(0);//Solids are stationary
+                    m_grid.velocityGridV().at(i,j) = 0;//Solids are stationary
                 }
                 else
                 {
-                    m_grid.at(i,j).V() -= scale * (pressures[m_grid.linearIndex(i,j)] - pressures[m_grid.linearIndex(i,j-1)]);
+                    m_grid.velocityGridV().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexJM1 == -1 ? 0.0 : pressures[fluidIndexJM1]));
                 }
             }
             else
             {
-                m_grid.at(i,j).setUnknownV();
+                m_grid.knownFlagsGridV().at(i,j) = false;
             }
         }
     }
@@ -78,7 +88,7 @@ void FlipSolver::extrapolateVelocityField()
     {
         for(int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if(m_grid.at(i,j).isKnownU())
+            if(m_grid.knownFlagsGridU().at(i,j))
             {
                 markers.at(i,j) = 0;
             }
@@ -113,7 +123,7 @@ void FlipSolver::extrapolateVelocityField()
         {
             if(markers.at(neighborIndex) < markers.at(index))
             {
-                avg += m_grid.at(neighborIndex).U();
+                avg += m_grid.velocityGridU().at(neighborIndex);
                 count++;
             }
             if(markers.at(neighborIndex) == INT_MAX)
@@ -122,8 +132,8 @@ void FlipSolver::extrapolateVelocityField()
                 wavefront.push(neighborIndex);
             }
         }
-        m_grid.at(index).setU(avg / count);
-        m_grid.at(index).setKnownU();
+        m_grid.velocityGridU().at(index) = avg / count;
+        m_grid.knownFlagsGridU().at(index) = true;
 
         wavefront.pop();
     }
@@ -135,7 +145,7 @@ void FlipSolver::extrapolateVelocityField()
     {
         for(int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if(m_grid.at(i,j).isKnownV())
+            if(m_grid.knownFlagsGridV().at(i,j))
             {
                 markers.at(i,j) = 0;
             }
@@ -170,7 +180,7 @@ void FlipSolver::extrapolateVelocityField()
         {
             if(markers.at(neighborIndex) < markers.at(index))
             {
-                avg += m_grid.at(neighborIndex).V();
+                avg += m_grid.velocityGridV().at(neighborIndex);
                 count++;
             }
             if(markers.at(neighborIndex) == INT_MAX)
@@ -179,8 +189,8 @@ void FlipSolver::extrapolateVelocityField()
                 wavefront.push(neighborIndex);
             }
         }
-        m_grid.at(index).setV(avg / count);
-        m_grid.at(index).setKnownV();
+        m_grid.velocityGridV().at(index) = avg / count;
+        m_grid.knownFlagsGridV().at(index) = true;
 
         wavefront.pop();
     }
@@ -190,14 +200,32 @@ void FlipSolver::calcRhs(std::vector<double> &rhs)
 {
     double scale = 1/SimSettings::dx();
 
-    for (int i = 1; i < m_grid.sizeI(); i++)
+    for (int i = 0; i < m_grid.sizeI(); i++)
     {
-        for (int j = 1; j < m_grid.sizeJ(); j++)
+        for (int j = 0; j < m_grid.sizeJ(); j++)
         {
             if (m_grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
             {
-                rhs[m_grid.linearIndex(i,j)] = -scale * (m_grid.getU(i+1,j) - m_grid.getU(i,j)
+                rhs[m_grid.linearFluidIndex(i,j)] = -scale * (m_grid.getU(i+1,j) - m_grid.getU(i,j)
                                                           +m_grid.getV(i,j+1) - m_grid.getV(i,j));
+
+                if(m_grid.getMaterial(i-1,j) == FluidCellMaterial::SOLID)
+                {
+                    rhs[m_grid.linearFluidIndex(i,j)] -= scale * (m_grid.getU(i,j) - 0);
+                }
+                if(m_grid.getMaterial(i+1,j) == FluidCellMaterial::SOLID)
+                {
+                    rhs[m_grid.linearFluidIndex(i,j)] += scale * (m_grid.getU(i+1,j) - 0);
+                }
+
+                if(m_grid.getMaterial(i,j-1) == FluidCellMaterial::SOLID)
+                {
+                    rhs[m_grid.linearFluidIndex(i,j)] -= scale * (m_grid.getV(i,j) - 0);
+                }
+                if(m_grid.getMaterial(i,j+1) == FluidCellMaterial::SOLID)
+                {
+                    rhs[m_grid.linearFluidIndex(i,j)] += scale * (m_grid.getV(i,j+1) - 0);
+                }
             }
         }
     }

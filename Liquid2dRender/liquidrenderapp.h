@@ -20,9 +20,16 @@ protected:
     void resizeCallback(GLFWwindow* window, int width, int height);
     void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+    void resetGrid();
+    void initGridForExtrapolation();
+    void initGridForProjection();
+
     GLFWwindow* m_window;
     std::shared_ptr<FlipSolver> m_solver;
     FluidRenderer m_fluidRenderer;
+
+    static const int m_gridSizeI = 10;
+    static const int m_gridSizeJ = 10;
 
     //Taken from https://stackoverflow.com/questions/7676971/pointing-to-a-function-that-is-a-class-member-glfw-setkeycallback
     class GLFWCallbackWrapper

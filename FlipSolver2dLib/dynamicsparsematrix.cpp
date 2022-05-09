@@ -60,6 +60,7 @@ DynamicSparseMatrix::DynamicSparseMatrix(MACFluidGrid &grid) :
                 {
                     modifyAdiag(i,j,scale);
                 }
+
             }
         }
     }
@@ -84,16 +85,16 @@ void DynamicSparseMatrix::setGridSize(const SparseMatrix &matrix)
 void DynamicSparseMatrix::setValue(int rowIndex, int columnIndex, double value)
 {
     SparseRow &targetRow = m_rows[rowIndex];
-    for(int column = 0; column < targetRow.size(); column++)
+    for(int i = 0; i < targetRow.size(); i++)
     {
-        if(targetRow[column].first == columnIndex)
+        if(targetRow[i].first == columnIndex)
         {
-            targetRow[column].second = value;
+            targetRow[i].second = value;
             return;
         }
-        else if(targetRow[column].first > columnIndex)
+        else if(targetRow[i].first > columnIndex)
         {
-            targetRow.insert(targetRow.begin()+column,SparseRowUnit(column,value));
+            targetRow.insert(targetRow.begin()+i,SparseRowUnit(columnIndex,value));
             m_elementCount++;
             return;
         }
@@ -128,5 +129,6 @@ bool DynamicSparseMatrix::getValue(int rowIndex, int columnIndex, double &out) c
         }
     }
 
+    out = 0;
     return false;
 }

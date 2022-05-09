@@ -1,6 +1,8 @@
 #ifndef FLUIDCELL_H
 #define FLUIDCELL_H
 
+#include <vector>
+
 enum FluidCellMaterial : char
 {
     FLUID = 0,
@@ -11,7 +13,7 @@ enum FluidCellMaterial : char
 class FluidCell
 {
 public:
-    FluidCell(FluidCellMaterial material = EMPTY, double u = 0.0, double v = 0.0, bool uKnown = false, bool vKnown = false) :
+    FluidCell(FluidCellMaterial& material, float& u, float& v, std::vector<bool>::reference uKnown, std::vector<bool>::reference vKnown) :
         m_material(material),
         m_velocityU(u),
         m_velocityV(v),
@@ -35,32 +37,32 @@ public:
         return m_material;
     }
 
-    inline void setU(double value)
+    inline void setU(float value)
     {
         m_velocityU = value;
     }
 
-    inline double getU() const
+    inline float getU() const
     {
         return m_velocityU;
     }
 
-    inline double& U()
+    inline float& U()
     {
         return m_velocityU;
     }
 
-    inline void setV(double value)
+    inline void setV(float value)
     {
         m_velocityV = value;
     }
 
-    inline double getV() const
+    inline float getV() const
     {
         return m_velocityV;
     }
 
-    inline double& V()
+    inline float& V()
     {
         return m_velocityV;
     }
@@ -80,7 +82,7 @@ public:
         m_knownU = false;
     }
 
-    inline bool isKnownU() const
+    inline std::vector<bool>::reference knownU() const
     {
         return m_knownU;
     }
@@ -100,17 +102,17 @@ public:
         m_knownV = false;
     }
 
-    inline bool isKnownV() const
+    inline std::vector<bool>::reference knownV() const
     {
         return m_knownV;
     }
 
 protected:
-    FluidCellMaterial m_material;
-    double m_velocityU;
-    double m_velocityV;
-    bool m_knownU;
-    bool m_knownV;
+    FluidCellMaterial& m_material;
+    float& m_velocityU;
+    float& m_velocityV;
+    std::vector<bool>::reference m_knownU;
+    std::vector<bool>::reference m_knownV;
 };
 
 #endif // FLUIDCELL_H

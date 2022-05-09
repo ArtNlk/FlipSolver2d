@@ -31,7 +31,8 @@ const char *FluidRenderer::m_fragShaderSource =
 
 FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver) :
     m_solver(solver),
-    m_gridVertexCount(0)
+    m_gridVertexCount(0),
+    m_renderMode(FluidRenderMode::RENDER_MATERIAL)
 {
     m_gridVerts.reserve(solver.get()->grid().cellCount()*m_vertexPerCell*m_vertexSize);
     m_gridIndices.reserve(solver.get()->grid().cellCount()*m_vertexPerCell);
@@ -254,9 +255,9 @@ void FluidRenderer::updateGridFromMaterial()
 
 void FluidRenderer::updateGridFromVelocity()
 {
-    float min = -10;
-    float max = 10;
-    float diff = max - min;
+    //float min = -10;
+    float max = 5;
+    //float diff = max - min;
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
@@ -264,8 +265,10 @@ void FluidRenderer::updateGridFromVelocity()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            float r = (m_solver->grid().getU(i,j) - min) / diff;
-            float g = (m_solver->grid().getV(i,j) - min) / diff;
+            //float r = (m_solver->grid().getU(i,j) - min) / diff;
+            //float g = (m_solver->grid().getV(i,j) - min) / diff;
+            float r = (std::abs(m_solver->grid().getU(i,j))) / max;
+            float g = (std::abs(m_solver->grid().getV(i,j))) / max;
             setCellColor(i,j,Color(r,g,0.0));
         }
     }
@@ -281,8 +284,8 @@ void FluidRenderer::updateGridFromUComponent()
 //                                            });
 //    float min = minMaxValues.first->getU();
 //    float max = minMaxValues.second->getU();
-    float min = -10;
-    float max = 10;
+    float min = -5;
+    float max = 5;
     float diff = max - min;
 
     int gridHeight = m_solver->grid().sizeI();
@@ -299,8 +302,8 @@ void FluidRenderer::updateGridFromUComponent()
 
 void FluidRenderer::updateGridFromVComponent()
 {
-    float min = -10;
-    float max = 10;
+    float min = -5;
+    float max = 5;
     float diff = max - min;
 
     int gridHeight = m_solver->grid().sizeI();
@@ -318,7 +321,7 @@ void FluidRenderer::updateGridFromVComponent()
 void FluidRenderer::updateVectors()
 {
     float maxLengthGridSizes = sqrt(2.f) / 2;
-    float maxLength = 50;
+    float maxLength = 0.5;
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
@@ -330,6 +333,7 @@ void FluidRenderer::updateVectors()
             Vertex gridspaceVelocity(m_solver->grid().getU(i,j),m_solver->grid().getV(i,j));
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = maxLength / gridspaceVelocity.distFromZero();
+            //float scaleFactor = 1;
             Vertex newVector = Vertex((gridspaceVelocity.x()/scaleFactor) * maxLengthGridSizes * m_cellSize,
                                        (gridspaceVelocity.y()/scaleFactor) * maxLengthGridSizes * m_cellSize);
             updateVector(i,j,newVector);

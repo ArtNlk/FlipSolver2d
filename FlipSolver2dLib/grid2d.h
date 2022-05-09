@@ -17,29 +17,43 @@ public:
 
     inline T& at(int i, int j)
     {
-        ASSERT_BETWEEN(i,0,m_sizeI);
-        ASSERT_BETWEEN(j,0,m_sizeJ);
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
         return m_data[linearIndex(i,j)];
     }
 
     inline T& at(Index2d index)
     {
-        ASSERT_BETWEEN(i,0,m_sizeI);
-        ASSERT_BETWEEN(j,0,m_sizeJ);
+        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
+        return m_data[linearIndex(index)];
+    }
+
+    inline const T& at(int i, int j) const
+    {
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        return m_data[linearIndex(i,j)];
+    }
+
+    inline const T& at(Index2d index) const
+    {
+        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
         return m_data[linearIndex(index)];
     }
 
     inline void setAt(int i, int j, T value)
     {
-        ASSERT_BETWEEN(i,0,m_sizeI);
-        ASSERT_BETWEEN(j,0,m_sizeJ);
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
         m_data[linearIndex(i,j)] = value;
     }
 
     inline T getAt(int i, int j) const
     {
-        ASSERT_BETWEEN(i,0,m_sizeI);
-        ASSERT_BETWEEN(j,0,m_sizeJ);
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
         return m_data[linearIndex(i,j)];
     }
 
@@ -54,6 +68,115 @@ public:
     inline std::vector<T> &data()
     {
         return m_data;
+    }
+
+    inline void fillRect(T value, Index2d topLeft, Index2d bottomRight)
+    {
+        fillRect(value,topLeft.m_i,topLeft.m_j,bottomRight.m_i,bottomRight.m_j);
+    }
+
+    inline void fillRect(T value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
+    {
+        topLeftX = std::max(0,topLeftX);
+        topLeftY = std::max(0,topLeftY);
+        bottomRightX = std::min(m_sizeI - 1,bottomRightX);
+        bottomRightY = std::min(m_sizeJ - 1,bottomRightY);
+        for(int i = topLeftX; i <= bottomRightX; i++)
+        {
+            for(int j = topLeftY; j <= bottomRightY; j++)
+            {
+                m_data[linearIndex(i,j)] = value;
+            }
+        }
+    }
+
+protected:
+    std::vector<T> m_data;
+};
+
+template<>
+class Grid2d<bool> : public LinearIndexable2d
+{
+public:
+    Grid2d(int sizeI, int sizeJ, bool initValue = false) :
+        LinearIndexable2d(sizeI,sizeJ)
+    {
+        m_data.assign(sizeI*sizeJ,initValue);
+    }
+
+    inline std::vector<bool>::reference at(int i, int j)
+    {
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        return m_data[linearIndex(i,j)];
+    }
+
+    inline std::vector<bool>::reference at(Index2d index)
+    {
+        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
+        return m_data[linearIndex(index)];
+    }
+
+    inline std::vector<bool>::const_reference at(int i, int j) const
+    {
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        return m_data[linearIndex(i,j)];
+    }
+
+    inline std::vector<bool>::const_reference at(Index2d index) const
+    {
+        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
+        return m_data[linearIndex(index)];
+    }
+
+    inline void setAt(int i, int j, bool value)
+    {
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        m_data[linearIndex(i,j)] = value;
+    }
+
+    inline bool getAt(int i, int j) const
+    {
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        return m_data[linearIndex(i,j)];
+    }
+
+    inline void fill(bool value)
+    {
+        for(int i = 0; i < m_data.size(); i++)
+        {
+            m_data[i] = value;
+        }
+    }
+
+    inline std::vector<bool> &data()
+    {
+        return m_data;
+    }
+
+    inline void fillRect(bool value, Index2d topLeft, Index2d bottomRight)
+    {
+        fillRect(value,topLeft.m_i,topLeft.m_j,topLeft.m_i,topLeft.m_j);
+    }
+
+    inline void fillRect(bool value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
+    {
+        topLeftX = std::max(0,topLeftX);
+        topLeftY = std::max(0,topLeftY);
+        bottomRightX = std::min(m_sizeI,bottomRightX);
+        bottomRightY = std::min(m_sizeJ,bottomRightY);
+        for(int i = topLeftX; i <= bottomRightX; i++)
+        {
+            for(int j = topLeftY; j <= bottomRightY; j++)
+            {
+                m_data[linearIndex(i,j)] = value;
+            }
+        }
     }
 
     inline std::vector<Index2d> getNeighborhood(Index2d index, int radius = 1, bool vonNeumann = false)
@@ -83,7 +206,7 @@ public:
     }
 
 protected:
-    std::vector<T> m_data;
+    std::vector<bool> m_data;
 };
 
 #endif // GRID2D_H

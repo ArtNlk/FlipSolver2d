@@ -1,5 +1,5 @@
-#ifndef DYNAMICSPARSEMATRIX_H
-#define DYNAMICSPARSEMATRIX_H
+#ifndef DYNAMICUPPERTRIANGULARSPARSEMATRIX_H
+#define DYNAMICUPPERTRIANGULARSPARSEMATRIX_H
 
 #include <vector>
 #include <utility>
@@ -8,17 +8,17 @@
 #include "fluidgrid.h"
 #include "linearindexable2d.h"
 
-class SparseMatrix;
+class UpperTriangularMatrix;
 
-class DynamicSparseMatrix : public LinearIndexable2d
+class DynamicUpperTriangularSparseMatrix : public LinearIndexable2d
 {
 public:
     typedef std::pair<int,double> SparseRowUnit;
     typedef std::vector<SparseRowUnit> SparseRow;
 
-    DynamicSparseMatrix(int size, int avgRowLength = 7);
+    DynamicUpperTriangularSparseMatrix(int size, int avgRowLength = 7);
 
-    DynamicSparseMatrix(MACFluidGrid &grid);
+    DynamicUpperTriangularSparseMatrix(MACFluidGrid &grid);
 
     void resize(int newSize);
     int size() const;
@@ -28,12 +28,12 @@ public:
         grid.getSize(m_sizeI, m_sizeJ);
     }
 
-    inline void setGridSize(const DynamicSparseMatrix &matrix)
+    inline void setGridSize(const DynamicUpperTriangularSparseMatrix &matrix)
     {
         matrix.getGridSize(m_sizeI, m_sizeJ);
     }
 
-    void setGridSize(const SparseMatrix &matrix);
+    void setGridSize(const UpperTriangularMatrix &matrix);
 
     inline void getGridSize(int& out_gridSizeI, int& out_gridSizeJ) const
     {
@@ -41,58 +41,58 @@ public:
         out_gridSizeJ = m_sizeJ;
     }
 
-    inline void setAdiag(int i, int j, double value)
+    inline void setAdiag(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int index = linearIndex(i,j);
+        int index = grid.linearFluidIndex(i,j);
         setValue(index, index, value);
     }
 
-    inline void setAx(int i, int j, double value)
+    inline void setAx(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = linearIndex(i,j);
-        int colIndex = linearIndex(i+1,j);
+        int rowIndex = grid.linearFluidIndex(i,j);
+        int colIndex = grid.linearFluidIndex(i+1,j);
 
         return setValue(rowIndex,colIndex, value);
     }
 
-    inline void setAy(int i, int j, double value)
+    inline void setAy(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = linearIndex(i,j);
-        int colIndex = linearIndex(i,j+1);
+        int rowIndex = grid.linearFluidIndex(i,j);
+        int colIndex = grid.linearFluidIndex(i,j+1);
 
         return setValue(rowIndex,colIndex, value);
     }
 
-    inline void modifyAdiag(int i, int j, double value)
+    inline void modifyAdiag(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int index = linearIndex(i,j);
+        int index = grid.linearFluidIndex(i,j);
         setValue(index, index, getValue(index,index) + value);
     }
 
-    inline void modifyAx(int i, int j, double value)
+    inline void modifyAx(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = linearIndex(i,j);
-        int colIndex = linearIndex(i+1,j);
+        int rowIndex = grid.linearFluidIndex(i,j);
+        int colIndex = grid.linearFluidIndex(i+1,j);
 
         return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
     }
 
-    inline void modifyAy(int i, int j, double value)
+    inline void modifyAy(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = linearIndex(i,j);
-        int colIndex = linearIndex(i,j+1);
+        int rowIndex = grid.linearFluidIndex(i,j);
+        int colIndex = grid.linearFluidIndex(i,j+1);
 
         return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
     }
@@ -103,9 +103,9 @@ public:
 
     inline const std::vector<SparseRow> *data() const { return &m_rows;}
 
-    virtual void setValue(int rowIndex, int columnIndex, double value);
-    virtual double getValue(int rowIndex, int columnIndex) const;
-    virtual bool getValue(int rowIndex, int columnIndex, double &out) const;
+    void setValue(int rowIndex, int columnIndex, double value);
+    double getValue(int rowIndex, int columnIndex) const;
+    bool getValue(int rowIndex, int columnIndex, double &out) const;
 
     inline std::string toString()
     {
@@ -124,9 +124,12 @@ public:
     }
 
 protected:
+
+    void internalSetValue(int rowIndex, int columnIndex, double value);
+
     std::vector<SparseRow> m_rows;
     int m_size;
     int m_elementCount;
 };
 
-#endif // DYNAMICSPARSEMATRIX_H
+#endif // DYNAMICUPPERTRIANGULARSPARSEMATRIX_H

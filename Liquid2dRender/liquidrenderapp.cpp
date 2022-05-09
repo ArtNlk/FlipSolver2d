@@ -8,18 +8,10 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(50,75,1,0.01,2,1,false)),
+    m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,1,1,1,false)),
     m_fluidRenderer(m_solver)
 {
-    m_solver->grid().setMaterial(10,10,FluidCellMaterial::SOLID);
-    m_solver->grid().setMaterial(10,11,FluidCellMaterial::FLUID);
-    for(int i = 0; i < 1000; i++)
-    {
-        m_solver->grid().setU(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), rand() % 20 - 10,true);
-        m_solver->grid().setV(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), rand() % 20 - 10,true);
-    }
     LiquidRenderApp::GLFWCallbackWrapper::SetApplication(this);
-    m_fluidRenderer.setRenderMode(FluidRenderMode::RENDER_V);
 }
 
 void LiquidRenderApp::init()
@@ -74,16 +66,82 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
         case GLFW_PRESS:
             switch(key)
             {
-                case GLFW_KEY_P:
-                    m_solver->extrapolateVelocityField();
+                case GLFW_KEY_M:
+                    m_fluidRenderer.renderMode()++;
                     m_fluidRenderer.updateGrid();
                 break;
 
-                case GLFW_KEY_T:
-                    m_fluidRenderer.renderMode()++;
+                case GLFW_KEY_U:
                     m_fluidRenderer.updateGrid();
+                break;
+
+                case GLFW_KEY_E:
+                    if(mods & GLFW_MOD_SHIFT)
+                    {
+                        initGridForExtrapolation();
+                    }
+                    else
+                    {
+                        m_solver->extrapolateVelocityField();
+                        m_fluidRenderer.updateGrid();
+                    }
+                break;
+
+                case GLFW_KEY_P:
+                    if(mods & GLFW_MOD_SHIFT)
+                    {
+                        initGridForProjection();
+                    }
+                    else
+                    {
+                        m_solver->project();
+                        m_fluidRenderer.updateGrid();
+                    }
                 break;
             }
         break;
     }
+}
+
+void LiquidRenderApp::resetGrid()
+{
+    m_solver->grid().fill();
+}
+
+void LiquidRenderApp::initGridForExtrapolation()
+{
+    resetGrid();
+    for(int i = 0; i < 1000; i++)
+    {
+        m_solver->grid().setU(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), static_cast<float>(rand() % 20 - 10)/10,true);
+        m_solver->grid().setV(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), static_cast<float>(rand() % 20 - 10)/10,true);
+    }
+    m_fluidRenderer.updateGrid();
+}
+
+void LiquidRenderApp::initGridForProjection()
+{
+    resetGrid();
+    srand(0);
+    Index2d fluidTopLeft(1,1);
+    Index2d fluidBottomRight(9,9);
+    m_solver->grid().fillMaterialRect(FluidCellMaterial::SOLID,0,0,9,9);
+    m_solver->grid().fillMaterialRect(FluidCellMaterial::FLUID,fluidTopLeft,fluidBottomRight);
+    for (int i = 0; i < m_solver->grid().sizeI(); i++)
+    {
+        for (int j = 0; j < m_solver->grid().sizeJ(); j++)
+        {
+            m_solver->grid().setU(i,j,static_cast<float>(rand() % 20 - 10) / 10);
+            m_solver->grid().setV(i,j,static_cast<float>(rand() % 20 - 10) / 10);
+            //m_solver->grid().setU(i,j,1.0);
+            //m_solver->grid().setV(i,j,0.0);
+        }
+    }
+    m_solver->grid().fillKnownFlagsU(true);
+    m_solver->grid().fillKnownFlagsV(true);
+    //m_solver->grid().velocityGridU().fillRect(10.f,fluidTopLeft,fluidBottomRight);
+    //m_solver->grid().knownFlagsGridU().fillRect(true,fluidTopLeft,fluidBottomRight);
+    //m_solver->grid().velocityGridV().fillRect(23.f,fluidTopLeft,fluidBottomRight);
+    //m_solver->grid().knownFlagsGridV().fillRect(true,fluidTopLeft,fluidBottomRight);
+    m_fluidRenderer.updateGrid();
 }
