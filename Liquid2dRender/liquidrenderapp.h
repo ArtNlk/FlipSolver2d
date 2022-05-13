@@ -7,6 +7,7 @@
 
 #include "flipsolver2d.h"
 #include "fluidrenderer.h"
+#include "vertex.h"
 
 class LiquidRenderApp
 {
@@ -20,16 +21,38 @@ protected:
     void resizeCallback(GLFWwindow* window, int width, int height);
     void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+    void setupFluidrender();
+    void setupFluidrenderQuad();
+    void addVert(std::vector<float> &vertexVector, float x, float y, float u, float v);
+    void formQuad(std::vector<unsigned int> &indexVector, std::vector<float> &vertexVector);
+    void updateFluidrenderQuad();
+    void updateFluidrenderBuffers();
+    void updateFluidrenderQuadVertex(Vertex v, int vertexIndex);
+    void render();
     void resetGrid();
     void initGridForExtrapolation();
     void initGridForProjection();
+    void resizeFluidrenderQuad();
 
     GLFWwindow* m_window;
     std::shared_ptr<FlipSolver> m_solver;
     FluidRenderer m_fluidRenderer;
 
-    static const int m_gridSizeI = 10;
-    static const int m_gridSizeJ = 10;
+    unsigned int m_fluidgrid_vbo;
+    unsigned int m_fluidgrid_vao;
+    unsigned int m_fluidgrid_ebo;
+    unsigned int m_textureQuadShaderProgram;
+
+    std::vector<float> m_fluidgridQuadVerts;
+    std::vector<unsigned int> m_fluidgridQuadIndices;
+
+    int m_windowWidth;
+    int m_windowHeight;
+
+    static const int m_gridSizeI = 25;
+    static const int m_gridSizeJ = 50;
+
+    static constexpr float m_gridDrawFraction = 0.75;
 
     //Taken from https://stackoverflow.com/questions/7676971/pointing-to-a-function-that-is-a-class-member-glfw-setkeycallback
     class GLFWCallbackWrapper

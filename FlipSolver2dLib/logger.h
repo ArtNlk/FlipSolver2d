@@ -53,6 +53,8 @@ Logger &operator<<(Logger &l, const float &v);
 
 Logger &operator<<(Logger &l, const int &v);
 
+Logger &operator<<(Logger &l, const unsigned int &v);
+
 Logger &operator<<(Logger &l, const char* str);
 
 #define debug() Logger::instance().stream() << "\n"; Logger::instance()

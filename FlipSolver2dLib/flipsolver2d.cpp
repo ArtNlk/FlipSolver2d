@@ -79,6 +79,16 @@ void FlipSolver::project()
     }
 }
 
+int FlipSolver::gridSizeI()
+{
+    return m_grid.sizeI();
+}
+
+int FlipSolver::gridSizeJ()
+{
+    return m_grid.sizeJ();
+}
+
 void FlipSolver::extrapolateVelocityField()
 {
     Grid2d<int> markers(m_grid.sizeI(),m_grid.sizeJ(),INT_MAX);

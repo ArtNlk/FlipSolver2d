@@ -18,7 +18,7 @@ inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
 class FluidRenderer
 {
 public:
-    FluidRenderer(std::shared_ptr<FlipSolver> solver);
+    FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidth, int textureHeight);
     void init();
     void render();
     void updateGrid();
@@ -40,12 +40,19 @@ public:
 
     static const Color &velocityVectorColor();
 
+    unsigned int renderTexture();
+
+    void resizeTexture(int width, int height);
+
+    float fluidGridAspect();
+
 protected:
     void addGridVertex(Vertex v, Color c = Color());
     void addGridQuad(Vertex topLeft, Vertex bottomRight, Color c);
     void addVectorVertex(Vertex v, Color c = Color());
     void addVector(Vertex start, Vertex end, Color c);
     void setupGl();
+    void setupOffscreenBuffer();
     void updateBuffers();
     void updateGridVerts();
     void updateVectorVerts();
@@ -69,8 +76,13 @@ protected:
     unsigned int m_vertexShader;
     unsigned int m_fragShader;
     unsigned int m_shaderProgram;
+    unsigned int m_framebuffer;
+    unsigned int m_renderbuffer;
+    unsigned int m_renderTexture;
 
     int m_gridVertexCount;
+    int m_textureWidth;
+    int m_textureHeight;
 
     static const int m_vertexPerCell = 4;
     static const int m_vertexSize = 6;
@@ -85,7 +97,8 @@ protected:
     static const Color m_solidColor;
     static const Color m_velocityVectorColor;
 
-    float m_cellSize;
+    float m_cellWidth;
+    float m_cellHeight;
 
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;

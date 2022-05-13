@@ -20,6 +20,10 @@ public:
     void extrapolateVelocityField();
     void project();
 
+    int gridSizeI();
+
+    int gridSizeJ();
+
 protected:
 
     void calcRhs(std::vector<double> &rhs);

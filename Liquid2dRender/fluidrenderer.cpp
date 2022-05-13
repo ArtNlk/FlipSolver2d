@@ -17,6 +17,7 @@ const char *FluidRenderer::m_vertexShaderSource =
         "void main()\n"
         "{\n"
         "   vertexColor = vColor;\n"
+        "   //vertexColor = aPos.xyz;\n"
         "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
         "}\0";
 
@@ -27,12 +28,15 @@ const char *FluidRenderer::m_fragShaderSource =
         "void main()\n"
         "{\n"
         "    FragColor = vec4(vertexColor.x, vertexColor.y, vertexColor.z, 1.0f);\n"
+        "    //FragColor = vec4(vertexColor.x, vertexColor.y, vertexColor.z, 1.0f);\n"
         "}\0";
 
-FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver) :
+FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidth, int textureHeight) :
     m_solver(solver),
     m_gridVertexCount(0),
-    m_renderMode(FluidRenderMode::RENDER_MATERIAL)
+    m_renderMode(FluidRenderMode::RENDER_MATERIAL),
+    m_textureWidth(textureWidth),
+    m_textureHeight(textureHeight)
 {
     m_gridVerts.reserve(solver.get()->grid().cellCount()*m_vertexPerCell*m_vertexSize);
     m_gridIndices.reserve(solver.get()->grid().cellCount()*m_vertexPerCell);
@@ -41,15 +45,24 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver) :
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
-    m_cellSize = 2.f / std::max(gridWidth,gridHeight);
+    m_cellWidth = 2.f / gridWidth;
+    m_cellHeight = 2.f / gridHeight;
 
     for (int i = 0; i < gridHeight; i++)
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            addGridQuad(Vertex(m_cellSize*j - 1,1 - m_cellSize*i),Vertex(m_cellSize*(j+1) - 1,1 - m_cellSize*(i+1)),Color(255,0,0));
-            Vertex vStart = Vertex(m_cellSize*j - 1 + m_cellSize / 2,1 - m_cellSize*i - m_cellSize/2);
-            Vertex vEnd = Vertex(vStart.x() + m_cellSize / 2, vStart.y());
+            if(i == 0 && j == 0)
+            {
+                debug() << "ij0 top left x = " << m_cellWidth*j - 1 << " top left y = " << 1 - m_cellHeight*i;
+            }
+            if(i == gridHeight - 1 && j == gridWidth - 1)
+            {
+                debug() << "ijmax bottom right x = " << m_cellWidth*(j+1) - 1 << " bottom right left y = " << 1 - m_cellHeight*(i+1);
+            }
+            addGridQuad(Vertex(m_cellWidth*j - 1,1 - m_cellHeight*i),Vertex(m_cellWidth*(j+1) - 1,1 - m_cellHeight*(i+1)),Color(255,0,0));
+            Vertex vStart = Vertex(m_cellWidth*j - 1 + m_cellWidth / 2,1 - m_cellHeight*i - m_cellHeight/2);
+            Vertex vEnd = Vertex(vStart.x() + m_cellWidth / 2, vStart.y());
             addVector(vStart,vEnd,m_velocityVectorColor);
             setVectorColor(i,j,Color(255,0,0));
         }
@@ -65,12 +78,19 @@ void FluidRenderer::init()
 
 void FluidRenderer::render()
 {
+    glViewport(0,0,m_textureWidth,m_textureHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+    glEnable(GL_DEPTH_TEST);
     glUseProgram(m_shaderProgram);
     //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
     glBindVertexArray(m_vao_grid);
     glDrawElements(GL_TRIANGLES,m_gridIndices.size(),GL_UNSIGNED_INT,0);
     glBindVertexArray(m_vao_vectors);
     glDrawArrays(GL_LINES,0,m_vectorVerts.size());
+    glBindVertexArray(0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FluidRenderer::addGridVertex(Vertex v, Color c)
@@ -103,7 +123,7 @@ void FluidRenderer::addVectorVertex(Vertex v, Color c)
 {
     m_vectorVerts.push_back(v.x());
     m_vectorVerts.push_back(v.y());
-    m_vectorVerts.push_back(v.z());
+    m_vectorVerts.push_back(-0.1);//slight offset to draw vectors over the grid
     m_vectorVerts.push_back(c.rf());
     m_vectorVerts.push_back(c.gf());
     m_vectorVerts.push_back(c.bf());
@@ -157,6 +177,40 @@ void FluidRenderer::setupGl()
     glGenVertexArrays(1, &m_vao_vectors);
     glGenBuffers(1,&m_vbo_vectors);
     updateBuffers();
+
+    //Frame buffers
+    glGenFramebuffers(1,&m_framebuffer);
+
+    //Textures
+    glGenTextures(1, &m_renderTexture);
+
+    //Render buffers
+    glGenRenderbuffers(1, &m_renderbuffer);
+    setupOffscreenBuffer();
+}
+
+void FluidRenderer::setupOffscreenBuffer()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+
+    glBindTexture(GL_TEXTURE_2D, m_renderTexture);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,m_textureWidth,m_textureHeight,0,GL_RGB,GL_UNSIGNED_BYTE,NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_renderTexture, 0);
+
+    glBindRenderbuffer(GL_RENDERBUFFER, m_renderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_textureWidth, m_textureHeight);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_renderbuffer);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete! Status = " << glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        debug() << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n" << glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FluidRenderer::updateBuffers()
@@ -221,6 +275,23 @@ void FluidRenderer::updateGrid()
     updateGridVerts();
     updateVectors();
     updateVectorVerts();
+}
+
+unsigned int FluidRenderer::renderTexture()
+{
+    return m_renderTexture;
+}
+
+void FluidRenderer::resizeTexture(int width, int height)
+{
+    m_textureHeight = height;
+    m_textureWidth = width;
+    setupOffscreenBuffer();
+}
+
+float FluidRenderer::fluidGridAspect()
+{
+    return static_cast<float>(m_solver->gridSizeI()) / m_solver->gridSizeJ();
 }
 
 void FluidRenderer::updateGridFromMaterial()
@@ -334,8 +405,8 @@ void FluidRenderer::updateVectors()
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = maxLength / gridspaceVelocity.distFromZero();
             //float scaleFactor = 1;
-            Vertex newVector = Vertex((gridspaceVelocity.x()/scaleFactor) * maxLengthGridSizes * m_cellSize,
-                                       (gridspaceVelocity.y()/scaleFactor) * maxLengthGridSizes * m_cellSize);
+            Vertex newVector = Vertex((gridspaceVelocity.x()/scaleFactor) * maxLengthGridSizes * m_cellWidth,
+                                       (gridspaceVelocity.y()/scaleFactor) * maxLengthGridSizes * m_cellHeight);
             updateVector(i,j,newVector);
         }
     }

@@ -78,8 +78,6 @@ void PCGSolver::applyICPrecond(const UpperTriangularMatrix &matrix, std::vector<
         }
     }
 
-    debug() << "mineq = " << temp;
-
     for (int i = grid.sizeI() - 1; i >= 0; i--)
     {
         for (int j = grid.sizeJ() - 1; j >= 0; j--)

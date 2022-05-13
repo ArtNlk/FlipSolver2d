@@ -115,6 +115,12 @@ Logger &operator<<(Logger &l, const int &v)
     return l;
 }
 
+Logger &operator<<(Logger &l, const unsigned int &v)
+{
+    l.stream() << v;
+    return l;
+}
+
 Logger &operator<<(Logger &l, const char* str)
 {
     l.stream() << str;
