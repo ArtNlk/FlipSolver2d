@@ -23,8 +23,11 @@ set(SOURCES
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
+find_package(Freetype REQUIRED)
 
 add_executable(LiquidRenderApp ${HEADERS} ${SOURCES})
 
 target_link_libraries(LiquidRenderApp FlipSolver2d)
 target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} ${GLFW3_LIBRARY})
+target_link_libraries(LiquidRenderApp ${FREETYPE_LIBRARIES})
+target_include_directories(LiquidRenderApp PRIVATE ${FREETYPE_INCLUDE_DIRS})

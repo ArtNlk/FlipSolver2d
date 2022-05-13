@@ -6,6 +6,12 @@
 #include "customassert.h"
 
 LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
+#if defined(_WIN32)
+    const std::string LiquidRenderApp::m_fontPath = "C:/Windows/Fonts/";
+#elif defined(__linux__)
+    const std::string LiquidRenderApp::m_fontPath = "/usr/share/fonts/truetype/";
+#endif
+
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
@@ -35,6 +41,16 @@ void LiquidRenderApp::init()
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         throw std::runtime_error("Failed to initialize glad");
+    }
+
+    if (FT_Init_FreeType(&ft))
+    {
+        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+    }
+
+    if (FT_New_Face(ft, (m_fontPath + "arial.ttf").c_str(), 0, &face))
+    {
+        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
     }
 
     glViewport(0, 0, m_windowWidth, m_windowHeight);

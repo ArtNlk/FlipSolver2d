@@ -3,6 +3,8 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include <memory>
 
 #include "flipsolver2d.h"
@@ -37,6 +39,8 @@ protected:
     GLFWwindow* m_window;
     std::shared_ptr<FlipSolver> m_solver;
     FluidRenderer m_fluidRenderer;
+    FT_Library ft;
+    FT_Face face;
 
     unsigned int m_fluidgrid_vbo;
     unsigned int m_fluidgrid_vao;
@@ -49,8 +53,9 @@ protected:
     int m_windowWidth;
     int m_windowHeight;
 
-    static const int m_gridSizeI = 25;
+    static const int m_gridSizeI = 50;
     static const int m_gridSizeJ = 50;
+    static const std::string m_fontPath;
 
     static constexpr float m_gridDrawFraction = 0.75;
 
