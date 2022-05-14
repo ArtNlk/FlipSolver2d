@@ -4,6 +4,9 @@ include_directories(include/glad)
 include_directories(include/KHR)
 include_directories(include/external)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(HEADERS
     include/glad/glad.h
     liquidrenderapp.h
@@ -28,6 +31,9 @@ find_package(Freetype REQUIRED)
 add_executable(LiquidRenderApp ${HEADERS} ${SOURCES})
 
 target_link_libraries(LiquidRenderApp FlipSolver2d)
-target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} ${GLFW3_LIBRARY})
+target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} glfw)
 target_link_libraries(LiquidRenderApp ${FREETYPE_LIBRARIES})
+if(UNIX)
+target_link_libraries(LiquidRenderApp ${CMAKE_DL_LIBS})
+endif()
 target_include_directories(LiquidRenderApp PRIVATE ${FREETYPE_INCLUDE_DIRS})

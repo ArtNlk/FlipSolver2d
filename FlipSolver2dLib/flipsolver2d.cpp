@@ -91,7 +91,7 @@ int FlipSolver::gridSizeJ()
 
 void FlipSolver::extrapolateVelocityField()
 {
-    Grid2d<int> markers(m_grid.sizeI(),m_grid.sizeJ(),INT_MAX);
+    Grid2d<int> markers(m_grid.sizeI(),m_grid.sizeJ(),std::numeric_limits<int>().max());
     std::queue<Index2d> wavefront;
     //Extrapolate U
     for(int i = 0; i < m_grid.sizeI(); i++)
@@ -136,7 +136,7 @@ void FlipSolver::extrapolateVelocityField()
                 avg += m_grid.velocityGridU().at(neighborIndex);
                 count++;
             }
-            if(markers.at(neighborIndex) == INT_MAX)
+            if(markers.at(neighborIndex) == std::numeric_limits<int>().max())
             {
                 markers.at(neighborIndex) = markers.at(index) + 1;
                 wavefront.push(neighborIndex);
@@ -148,7 +148,7 @@ void FlipSolver::extrapolateVelocityField()
         wavefront.pop();
     }
 
-    markers.fill(INT_MAX);
+    markers.fill(std::numeric_limits<int>().max());
 
     //Extrapolate V
     for(int i = 0; i < m_grid.sizeI(); i++)
@@ -193,7 +193,7 @@ void FlipSolver::extrapolateVelocityField()
                 avg += m_grid.velocityGridV().at(neighborIndex);
                 count++;
             }
-            if(markers.at(neighborIndex) == INT_MAX)
+            if(markers.at(neighborIndex) == std::numeric_limits<int>().max())
             {
                 markers.at(neighborIndex) = markers.at(index) + 1;
                 wavefront.push(neighborIndex);
