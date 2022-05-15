@@ -10,6 +10,7 @@
 #include "flipsolver2d.h"
 #include "fluidrenderer.h"
 #include "vertex.h"
+#include "textmenurenderer.h"
 
 class LiquidRenderApp
 {
@@ -39,8 +40,7 @@ protected:
     GLFWwindow* m_window;
     std::shared_ptr<FlipSolver> m_solver;
     FluidRenderer m_fluidRenderer;
-    FT_Library ft;
-    FT_Face face;
+    TextMenuRenderer m_textMenuRenderer;
 
     unsigned int m_fluidgrid_vbo;
     unsigned int m_fluidgrid_vao;
@@ -55,7 +55,6 @@ protected:
 
     static const int m_gridSizeI = 50;
     static const int m_gridSizeJ = 50;
-    static const std::string m_fontPath;
 
     static constexpr float m_gridDrawFraction = 0.75;
 

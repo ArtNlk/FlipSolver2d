@@ -6,17 +6,13 @@
 #include "customassert.h"
 
 LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
-#if defined(_WIN32)
-    const std::string LiquidRenderApp::m_fontPath = "C:/Windows/Fonts/";
-#elif defined(__linux__)
-    const std::string LiquidRenderApp::m_fontPath = "/usr/share/fonts/truetype/";
-#endif
 
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
     m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,1,1,1,false)),
-    m_fluidRenderer(m_solver,800,600)
+    m_fluidRenderer(m_solver,800,600),
+    m_textMenuRenderer(0,0,800,600,m_fluidRenderer)
 {
     m_windowWidth = 800;
     m_windowHeight = 600;
@@ -43,22 +39,13 @@ void LiquidRenderApp::init()
         throw std::runtime_error("Failed to initialize glad");
     }
 
-    if (FT_Init_FreeType(&ft))
-    {
-        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
-    }
-
-    if (FT_New_Face(ft, (m_fontPath + "arial.ttf").c_str(), 0, &face))
-    {
-        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
-    }
-
     glViewport(0, 0, m_windowWidth, m_windowHeight);
 
     glfwSetFramebufferSizeCallback(m_window,LiquidRenderApp::GLFWCallbackWrapper::ResizeCallback);
     glfwSetKeyCallback(m_window, LiquidRenderApp::GLFWCallbackWrapper::KeyboardCallback);
 
     m_fluidRenderer.init();
+    m_textMenuRenderer.init();
 
     setupFluidrender();
     resizeFluidrenderQuad();
@@ -80,6 +67,7 @@ void LiquidRenderApp::resizeCallback(GLFWwindow *window, int width, int height)
     m_windowWidth = width;
     m_windowHeight = height;
     resizeFluidrenderQuad();
+    m_textMenuRenderer.resize(width,height);
 }
 
 void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -292,6 +280,8 @@ void LiquidRenderApp::render()
     //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindVertexArray(0);
 
+    m_textMenuRenderer.render();
+
     glfwSwapBuffers(m_window);
 }
 
@@ -339,7 +329,8 @@ void LiquidRenderApp::initGridForProjection()
 
 void LiquidRenderApp::resizeFluidrenderQuad()
 {
-    int maxGridDrawSize = std::min(m_windowWidth,m_windowHeight)*m_gridDrawFraction;
+    int workingWidth = m_windowWidth - m_textMenuRenderer.menuWidth();
+    int maxGridDrawSize = std::min(workingWidth,m_windowHeight)*m_gridDrawFraction;
     float fgAsp = m_fluidRenderer.fluidGridAspect();
     int fluidDrawWidth = fgAsp > 1 ? maxGridDrawSize / fgAsp : maxGridDrawSize;
     int fluidDrawHeight = fgAsp > 1 ? maxGridDrawSize : maxGridDrawSize * fgAsp;
