@@ -78,12 +78,24 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
             switch(key)
             {
                 case GLFW_KEY_M:
-                    m_fluidRenderer.renderMode()++;
+                    m_fluidRenderer.gridRenderMode()++;
                     m_fluidRenderer.updateGrid();
                 break;
 
+                case GLFW_KEY_V:
+                    if(mods & GLFW_MOD_SHIFT)
+                    {
+                        m_fluidRenderer.toggleVectors();
+                    }
+                    else
+                    {
+                        m_fluidRenderer.vectorRenderMode()++;
+                    }
+                    m_fluidRenderer.update();
+                break;
+
                 case GLFW_KEY_U:
-                    m_fluidRenderer.updateGrid();
+                    m_fluidRenderer.update();
                 break;
 
                 case GLFW_KEY_E:
@@ -94,8 +106,8 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     else
                     {
                         m_solver->extrapolateVelocityField();
-                        m_fluidRenderer.updateGrid();
                     }
+                    m_fluidRenderer.update();
                 break;
 
                 case GLFW_KEY_P:
@@ -108,6 +120,7 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                         m_solver->project();
                         m_fluidRenderer.updateGrid();
                     }
+                    m_fluidRenderer.update();
                 break;
             }
         break;

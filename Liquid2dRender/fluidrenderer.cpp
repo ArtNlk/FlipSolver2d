@@ -34,7 +34,9 @@ const char *FluidRenderer::m_fragShaderSource =
 FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidth, int textureHeight) :
     m_solver(solver),
     m_gridVertexCount(0),
-    m_renderMode(FluidRenderMode::RENDER_MATERIAL),
+    m_gridRenderMode(FluidRenderMode::RENDER_MATERIAL),
+    m_vectorRenderMode(VectorRenderMode::RENDER_CENTER),
+    m_vectorsEnabled(true),
     m_textureWidth(textureWidth),
     m_textureHeight(textureHeight)
 {
@@ -73,6 +75,7 @@ void FluidRenderer::init()
 {
     setupGl();
     updateGrid();
+    updateVectors();
     updateGridVerts();
 }
 
@@ -87,10 +90,19 @@ void FluidRenderer::render()
     //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
     glBindVertexArray(m_vao_grid);
     glDrawElements(GL_TRIANGLES,m_gridIndices.size(),GL_UNSIGNED_INT,0);
-    glBindVertexArray(m_vao_vectors);
-    glDrawArrays(GL_LINES,0,m_vectorVerts.size());
+    if(m_vectorsEnabled)
+    {
+        glBindVertexArray(m_vao_vectors);
+        glDrawArrays(GL_LINES,0,m_vectorVerts.size());
+    }
     glBindVertexArray(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void FluidRenderer::update()
+{
+    updateGrid();
+    updateVectors();
 }
 
 void FluidRenderer::addGridVertex(Vertex v, Color c)
@@ -253,7 +265,7 @@ void FluidRenderer::updateVectorVerts()
 
 void FluidRenderer::updateGrid()
 {
-    switch(m_renderMode)
+    switch(m_gridRenderMode)
     {
     case FluidRenderMode::RENDER_MATERIAL:
         updateGridFromMaterial();
@@ -273,8 +285,6 @@ void FluidRenderer::updateGrid()
         break;
     }
     updateGridVerts();
-    updateVectors();
-    updateVectorVerts();
 }
 
 unsigned int FluidRenderer::renderTexture()
@@ -391,6 +401,24 @@ void FluidRenderer::updateGridFromVComponent()
 
 void FluidRenderer::updateVectors()
 {
+    switch(m_vectorRenderMode)
+    {
+    case RENDER_CENTER:
+        updateVectorsCentered();
+        break;
+    case RENDER_CURRENT_CELL:
+        updateVectorsStaggered();
+        break;
+    case VECTOR_RENDER_ITER_END:
+        std::cout << "Invalid vector render mode!";
+        break;
+
+    }
+    updateVectorVerts();
+}
+
+void FluidRenderer::updateVectorsStaggered()
+{
     float maxLengthGridSizes = sqrt(2.f) / 2;
     float maxLength = 0.5;
 
@@ -402,6 +430,29 @@ void FluidRenderer::updateVectors()
         for (int j = 0; j < gridWidth; j++)
         {
             Vertex gridspaceVelocity(m_solver->grid().getU(i,j),m_solver->grid().getV(i,j));
+            //Vertex gridspaceVelocity(1,0);
+            float scaleFactor = maxLength / gridspaceVelocity.distFromZero();
+            //float scaleFactor = 1;
+            Vertex newVector = Vertex((gridspaceVelocity.x()/scaleFactor) * maxLengthGridSizes * m_cellWidth,
+                                       (gridspaceVelocity.y()/scaleFactor) * maxLengthGridSizes * m_cellHeight);
+            updateVector(i,j,newVector);
+        }
+    }
+}
+
+void FluidRenderer::updateVectorsCentered()
+{
+    float maxLengthGridSizes = sqrt(2.f) / 2;
+    float maxLength = 0.5;
+
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    Vertex vEnd;
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            Vertex gridspaceVelocity(m_solver->grid().trueU(i,j),m_solver->grid().trueV(i,j));
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = maxLength / gridspaceVelocity.distFromZero();
             //float scaleFactor = 1;

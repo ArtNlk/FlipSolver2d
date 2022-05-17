@@ -88,6 +88,10 @@ public:
 
     int fluidCellCount() const;
 
+    float trueU(int i, int j);
+
+    float trueV(int i, int j);
+
 //    inline FluidCell at(int i, int j)
 //    {
 //        return FluidCell(m_materialGrid.at(i,j),

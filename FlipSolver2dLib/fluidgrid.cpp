@@ -226,6 +226,16 @@ int MACFluidGrid::fluidCellCount() const
     return m_fluidCellCount;
 }
 
+float MACFluidGrid::trueU(int i, int j)
+{
+    return ((getU(i,j) + getU(i+1,j))/2.f);
+}
+
+float MACFluidGrid::trueV(int i, int j)
+{
+    return ((getV(i,j) + getV(i,j+1))/2.f);
+}
+
 const Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
 {
     return m_materialGrid;

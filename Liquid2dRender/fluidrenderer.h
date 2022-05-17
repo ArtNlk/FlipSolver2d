@@ -8,10 +8,17 @@
 #include "color.h"
 #include "vertex.h"
 
-enum FluidRenderMode : int {RENDER_MATERIAL,RENDER_VELOCITY,RENDER_U,RENDER_V,RENDER_ITER_END};
+enum FluidRenderMode : int {RENDER_MATERIAL,RENDER_VELOCITY,RENDER_U,RENDER_V,GRID_RENDER_ITER_END};
 inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
-    state = static_cast<FluidRenderMode>((i) % RENDER_ITER_END);
+    state = static_cast<FluidRenderMode>((i) % GRID_RENDER_ITER_END);
+    return state;
+}
+
+enum VectorRenderMode : int {RENDER_CENTER,RENDER_CURRENT_CELL,VECTOR_RENDER_ITER_END};
+inline VectorRenderMode& operator++(VectorRenderMode& state, int) {
+    const int i = static_cast<int>(state)+1;
+    state = static_cast<VectorRenderMode>((i) % VECTOR_RENDER_ITER_END);
     return state;
 }
 
@@ -21,21 +28,34 @@ public:
     FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidth, int textureHeight);
     void init();
     void render();
+    void update();
     void updateGrid();
+    void updateVectors();
 
     inline void setRenderMode(FluidRenderMode mode)
     {
-        m_renderMode = mode;
+        m_gridRenderMode = mode;
     }
 
-    inline FluidRenderMode getRenderMode()
+    inline FluidRenderMode& gridRenderMode()
     {
-        return m_renderMode;
+        return m_gridRenderMode;
     }
 
-    inline FluidRenderMode& renderMode()
+    inline VectorRenderMode& vectorRenderMode()
     {
-        return m_renderMode;
+        return m_vectorRenderMode;
+    }
+
+    inline bool& vectorRenderEnabled()
+    {
+        return m_vectorsEnabled;
+    }
+
+    inline bool toggleVectors()
+    {
+        m_vectorsEnabled = !m_vectorsEnabled;
+        return m_vectorsEnabled;
     }
 
     static const Color &velocityVectorColor();
@@ -60,7 +80,8 @@ protected:
     void updateGridFromVelocity();
     void updateGridFromUComponent();
     void updateGridFromVComponent();
-    void updateVectors();
+    void updateVectorsStaggered();
+    void updateVectorsCentered();
     void updateVector(int x, int y, Vertex newVector);
     void setCellVertexColor(int vIndex, Color c);
     void setCellColor(int x, int y, Color c);
@@ -103,7 +124,9 @@ protected:
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;
     std::vector<float> m_vectorVerts;
-    FluidRenderMode m_renderMode;
+    FluidRenderMode m_gridRenderMode;
+    VectorRenderMode m_vectorRenderMode;
+    bool m_vectorsEnabled;
 
     std::shared_ptr<FlipSolver> m_solver;
 };

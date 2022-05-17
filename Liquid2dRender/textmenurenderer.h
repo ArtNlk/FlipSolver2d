@@ -28,7 +28,8 @@ public:
 protected:
     FluidRenderer &m_fluidRenderer;
     TextRenderer m_textRenderer;
-    std::vector<std::string> m_renderModeNames;
+    std::vector<std::string> m_renderModeTexts;
+    std::vector<std::string> m_vectorRenderModeTexts;
 
     int m_x;
     int m_y;
@@ -36,6 +37,7 @@ protected:
     int m_height;
 
     glm::vec2 m_renderModeTextPosition = glm::vec2(0.f,20.f);
+    glm::vec2 m_vectorRenderModeOffset = glm::vec2(0.f,20.f);
 
     float m_menuWidth = 300.f;
 };

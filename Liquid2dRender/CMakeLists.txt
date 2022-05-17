@@ -33,10 +33,14 @@ find_package(glfw3 REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(glm REQUIRED)
 
+if(NOT DEFINED GLFW3_LIBRARY)
+    set(GLFW3_LIBRARY glfw)
+endif()
+
 add_executable(LiquidRenderApp ${HEADERS} ${SOURCES})
 
 target_link_libraries(LiquidRenderApp FlipSolver2d)
-target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} glfw)
+target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} ${GLFW3_LIBRARY})
 target_link_libraries(LiquidRenderApp ${FREETYPE_LIBRARIES})
 if(UNIX)
 target_link_libraries(LiquidRenderApp ${CMAKE_DL_LIBS})
