@@ -1,6 +1,7 @@
 #ifndef FLUIDRENDERER_H
 #define FLUIDRENDERER_H
 #include "glad/glad.h"
+#include <glm/glm.hpp>
 
 #include <memory>
 
@@ -15,7 +16,7 @@ inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
     return state;
 }
 
-enum VectorRenderMode : int {RENDER_CENTER,RENDER_CURRENT_CELL,VECTOR_RENDER_ITER_END};
+enum VectorRenderMode : int {VECTOR_RENDER_CENTER,VECTOR_RENDER_STAGGERED,VECTOR_RENDER_ITER_END};
 inline VectorRenderMode& operator++(VectorRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
     state = static_cast<VectorRenderMode>((i) % VECTOR_RENDER_ITER_END);
@@ -126,6 +127,7 @@ protected:
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;
     std::vector<float> m_vectorVerts;
+    glm::mat4 m_projection;
     FluidRenderMode m_gridRenderMode;
     VectorRenderMode m_vectorRenderMode;
     bool m_vectorsEnabled;

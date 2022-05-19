@@ -4,6 +4,9 @@
 #include <cmath>
 #include <algorithm>
 
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
+
 #include "globalcallbackhandler.h"
 
 const Color FluidRenderer::m_emptyColor = Color(255,255,255);
@@ -15,12 +18,13 @@ const char *FluidRenderer::m_vertexShaderSource =
         "#version 330 core\n"
         "layout (location = 0) in vec3 aPos;\n"
         "layout (location = 1) in vec3 vColor;\n"
+        "uniform mat4 projection;"
         "out vec3 vertexColor;\n"
         "void main()\n"
         "{\n"
         "   vertexColor = vColor;\n"
         "   //vertexColor = aPos.xyz;\n"
-        "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+        "   gl_Position = projection * vec4(aPos.xyz, 1.0);\n"
         "}\0";
 
 const char *FluidRenderer::m_fragShaderSource =
@@ -37,10 +41,12 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
     m_solver(solver),
     m_gridVertexCount(0),
     m_gridRenderMode(FluidRenderMode::RENDER_MATERIAL),
-    m_vectorRenderMode(VectorRenderMode::RENDER_CENTER),
+    m_vectorRenderMode(VectorRenderMode::VECTOR_RENDER_CENTER),
     m_vectorsEnabled(true),
     m_textureWidth(textureWidth),
-    m_textureHeight(textureHeight)
+    m_textureHeight(textureHeight),
+    m_projection(glm::ortho(0.f,static_cast<float>(solver->gridSizeI()),
+                            static_cast<float>(solver->gridSizeJ()),0.f))
 {
     m_gridVerts.reserve(solver.get()->grid().cellCount()*m_vertexPerCell*m_vertexSize);
     m_gridIndices.reserve(solver.get()->grid().cellCount()*m_vertexPerCell);
@@ -56,17 +62,9 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            if(i == 0 && j == 0)
-            {
-                debug() << "ij0 top left x = " << m_cellWidth*j - 1 << " top left y = " << 1 - m_cellHeight*i;
-            }
-            if(i == gridHeight - 1 && j == gridWidth - 1)
-            {
-                debug() << "ijmax bottom right x = " << m_cellWidth*(j+1) - 1 << " bottom right left y = " << 1 - m_cellHeight*(i+1);
-            }
-            addGridQuad(Vertex(m_cellWidth*j - 1,1 - m_cellHeight*i),Vertex(m_cellWidth*(j+1) - 1,1 - m_cellHeight*(i+1)),Color(255,0,0));
-            Vertex vStart = Vertex(m_cellWidth*j - 1 + m_cellWidth / 2,1 - m_cellHeight*i - m_cellHeight/2);
-            Vertex vEnd = Vertex(vStart.x() + m_cellWidth / 2, vStart.y());
+            addGridQuad(Vertex(j,i),Vertex(j+1,i+1),Color(255,0,0));
+            Vertex vStart = Vertex(j + 0.5,i + 0.5);
+            Vertex vEnd = Vertex(vStart.x() + 0.5, vStart.y());
             addVector(vStart,vEnd,m_velocityVectorColor);
             setVectorColor(i,j,Color(255,0,0));
         }
@@ -89,6 +87,10 @@ void FluidRenderer::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
     glEnable(GL_DEPTH_TEST);
     glUseProgram(m_shaderProgram);
+    glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, "projection"),
+                       1,
+                       GL_FALSE,
+                       glm::value_ptr(m_projection));
     //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
     glBindVertexArray(m_vao_grid);
     glDrawElements(GL_TRIANGLES,m_gridIndices.size(),GL_UNSIGNED_INT,0);
@@ -137,7 +139,7 @@ void FluidRenderer::addVectorVertex(Vertex v, Color c)
 {
     m_vectorVerts.push_back(v.x());
     m_vectorVerts.push_back(v.y());
-    m_vectorVerts.push_back(-0.1);//slight offset to draw vectors over the grid
+    m_vectorVerts.push_back(0.1);//slight offset to draw vectors over the grid
     m_vectorVerts.push_back(c.rf());
     m_vectorVerts.push_back(c.gf());
     m_vectorVerts.push_back(c.bf());
@@ -423,10 +425,10 @@ void FluidRenderer::updateVectors()
     GlobalCallbackHandler::instance().registerRenderUpdate();
     switch(m_vectorRenderMode)
     {
-    case RENDER_CENTER:
+    case VECTOR_RENDER_CENTER:
         updateVectorsCentered();
         break;
-    case RENDER_CURRENT_CELL:
+    case VECTOR_RENDER_STAGGERED:
         updateVectorsStaggered();
         break;
     case VECTOR_RENDER_ITER_END:
@@ -439,8 +441,7 @@ void FluidRenderer::updateVectors()
 
 void FluidRenderer::updateVectorsStaggered()
 {
-    float maxLengthGridSizes = sqrt(2.f) / 2;
-    float maxLength = 0.5;
+    float unitLengthVelocity = 0.75; //Velocity len(v) at which draw vector will be exactly length 1 grid cell side
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
@@ -451,10 +452,10 @@ void FluidRenderer::updateVectorsStaggered()
         {
             Vertex gridspaceVelocity(m_solver->grid().getU(i,j),m_solver->grid().getV(i,j));
             //Vertex gridspaceVelocity(1,0);
-            float scaleFactor = maxLength / gridspaceVelocity.distFromZero();
+            float scaleFactor = gridspaceVelocity.distFromZero() / unitLengthVelocity;
             //float scaleFactor = 1;
-            Vertex newVector = Vertex((gridspaceVelocity.x()/scaleFactor) * maxLengthGridSizes * m_cellWidth,
-                                       (gridspaceVelocity.y()/scaleFactor) * maxLengthGridSizes * m_cellHeight);
+            Vertex newVector = Vertex(gridspaceVelocity.x() * scaleFactor,
+                                       gridspaceVelocity.y() * scaleFactor);
             updateVector(i,j,newVector);
         }
     }
@@ -462,8 +463,7 @@ void FluidRenderer::updateVectorsStaggered()
 
 void FluidRenderer::updateVectorsCentered()
 {
-    float maxLengthGridSizes = sqrt(2.f) / 2;
-    float maxLength = 0.5;
+    float unitLengthVelocity = 0.75;
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
@@ -474,10 +474,10 @@ void FluidRenderer::updateVectorsCentered()
         {
             Vertex gridspaceVelocity(m_solver->grid().trueU(i,j),m_solver->grid().trueV(i,j));
             //Vertex gridspaceVelocity(1,0);
-            float scaleFactor = maxLength / gridspaceVelocity.distFromZero();
+            float scaleFactor = gridspaceVelocity.distFromZero() / unitLengthVelocity;
             //float scaleFactor = 1;
-            Vertex newVector = Vertex((gridspaceVelocity.x()/scaleFactor) * maxLengthGridSizes * m_cellWidth,
-                                       (gridspaceVelocity.y()/scaleFactor) * maxLengthGridSizes * m_cellHeight);
+            Vertex newVector = Vertex((gridspaceVelocity.x() * scaleFactor),
+                                       (gridspaceVelocity.y() * scaleFactor));
             updateVector(i,j,newVector);
         }
     }

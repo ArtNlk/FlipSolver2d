@@ -15,8 +15,8 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_renderModeTexts[FluidRenderMode::RENDER_V] = "Render V component";
 
     m_vectorRenderModeTexts.assign(VectorRenderMode::VECTOR_RENDER_ITER_END + 1,"");
-    m_vectorRenderModeTexts[VectorRenderMode::RENDER_CENTER] = "Vector center avg";
-    m_vectorRenderModeTexts[VectorRenderMode::RENDER_CURRENT_CELL] = "Vector cell velocity";
+    m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER] = "Vector center avg velocity";
+    m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_STAGGERED] = "Vector staggered velocity";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_ITER_END] = "Vectors off";
 }
 
