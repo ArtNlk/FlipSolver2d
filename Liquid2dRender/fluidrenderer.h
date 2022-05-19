@@ -73,7 +73,9 @@ protected:
     void addVector(Vertex start, Vertex end, Color c);
     void setupGl();
     void setupOffscreenBuffer();
-    void updateBuffers();
+    void setupBuffers();
+    void setupGridVerts();
+    void setupVectorVerts();
     void updateGridVerts();
     void updateVectorVerts();
     void updateGridFromMaterial();

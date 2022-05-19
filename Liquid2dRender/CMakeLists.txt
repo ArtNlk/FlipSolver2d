@@ -15,7 +15,8 @@ set(HEADERS
     color.h
     vertex.h
     textrenderer.h
-    textmenurenderer.h)
+    textmenurenderer.h
+    globalcallbackhandler.h)
 
 set(SOURCES
     src/glad.c
@@ -26,7 +27,8 @@ set(SOURCES
     color.cpp
     vertex.cpp
     textrenderer.cpp
-    textmenurenderer.cpp)
+    textmenurenderer.cpp
+    globalcallbackhandler.cpp)
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)

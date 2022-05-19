@@ -19,6 +19,7 @@ public:
 
     void init();
     void run();
+    void requestRender();
 
 protected:
     void resizeCallback(GLFWwindow* window, int width, int height);
@@ -52,6 +53,8 @@ protected:
 
     int m_windowWidth;
     int m_windowHeight;
+
+    bool m_renderRequested;
 
     static const int m_gridSizeI = 50;
     static const int m_gridSizeJ = 50;

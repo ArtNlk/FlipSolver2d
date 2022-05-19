@@ -4,6 +4,7 @@
 
 #include "linearindexable2d.h"
 #include "customassert.h"
+#include "globalcallbackhandler.h"
 
 LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
@@ -12,7 +13,8 @@ LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
     m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,1,1,1,false)),
     m_fluidRenderer(m_solver,800,600),
-    m_textMenuRenderer(0,0,800,600,m_fluidRenderer)
+    m_textMenuRenderer(0,0,800,600,m_fluidRenderer),
+    m_renderRequested(false)
 {
     m_windowWidth = 800;
     m_windowHeight = 600;
@@ -25,6 +27,9 @@ void LiquidRenderApp::init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    GlobalCallbackHandler::instance().init(this,
+                                           &m_fluidRenderer,
+                                           &m_textMenuRenderer);
 
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
@@ -49,6 +54,7 @@ void LiquidRenderApp::init()
 
     setupFluidrender();
     resizeFluidrenderQuad();
+    m_renderRequested = true;
 }
 
 void LiquidRenderApp::run()
@@ -56,7 +62,7 @@ void LiquidRenderApp::run()
     while(!glfwWindowShouldClose(m_window))
     {
         render();
-        glfwPollEvents();
+        glfwWaitEvents();
     }
 
     glfwTerminate();
@@ -68,6 +74,7 @@ void LiquidRenderApp::resizeCallback(GLFWwindow *window, int width, int height)
     m_windowHeight = height;
     resizeFluidrenderQuad();
     m_textMenuRenderer.resize(width,height);
+    m_renderRequested = true;
 }
 
 void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -275,8 +282,14 @@ void LiquidRenderApp::updateFluidrenderQuadVertex(Vertex v, int vertexIndex)
     m_fluidgridQuadVerts[vertexParamStartIndex+1] = v.y();
 }
 
+void LiquidRenderApp::requestRender()
+{
+    m_renderRequested = true;
+}
+
 void LiquidRenderApp::render()
 {
+    if(!m_renderRequested) return;
     m_fluidRenderer.render();
 
     glViewport(0,0,m_windowWidth,m_windowHeight);
@@ -296,6 +309,7 @@ void LiquidRenderApp::render()
     m_textMenuRenderer.render();
 
     glfwSwapBuffers(m_window);
+    m_renderRequested = false;
 }
 
 void LiquidRenderApp::resetGrid()
