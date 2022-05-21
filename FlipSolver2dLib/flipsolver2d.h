@@ -1,9 +1,12 @@
 #ifndef FLIPSOLVER_H
 #define FLIPSOLVER_H
 
+#include <vector>
+
 #include "pcgsolver.h"
 #include "fluidgrid.h"
 #include "uppertriangularmatrix.h"
+#include "geometry2d.h"
 
 class FlipSolver
 {
@@ -18,11 +21,16 @@ public:
     }
 
     void extrapolateVelocityField();
+
     void project();
 
     int gridSizeI();
 
     int gridSizeJ();
+
+    void addGeometry(Geometry2d geometry);
+
+    std::vector<Geometry2d> &geometryObjects();
 
 protected:
 
@@ -32,6 +40,7 @@ protected:
     bool m_useVonNeumannNeighborhood;
     MACFluidGrid m_grid;
     PCGSolver m_pcgSolver;
+    std::vector<Geometry2d> m_geometry;
 };
 
 #endif // FLIPSOLVER_H

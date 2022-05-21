@@ -33,10 +33,10 @@ public:
     inline int &b() {return m_b;}
     inline int &a() {return m_a;}
 
-    inline float rf() {return m_r / 255.f;}
-    inline float gf() {return m_g / 255.f;}
-    inline float bf() {return m_b / 255.f;}
-    inline float af() {return m_a / 255.f;}
+    inline float rf() const {return m_r / 255.f;}
+    inline float gf() const {return m_g / 255.f;}
+    inline float bf() const {return m_b / 255.f;}
+    inline float af() const {return m_a / 255.f;}
 
 protected:
     int m_r;

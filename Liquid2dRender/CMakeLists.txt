@@ -13,7 +13,6 @@ set(HEADERS
     fluidrenderer.h
     texture2d.h
     color.h
-    vertex.h
     textrenderer.h
     textmenurenderer.h
     globalcallbackhandler.h)
@@ -25,7 +24,6 @@ set(SOURCES
     fluidrenderer.cpp
     texture2d.cpp
     color.cpp
-    vertex.cpp
     textrenderer.cpp
     textmenurenderer.cpp
     globalcallbackhandler.cpp)

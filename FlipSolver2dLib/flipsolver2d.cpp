@@ -89,6 +89,16 @@ int FlipSolver::gridSizeJ()
     return m_grid.sizeJ();
 }
 
+void FlipSolver::addGeometry(Geometry2d geometry)
+{
+    m_geometry.push_back(geometry);
+}
+
+std::vector<Geometry2d> &FlipSolver::geometryObjects()
+{
+    return m_geometry;
+}
+
 void FlipSolver::extrapolateVelocityField()
 {
     Grid2d<int> markers(m_grid.sizeI(),m_grid.sizeJ(),std::numeric_limits<int>().max());

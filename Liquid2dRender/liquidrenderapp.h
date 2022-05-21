@@ -9,7 +9,7 @@
 
 #include "flipsolver2d.h"
 #include "fluidrenderer.h"
-#include "vertex.h"
+#include "geometry2d.h"
 #include "textmenurenderer.h"
 
 class LiquidRenderApp
@@ -25,6 +25,7 @@ protected:
     void resizeCallback(GLFWwindow* window, int width, int height);
     void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+    void setupGeometry();
     void setupFluidrender();
     void setupFluidrenderQuad();
     void addVert(std::vector<float> &vertexVector, float x, float y, float u, float v);

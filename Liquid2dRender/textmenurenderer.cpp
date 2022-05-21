@@ -47,6 +47,13 @@ void TextMenuRenderer::render()
                                 m_height - currentTextPos.y,
                                 1.0f,
                                 Color(255,255,255));
+
+    currentTextPos += m_geometryRenderModeOffset;
+    m_textRenderer.renderText(m_fluidRenderer.geometryEnabled() ? "Geometry on" : "Geometry off",
+                                currentTextPos.x + widthBaseline,
+                                m_height - currentTextPos.y,
+                                1.0f,
+                                Color(255,255,255));
 }
 
 void TextMenuRenderer::move(int x, int y)

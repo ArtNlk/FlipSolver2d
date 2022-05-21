@@ -13,7 +13,8 @@ set(HEADERS
     vmath.h
     uppertriangularmatrix.h
     dynamicuppertriangularsparsematrix.h
-    logger.h)
+    logger.h
+    geometry2d.h)
 
 set(SOURCES
     flipsolver2d.cpp
@@ -29,7 +30,8 @@ set(SOURCES
     vmath.cpp
     uppertriangularmatrix.cpp
     dynamicuppertriangularsparsematrix.cpp
-    logger.cpp)
+    logger.cpp
+    geometry2d.cpp)
 
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 

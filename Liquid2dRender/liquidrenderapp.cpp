@@ -31,6 +31,8 @@ void LiquidRenderApp::init()
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
 
+    setupGeometry();
+
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
     {
@@ -101,6 +103,11 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_fluidRenderer.update();
                 break;
 
+                case GLFW_KEY_G:
+                    m_fluidRenderer.toggleGeometry();
+                    m_fluidRenderer.update();
+                break;
+
                 case GLFW_KEY_U:
                     m_fluidRenderer.update();
                 break;
@@ -132,6 +139,22 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
             }
         break;
     }
+}
+
+void LiquidRenderApp::setupGeometry()
+{
+    Geometry2d geo;
+    geo.addVertex(Vertex(5,5));
+    geo.addVertex(Vertex(10,5));
+    geo.addVertex(Vertex(10,10));
+    geo.addVertex(Vertex(5,10));
+    m_solver->addGeometry(geo);
+
+    geo = Geometry2d();
+    geo.addVertex(Vertex(15,15));
+    geo.addVertex(Vertex(20,25));
+    geo.addVertex(Vertex(25,10));
+    m_solver->addGeometry(geo);
 }
 
 void LiquidRenderApp::setupFluidrender()

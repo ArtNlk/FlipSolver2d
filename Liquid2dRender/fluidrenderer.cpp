@@ -13,6 +13,7 @@ const Color FluidRenderer::m_emptyColor = Color(255,255,255);
 const Color FluidRenderer::m_fluidColor = Color(44, 95, 150);
 const Color FluidRenderer::m_solidColor = Color(94,94,94);
 const Color FluidRenderer::m_velocityVectorColor = Color(255,255,255);
+const Color FluidRenderer::m_geometryColor = Color(0,255,0);
 
 const char *FluidRenderer::m_vertexShaderSource =
         "#version 330 core\n"
@@ -43,6 +44,7 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
     m_gridRenderMode(FluidRenderMode::RENDER_MATERIAL),
     m_vectorRenderMode(VectorRenderMode::VECTOR_RENDER_CENTER),
     m_vectorsEnabled(true),
+    m_geometryEnabled(true),
     m_textureWidth(textureWidth),
     m_textureHeight(textureHeight),
     m_projection(glm::ortho(0.f,static_cast<float>(solver->gridSizeI()),
@@ -55,8 +57,6 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
-    m_cellWidth = 2.f / gridWidth;
-    m_cellHeight = 2.f / gridHeight;
 
     for (int i = 0; i < gridHeight; i++)
     {
@@ -73,6 +73,7 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
 
 void FluidRenderer::init()
 {
+    loadGeometry();
     setupGl();
     updateGrid();
     updateVectors();
@@ -99,6 +100,11 @@ void FluidRenderer::render()
         glBindVertexArray(m_vao_vectors);
         glDrawArrays(GL_LINES,0,m_vectorVerts.size());
     }
+    if(m_geometryEnabled)
+    {
+        glBindVertexArray(m_vao_geometry);
+        glDrawElements(GL_LINES,m_geometryIndices.size(),GL_UNSIGNED_INT,0);
+    }
     glBindVertexArray(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -113,7 +119,7 @@ void FluidRenderer::addGridVertex(Vertex v, Color c)
 {
     m_gridVerts.push_back(v.x());
     m_gridVerts.push_back(v.y());
-    m_gridVerts.push_back(v.z());
+    m_gridVerts.push_back(0.0f);
     m_gridVerts.push_back(c.rf());
     m_gridVerts.push_back(c.gf());
     m_gridVerts.push_back(c.bf());
@@ -139,7 +145,7 @@ void FluidRenderer::addVectorVertex(Vertex v, Color c)
 {
     m_vectorVerts.push_back(v.x());
     m_vectorVerts.push_back(v.y());
-    m_vectorVerts.push_back(0.1);//slight offset to draw vectors over the grid
+    m_vectorVerts.push_back(0.8f);//offset to draw vectors over the grid
     m_vectorVerts.push_back(c.rf());
     m_vectorVerts.push_back(c.gf());
     m_vectorVerts.push_back(c.bf());
@@ -192,8 +198,13 @@ void FluidRenderer::setupGl()
     //Vector buffers
     glGenVertexArrays(1, &m_vao_vectors);
     glGenBuffers(1,&m_vbo_vectors);
-    setupBuffers();
 
+    //Geometry buffers
+    glGenVertexArrays(1, &m_vao_geometry);
+    glGenBuffers(1,&m_vbo_geometry);
+    glGenBuffers(1,&m_ebo_geometry);
+
+    setupBuffers();
     //Frame buffers
     glGenFramebuffers(1,&m_framebuffer);
 
@@ -249,6 +260,16 @@ void FluidRenderer::setupBuffers()
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(float) * 6, reinterpret_cast<void*>(sizeof(float)*3));
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
+
+    setupGeometryVerts();
+    glBindVertexArray(m_vao_geometry);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo_geometry);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(int) * m_geometryIndices.size(), m_geometryIndices.data(),GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(float) * 6, 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(float) * 6, reinterpret_cast<void*>(sizeof(float)*3));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
 }
 
 void FluidRenderer::setupGridVerts()
@@ -267,6 +288,53 @@ void FluidRenderer::setupVectorVerts()
     glBindVertexArray(0);
 }
 
+void FluidRenderer::setupGeometryVerts()
+{
+    glBindVertexArray(m_vao_geometry);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_geometry);
+    glBufferData(GL_ARRAY_BUFFER,sizeof(float) * m_geometryVerts.size(),m_geometryVerts.data(),GL_DYNAMIC_DRAW);
+    glBindVertexArray(0);
+}
+
+void FluidRenderer::loadGeometry()
+{
+    for(Geometry2d &g : m_solver->geometryObjects())
+    {
+        addGeometry(g);
+    }
+}
+
+void FluidRenderer::addGeometry(Geometry2d &geometry)
+{
+    m_geometryVerts.reserve(m_geometryVerts.size() + geometry.vertextCount() * m_vertexSize);
+    m_geometryIndices.reserve(m_geometryVerts.size() + geometry.vertextCount()*2);
+
+    int startVertexIndex = m_geometryVerts.size() / m_vertexSize;
+    int endVertexIndex = startVertexIndex;
+    for(Vertex& v : geometry.verts())
+    {
+        m_geometryVerts.push_back(v.x());
+        m_geometryVerts.push_back(v.y());
+        m_geometryVerts.push_back(0.9f);
+        m_geometryVerts.push_back(m_geometryColor.rf());
+        m_geometryVerts.push_back(m_geometryColor.gf());
+        m_geometryVerts.push_back(m_geometryColor.bf());
+        endVertexIndex++;
+    }
+
+    for(int i = startVertexIndex; i < endVertexIndex; i++)
+    {
+        if(i == endVertexIndex - 1)
+        {
+            m_geometryIndices.push_back(i);
+            m_geometryIndices.push_back(startVertexIndex);
+            break;
+        }
+        m_geometryIndices.push_back(i);
+        m_geometryIndices.push_back(i+1);
+    }
+}
+
 void FluidRenderer::updateGridVerts()
 {
     glBindVertexArray(m_vao_grid);
@@ -280,6 +348,14 @@ void FluidRenderer::updateVectorVerts()
     glBindVertexArray(m_vao_vectors);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo_vectors);
     glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(float) * m_vectorVerts.size(),m_vectorVerts.data());
+    glBindVertexArray(0);
+}
+
+void FluidRenderer::updateGeometryVerts()
+{
+    glBindVertexArray(m_vao_geometry);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_geometry);
+    glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(float) * m_geometryVerts.size(),m_geometryVerts.data());
     glBindVertexArray(0);
 }
 

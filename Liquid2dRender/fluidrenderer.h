@@ -7,7 +7,7 @@
 
 #include "flipsolver2d.h"
 #include "color.h"
-#include "vertex.h"
+#include "geometry2d.h"
 
 enum FluidRenderMode : int {RENDER_MATERIAL,RENDER_VELOCITY,RENDER_U,RENDER_V,GRID_RENDER_ITER_END};
 inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
@@ -59,6 +59,17 @@ public:
         return m_vectorsEnabled;
     }
 
+    inline bool& geometryEnabled()
+    {
+        return m_geometryEnabled;
+    }
+
+    inline bool toggleGeometry()
+    {
+        m_geometryEnabled = !m_geometryEnabled;
+        return m_geometryEnabled;
+    }
+
     static const Color &velocityVectorColor();
 
     unsigned int renderTexture();
@@ -77,8 +88,12 @@ protected:
     void setupBuffers();
     void setupGridVerts();
     void setupVectorVerts();
+    void setupGeometryVerts();
+    void loadGeometry();
+    void addGeometry(Geometry2d &geometry);
     void updateGridVerts();
     void updateVectorVerts();
+    void updateGeometryVerts();
     void updateGridFromMaterial();
     void updateGridFromVelocity();
     void updateGridFromUComponent();
@@ -97,6 +112,9 @@ protected:
     unsigned int m_vbo_vectors;
     unsigned int m_vao_vectors;
     unsigned int m_ebo_vectors;
+    unsigned int m_vbo_geometry;
+    unsigned int m_vao_geometry;
+    unsigned int m_ebo_geometry;
     unsigned int m_vertexShader;
     unsigned int m_fragShader;
     unsigned int m_shaderProgram;
@@ -120,17 +138,18 @@ protected:
     static const Color m_fluidColor;
     static const Color m_solidColor;
     static const Color m_velocityVectorColor;
-
-    float m_cellWidth;
-    float m_cellHeight;
+    static const Color m_geometryColor;
 
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;
     std::vector<float> m_vectorVerts;
+    std::vector<float> m_geometryVerts;
+    std::vector<unsigned int> m_geometryIndices;
     glm::mat4 m_projection;
     FluidRenderMode m_gridRenderMode;
     VectorRenderMode m_vectorRenderMode;
     bool m_vectorsEnabled;
+    bool m_geometryEnabled;
 
     std::shared_ptr<FlipSolver> m_solver;
 };
