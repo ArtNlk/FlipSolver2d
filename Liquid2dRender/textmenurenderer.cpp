@@ -13,6 +13,7 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_renderModeTexts[FluidRenderMode::RENDER_VELOCITY] = "Render velocity";
     m_renderModeTexts[FluidRenderMode::RENDER_U] = "Render U component";
     m_renderModeTexts[FluidRenderMode::RENDER_V] = "Render V component";
+    m_renderModeTexts[FluidRenderMode::RENDER_SDF] = "Render SDF";
 
     m_vectorRenderModeTexts.assign(VectorRenderMode::VECTOR_RENDER_ITER_END + 1,"");
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER] = "Vector center avg velocity";

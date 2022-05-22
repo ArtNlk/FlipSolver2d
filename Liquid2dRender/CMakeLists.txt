@@ -4,7 +4,7 @@ include_directories(include/glad)
 include_directories(include/KHR)
 include_directories(include/external)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(HEADERS

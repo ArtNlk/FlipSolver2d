@@ -5,6 +5,7 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_materialGrid(sizeI,sizeJ,FluidCellMaterial::EMPTY),
     m_velocityGridU(sizeI + 1,sizeJ, 0.f),
     m_velocityGridV(sizeI, sizeJ + 1, 0.f),
+    m_sdf(sizeI,sizeJ,0.f),
     m_knownFlagsU(sizeI + 1, sizeJ, false),
     m_knownFlagsV(sizeI, sizeJ + 1, false),
     m_fluidCellCount(0)
@@ -259,6 +260,26 @@ Grid2d<bool> &MACFluidGrid::knownFlagsGridU()
 Grid2d<bool> &MACFluidGrid::knownFlagsGridV()
 {
     return m_knownFlagsV;
+}
+
+float MACFluidGrid::sdf(int i, int j)
+{
+    return m_sdf.at(i,j);
+}
+
+float MACFluidGrid::sdf(Index2d index)
+{
+    return m_sdf.at(index);
+}
+
+void MACFluidGrid::setSdf(int i, int j, float value)
+{
+    m_sdf.at(i,j) = value;
+}
+
+void MACFluidGrid::setSdf(Index2d index, float value)
+{
+    m_sdf.at(index) = value;
 }
 
 void MACFluidGrid::updateLinearToFluidMapping()

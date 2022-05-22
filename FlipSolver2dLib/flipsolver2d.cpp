@@ -79,6 +79,22 @@ void FlipSolver::project()
     }
 }
 
+void FlipSolver::updateSdf()
+{
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            float dist = std::numeric_limits<float>().max();
+            for(Geometry2d& geo : m_geometry)
+            {
+                dist = std::min(geo.signedDistance(i+0.5,j+0.5),dist);
+            }
+            m_grid.setSdf(i,j,dist);
+        }
+    }
+}
+
 int FlipSolver::gridSizeI()
 {
     return m_grid.sizeI();

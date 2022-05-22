@@ -12,12 +12,12 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
     m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,1,1,1,false)),
-    m_fluidRenderer(m_solver,800,600),
-    m_textMenuRenderer(0,0,800,600,m_fluidRenderer),
+    m_fluidRenderer(m_solver,m_startWindowWidth,m_startWindowHeight),
+    m_textMenuRenderer(0,0,m_startWindowWidth,m_startWindowHeight,m_fluidRenderer),
     m_renderRequested(false)
 {
-    m_windowWidth = 800;
-    m_windowHeight = 600;
+    m_windowWidth = m_startWindowWidth;
+    m_windowHeight = m_startWindowHeight;
     LiquidRenderApp::GLFWCallbackWrapper::SetApplication(this);
 }
 
@@ -57,6 +57,7 @@ void LiquidRenderApp::init()
     setupFluidrender();
     resizeFluidrenderQuad();
     m_renderRequested = true;
+    m_solver->updateSdf();
 }
 
 void LiquidRenderApp::run()
@@ -154,6 +155,14 @@ void LiquidRenderApp::setupGeometry()
     geo.addVertex(Vertex(15,15));
     geo.addVertex(Vertex(20,25));
     geo.addVertex(Vertex(25,10));
+    m_solver->addGeometry(geo);
+
+    geo = Geometry2d();
+    geo.addVertex(Vertex(10,70));
+    geo.addVertex(Vertex(40,70));
+    geo.addVertex(Vertex(35,50));
+    geo.addVertex(Vertex(35,30));
+    geo.addVertex(Vertex(30,30));
     m_solver->addGeometry(geo);
 }
 

@@ -24,6 +24,8 @@ public:
 
     void project();
 
+    void updateSdf();
+
     int gridSizeI();
 
     int gridSizeJ();

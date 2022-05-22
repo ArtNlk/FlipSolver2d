@@ -58,7 +58,10 @@ protected:
     bool m_renderRequested;
 
     static const int m_gridSizeI = 50;
-    static const int m_gridSizeJ = 50;
+    static const int m_gridSizeJ = 70;
+
+    static const int m_startWindowWidth = 900;
+    static const int m_startWindowHeight = 900;
 
     static constexpr float m_gridDrawFraction = 0.75;
 

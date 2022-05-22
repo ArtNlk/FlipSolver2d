@@ -120,6 +120,14 @@ public:
 
     Grid2d<bool> &knownFlagsGridV();
 
+    float sdf(int i, int j);
+
+    float sdf(Index2d index);
+
+    void setSdf(int i, int j, float value);
+
+    void setSdf(Index2d index, float value);
+
     void updateLinearToFluidMapping();
 
     int linearFluidIndex(int i, int j);
@@ -128,6 +136,7 @@ protected:
     Grid2d<FluidCellMaterial> m_materialGrid;
     Grid2d<float> m_velocityGridU;
     Grid2d<float> m_velocityGridV;
+    Grid2d<float> m_sdf;
     Grid2d<bool> m_knownFlagsU;
     Grid2d<bool> m_knownFlagsV;
     std::unordered_map<int,int> m_linearToFluidCellIndexMap;

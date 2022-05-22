@@ -47,8 +47,8 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
     m_geometryEnabled(true),
     m_textureWidth(textureWidth),
     m_textureHeight(textureHeight),
-    m_projection(glm::ortho(0.f,static_cast<float>(solver->gridSizeI()),
-                            static_cast<float>(solver->gridSizeJ()),0.f))
+    m_projection(glm::ortho(0.f,static_cast<float>(solver->gridSizeJ()),
+                            static_cast<float>(solver->gridSizeI()),0.f))
 {
     m_gridVerts.reserve(solver.get()->grid().cellCount()*m_vertexPerCell*m_vertexSize);
     m_gridIndices.reserve(solver.get()->grid().cellCount()*m_vertexPerCell);
@@ -313,8 +313,9 @@ void FluidRenderer::addGeometry(Geometry2d &geometry)
     int endVertexIndex = startVertexIndex;
     for(Vertex& v : geometry.verts())
     {
-        m_geometryVerts.push_back(v.x());
+        //X and Y are swapped, because i is x and vertical, and j is y and horizontal, but in opengl x is horizontal and y is vertical
         m_geometryVerts.push_back(v.y());
+        m_geometryVerts.push_back(v.x());
         m_geometryVerts.push_back(0.9f);
         m_geometryVerts.push_back(m_geometryColor.rf());
         m_geometryVerts.push_back(m_geometryColor.gf());
@@ -375,6 +376,9 @@ void FluidRenderer::updateGrid()
         break;
     case FluidRenderMode::RENDER_V:
         updateGridFromVComponent();
+        break;
+    case FluidRenderMode::RENDER_SDF:
+        updateGridFromSdf();
         break;
 
     default:
@@ -492,6 +496,30 @@ void FluidRenderer::updateGridFromVComponent()
         {
             float brightness = (m_solver->grid().getV(i,j) - min) / diff;
             setCellColor(i,j,Color(brightness,brightness,brightness));
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromSdf()
+{
+    float max = std::max(m_solver->gridSizeI(),m_solver->gridSizeJ());
+
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float dist = m_solver->grid().sdf(i,j);
+            float brightness = std::pow(std::abs(dist) / max,0.4);
+            if(dist <= 0.f)
+            {
+                setCellColor(i,j,Color(static_cast<int>(87 * brightness), static_cast<int>(202 * brightness), static_cast<int>(255 * brightness)));
+            }
+            else
+            {
+                setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(168 * brightness), static_cast<int>(87 * brightness)));
+            }
         }
     }
 }
