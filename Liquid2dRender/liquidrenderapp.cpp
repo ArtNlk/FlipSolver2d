@@ -365,16 +365,22 @@ void LiquidRenderApp::initGridForProjection()
     resetGrid();
     Index2d fluidTopLeft(1,1);
     Index2d fluidBottomRight(99,99);
-    m_solver->grid().fillMaterialRect(FluidCellMaterial::SOLID,0,0,99,99);
+    //m_solver->grid().fillMaterialRect(FluidCellMaterial::SOLID,0,0,99,99);
     m_solver->grid().fillMaterialRect(FluidCellMaterial::FLUID,fluidTopLeft,fluidBottomRight);
+    float u = static_cast<float>(rand() % 20 - 10) / 10;
+    float v = static_cast<float>(rand() % 20 - 10) / 10;
     for (int i = 0; i < m_solver->grid().sizeI(); i++)
     {
         for (int j = 0; j < m_solver->grid().sizeJ(); j++)
         {
-            m_solver->grid().setU(i,j,static_cast<float>(rand() % 20 - 10) / 10);
-            m_solver->grid().setV(i,j,static_cast<float>(rand() % 20 - 10) / 10);
-            //m_solver->grid().setU(i,j,1.0);
-            //m_solver->grid().setV(i,j,0.0);
+            //m_solver->grid().setU(i,j,static_cast<float>(rand() % 20 - 10) / 10);
+            //m_solver->grid().setV(i,j,static_cast<float>(rand() % 20 - 10) / 10);
+            if(m_solver->grid().sdf(i,j) < 0)
+            {
+                m_solver->grid().setMaterial(i,j,FluidCellMaterial::SOLID);
+            }
+            m_solver->grid().setU(i,j,u);
+            m_solver->grid().setV(i,j,v);
         }
     }
     m_solver->grid().fillKnownFlagsU(true);
