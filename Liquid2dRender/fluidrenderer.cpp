@@ -8,6 +8,7 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #include "globalcallbackhandler.h"
+#include "simsettings.h"
 
 const Color FluidRenderer::m_emptyColor = Color(255,255,255);
 const Color FluidRenderer::m_fluidColor = Color(44, 95, 150);
@@ -46,25 +47,31 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
     m_vectorsEnabled(true),
     m_geometryEnabled(true),
     m_textureWidth(textureWidth),
-    m_textureHeight(textureHeight),
-    m_projection(glm::ortho(0.f,static_cast<float>(solver->gridSizeJ()),
-                            static_cast<float>(solver->gridSizeI()),0.f))
+    m_textureHeight(textureHeight)
 {
+    float gridHeightF = m_solver->grid().sizeI() * SimSettings::dx();
+    float gridWidthF = m_solver->grid().sizeJ() * SimSettings::dx();
+    m_projection = glm::ortho(0.f,static_cast<float>(gridWidthF),
+                                static_cast<float>(gridHeightF),0.f);
     m_gridVerts.reserve(solver.get()->grid().cellCount()*m_vertexPerCell*m_vertexSize);
     m_gridIndices.reserve(solver.get()->grid().cellCount()*m_vertexPerCell);
 
     m_vectorVerts.reserve(solver.get()->grid().cellCount()*m_vectorVertsPerCell);
 
-    int gridHeight = m_solver->grid().sizeI();
-    int gridWidth = m_solver->grid().sizeJ();
+    int gridWidth = m_solver->gridSizeJ();
+    int gridHeight = m_solver->gridSizeI();
+
+    float dx = SimSettings::dx();
 
     for (int i = 0; i < gridHeight; i++)
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            addGridQuad(Vertex(j,i),Vertex(j+1,i+1),Color(255,0,0));
-            Vertex vStart = Vertex(j + 0.5,i + 0.5);
-            Vertex vEnd = Vertex(vStart.x() + 0.5, vStart.y());
+            float it = i * dx;
+            float jt = j * dx;
+            addGridQuad(Vertex(jt,it),Vertex(jt+dx,it+dx),Color(255,0,0));
+            Vertex vStart = Vertex(jt + 0.5*dx,it + 0.5*dx);
+            Vertex vEnd = Vertex(vStart.x() + 0.5*dx, vStart.y());
             addVector(vStart,vEnd,m_velocityVectorColor);
             setVectorColor(i,j,Color(255,0,0));
         }

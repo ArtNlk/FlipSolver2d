@@ -11,7 +11,7 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,1,1,1,false)),
+    m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,1,0.5,1,false)),
     m_fluidRenderer(m_solver,m_startWindowWidth,m_startWindowHeight),
     m_textMenuRenderer(0,0,m_startWindowWidth,m_startWindowHeight,m_fluidRenderer),
     m_renderRequested(false)
@@ -363,7 +363,7 @@ void LiquidRenderApp::initGridForExtrapolation()
 void LiquidRenderApp::initGridForProjection()
 {
     resetGrid();
-    Index2d fluidTopLeft(1,1);
+    Index2d fluidTopLeft(15,0);
     Index2d fluidBottomRight(99,99);
     //m_solver->grid().fillMaterialRect(FluidCellMaterial::SOLID,0,0,99,99);
     m_solver->grid().fillMaterialRect(FluidCellMaterial::FLUID,fluidTopLeft,fluidBottomRight);

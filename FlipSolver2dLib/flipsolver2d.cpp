@@ -81,6 +81,7 @@ void FlipSolver::project()
 
 void FlipSolver::updateSdf()
 {
+    float dx = SimSettings::dx();
     for (int i = 0; i < m_grid.sizeI(); i++)
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
@@ -88,7 +89,7 @@ void FlipSolver::updateSdf()
             float dist = std::numeric_limits<float>().max();
             for(Geometry2d& geo : m_geometry)
             {
-                dist = std::min(geo.signedDistance(i+0.5,j+0.5),dist);
+                dist = std::min(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx),dist);
             }
             m_grid.setSdf(i,j,dist);
         }
