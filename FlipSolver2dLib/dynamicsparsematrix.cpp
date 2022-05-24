@@ -31,32 +31,32 @@ DynamicSparseMatrix::DynamicSparseMatrix(MACFluidGrid &grid) :
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
-            if(grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if(grid.isFluid(i,j))
             {
                 //X Neighbors
-                if(grid.getMaterial(i-1,j) == FluidCellMaterial::FLUID)
+                if(grid.isFluid(i-1,j))
                 {
                     modifyAdiag(i,j,scale);
                 }
-                if(grid.getMaterial(i+1,j) == FluidCellMaterial::FLUID)
+                if(grid.isFluid(i+1,j))
                 {
                     modifyAdiag(i,j,scale);
                     modifyAx(i,j,-scale);
-                } else if(grid.getMaterial(i+1,j) == FluidCellMaterial::EMPTY)
+                } else if(grid.isEmpty(i+1,j))
                 {
                     modifyAdiag(i,j,scale);
                 }
 
                 //Y Neighbors
-                if(grid.getMaterial(i,j-1) == FluidCellMaterial::FLUID)
+                if(grid.isFluid(i,j-1))
                 {
                     modifyAdiag(i,j,scale);
                 }
-                if(grid.getMaterial(i,j+1) == FluidCellMaterial::FLUID)
+                if(grid.isFluid(i,j+1))
                 {
                     modifyAdiag(i,j,scale);
                     modifyAy(i,j,-scale);
-                } else if(grid.getMaterial(i,j+1) == FluidCellMaterial::EMPTY)
+                } else if(grid.isEmpty(i,j+1))
                 {
                     modifyAdiag(i,j,scale);
                 }

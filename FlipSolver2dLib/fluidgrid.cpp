@@ -14,7 +14,7 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
 
 void MACFluidGrid::fill(FluidCellMaterial m, float velocityU, float velocityV, bool knownFlagU, bool knownFlagV)
 {
-    if(m == FluidCellMaterial::FLUID)
+    if(fluidTest(m))
         m_fluidCellCount = m_materialGrid.sizeI() * m_materialGrid.sizeJ();
     else
         m_fluidCellCount = 0;
@@ -41,9 +41,9 @@ void MACFluidGrid::fillMaterialRect(FluidCellMaterial value, int topLeftX, int t
         for(int j = topLeftY; j <= bottomRightY; j++)
         {
             FluidCellMaterial oldMat = m_materialGrid.at(i,j);
-            if(oldMat == FluidCellMaterial::FLUID && oldMat != value)
+            if(fluidTest(oldMat) && oldMat != value)
                 m_fluidCellCount--;
-            else if(oldMat != FluidCellMaterial::FLUID && value == FluidCellMaterial::FLUID)
+            else if(!fluidTest(oldMat) && fluidTest(value))
                 m_fluidCellCount++;
             m_materialGrid.setAt(i,j,value);
         }
@@ -130,21 +130,46 @@ FluidCellMaterial MACFluidGrid::getMaterial(int i, int j) const
 void MACFluidGrid::setMaterial(Index2d index, FluidCellMaterial m)
 {
     FluidCellMaterial oldMat = getMaterial(index);
-    if(oldMat == FluidCellMaterial::FLUID && oldMat != m)
+    if(fluidTest(oldMat) && oldMat != m)
         m_fluidCellCount--;
-    else if(oldMat != FluidCellMaterial::FLUID && m == FluidCellMaterial::FLUID)
+    else if(!fluidTest(oldMat) && fluidTest(m))
         m_fluidCellCount++;
     m_materialGrid.at(index) = m;
 }
 
 void MACFluidGrid::setMaterial(int i, int j, FluidCellMaterial m)
 {
-    FluidCellMaterial oldMat = getMaterial(i,j);
-    if(oldMat == FluidCellMaterial::FLUID && oldMat != m)
-        m_fluidCellCount--;
-    else if(oldMat != FluidCellMaterial::FLUID && m == FluidCellMaterial::FLUID)
-        m_fluidCellCount++;
-    m_materialGrid.at(i,j) = m;
+    setMaterial(Index2d(i,j),m);
+}
+
+bool MACFluidGrid::isFluid(int i, int j)
+{
+    if(!inBounds(i,j)) return false;
+    return fluidTest(m_materialGrid.at(i,j));
+}
+
+bool MACFluidGrid::isSolid(int i, int j)
+{
+    if(!inBounds(i,j)) return true;
+    return solidTest(m_materialGrid.at(i,j));
+}
+
+bool MACFluidGrid::isEmpty(int i, int j)
+{
+    if(!inBounds(i,j)) return false;
+    return emptyTest(m_materialGrid.at(i,j));
+}
+
+bool MACFluidGrid::isSource(int i, int j)
+{
+    if(!inBounds(i,j)) return false;
+    return sourceTest(m_materialGrid.at(i,j));
+}
+
+bool MACFluidGrid::isSink(int i, int j)
+{
+    if(!inBounds(i,j)) return false;
+    return sinkTest(m_materialGrid.at(i,j));
 }
 
 void MACFluidGrid::setU(Index2d index, double value, bool knownStatus)
@@ -290,7 +315,7 @@ void MACFluidGrid::updateLinearToFluidMapping()
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
-            if(getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if(fluidTest(getMaterial(i,j)))
             {
                 m_linearToFluidCellIndexMap[linearIndex(i,j)] = fluidCellIndex;
                 fluidCellIndex++;

@@ -26,13 +26,27 @@ public:
 
     void updateSdf();
 
+    void updateSolids();
+
+    void updateSources();
+
+    void updateSinks();
+
     int gridSizeI();
 
     int gridSizeJ();
 
-    void addGeometry(Geometry2d geometry);
+    void addGeometry(Geometry2d& geometry);
+
+    void addSource(Geometry2d& geometry);
+
+    void addSink(Geometry2d& geometry);
 
     std::vector<Geometry2d> &geometryObjects();
+
+    std::vector<Geometry2d> &sourceObjects();
+
+    std::vector<Geometry2d> &sinkObjects();
 
 protected:
 
@@ -41,8 +55,11 @@ protected:
     int m_extrapolationRadius;
     bool m_useVonNeumannNeighborhood;
     MACFluidGrid m_grid;
+    std::vector<Vertex> m_markerParticles;
     PCGSolver m_pcgSolver;
     std::vector<Geometry2d> m_geometry;
+    std::vector<Geometry2d> m_sources;
+    std::vector<Geometry2d> m_sinks;
 };
 
 #endif // FLIPSOLVER_H

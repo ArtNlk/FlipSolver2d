@@ -13,6 +13,8 @@
 const Color FluidRenderer::m_emptyColor = Color(255,255,255);
 const Color FluidRenderer::m_fluidColor = Color(44, 95, 150);
 const Color FluidRenderer::m_solidColor = Color(94,94,94);
+const Color FluidRenderer::m_sourceColor = Color(22, 196, 193);
+const Color FluidRenderer::m_sinkColor = Color(11, 6, 64);
 const Color FluidRenderer::m_velocityVectorColor = Color(255,255,255);
 const Color FluidRenderer::m_geometryColor = Color(0,255,0);
 
@@ -369,6 +371,8 @@ void FluidRenderer::updateGeometryVerts()
 
 void FluidRenderer::updateGrid()
 {
+    m_solver->updateSinks();
+    m_solver->updateSources();
     GlobalCallbackHandler::instance().registerRenderUpdate();
     switch(m_gridRenderMode)
     {
@@ -432,6 +436,14 @@ void FluidRenderer::updateGridFromMaterial()
 
                 case FluidCellMaterial::SOLID:
                     setCellColor(i,j,m_solidColor);
+                break;
+
+                case FluidCellMaterial::SOURCE:
+                    setCellColor(i,j,m_sourceColor);
+                break;
+
+                case FluidCellMaterial::SINK:
+                    setCellColor(i,j,m_sinkColor);
                 break;
 
                 default:

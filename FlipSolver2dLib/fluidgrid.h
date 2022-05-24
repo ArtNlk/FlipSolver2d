@@ -58,6 +58,16 @@ public:
 
     void setMaterial(int i, int j, FluidCellMaterial m);
 
+    bool isFluid(int i, int j);
+
+    bool isSolid(int i, int j);
+
+    bool isEmpty(int i, int j);
+
+    bool isSource(int i, int j);
+
+    bool isSink(int i, int j);
+
     void setU(Index2d index, double value, bool knownStatus);
 
     void setU(Index2d index, double value);

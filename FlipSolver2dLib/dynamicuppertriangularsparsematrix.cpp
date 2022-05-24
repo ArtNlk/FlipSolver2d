@@ -31,40 +31,40 @@ DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(MACFluidG
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
-            if(grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if(grid.isFluid(i,j))
             {
                 //X Neighbors
-                if(grid.getMaterial(i-1,j) == FluidCellMaterial::FLUID)
+                if(grid.isFluid(i-1,j))
                 {
                     modifyAdiag(i,j,scale, grid);
-                }else if(grid.getMaterial(i-1,j) == FluidCellMaterial::EMPTY)
+                }else if(grid.isEmpty(i-1,j))
                 {
                     modifyAdiag(i,j,scale, grid);
                 }
 
-                if(grid.getMaterial(i+1,j) == FluidCellMaterial::FLUID)
+                if(grid.isFluid(i+1,j))
                 {
                     modifyAdiag(i,j,scale, grid);
                     modifyAx(i,j,-scale, grid);
-                } else if(grid.getMaterial(i+1,j) == FluidCellMaterial::EMPTY)
+                } else if(grid.isEmpty(i+1,j))
                 {
                     modifyAdiag(i,j,scale, grid);
                 }
 
                 //Y Neighbors
-                if(grid.getMaterial(i,j-1) == FluidCellMaterial::FLUID)
+                if(grid.isFluid(i,j-1))
                 {
                     modifyAdiag(i,j,scale, grid);
-                }else if(grid.getMaterial(i,j-1) == FluidCellMaterial::EMPTY)
+                }else if(grid.isEmpty(i,j-1))
                 {
                     modifyAdiag(i,j,scale, grid);
                 }
 
-                if(grid.getMaterial(i,j+1) == FluidCellMaterial::FLUID)
+                if(grid.isFluid(i,j+1))
                 {
                     modifyAdiag(i,j,scale, grid);
                     modifyAy(i,j,-scale, grid);
-                } else if(grid.getMaterial(i,j+1) == FluidCellMaterial::EMPTY)
+                } else if(grid.isEmpty(i,j+1))
                 {
                     modifyAdiag(i,j,scale, grid);
                 }

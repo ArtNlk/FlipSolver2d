@@ -67,7 +67,7 @@ void PCGSolver::applyICPrecond(const UpperTriangularMatrix &matrix, std::vector<
     {
         for (int j = 0; j < grid.sizeJ(); j++)
         {
-            if (grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if (grid.isFluid(i,j))
             {
                 double v1 = grid.linearFluidIndex(i-1,j) == -1? 0.0 : matrix.Ax(i-1,j,grid) * precond(matrix,i-1,j,grid) * temp[grid.linearFluidIndex(i-1,j)];
                 double v2 = grid.linearFluidIndex(i,j-1) == -1? 0.0 : matrix.Ay(i,j-1,grid) * precond(matrix,i,j-1,grid) * temp[grid.linearFluidIndex(i,j-1)];
@@ -82,7 +82,7 @@ void PCGSolver::applyICPrecond(const UpperTriangularMatrix &matrix, std::vector<
     {
         for (int j = grid.sizeJ() - 1; j >= 0; j--)
         {
-            if (grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if (grid.isFluid(i,j))
             {
                 double v1 = grid.linearFluidIndex(i+1,j) == -1? 0.0 : matrix.Ax(i,j,grid) * precond(matrix,i,j,grid) * out[grid.linearFluidIndex(i+1,j)];
                 double v2 = grid.linearFluidIndex(i,j+1) == -1? 0.0 : matrix.Ay(i,j,grid) * precond(matrix,i,j,grid) * out[grid.linearFluidIndex(i,j+1)];
@@ -101,7 +101,7 @@ void PCGSolver::calcPrecond(const UpperTriangularMatrix &matrix, MACFluidGrid &g
     {
         for (int j = 0; j < grid.sizeJ(); j++)
         {
-            if (grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if (grid.isFluid(i,j))
             {
                 precond(matrix,i,j,grid);
             }

@@ -138,6 +138,8 @@ protected:
     static const Color m_emptyColor;
     static const Color m_fluidColor;
     static const Color m_solidColor;
+    static const Color m_sourceColor;
+    static const Color m_sinkColor;
     static const Color m_velocityVectorColor;
     static const Color m_geometryColor;
 

@@ -5,10 +5,18 @@
 
 enum FluidCellMaterial : char
 {
-    FLUID = 0,
-    SOLID = 1,
-    EMPTY = 2
+    FLUID = 0b01000000,
+    SOURCE =0b01000001,
+    SOLID = 0b00100000,
+    SINK =  0b00010010,
+    EMPTY = 0b00010000
 };
+
+#define fluidTest(x) ((x & FluidCellMaterial::FLUID) != 0)
+#define emptyTest(x) ((x & FluidCellMaterial::EMPTY) != 0)
+#define solidTest(x) ((x & FluidCellMaterial::SOLID) != 0)
+#define sourceTest(x) (x == FluidCellMaterial::SOURCE)
+#define sinkTest(x) (x == FluidCellMaterial::SINK)
 
 class FluidCell
 {

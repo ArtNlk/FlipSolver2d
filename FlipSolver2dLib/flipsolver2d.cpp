@@ -43,9 +43,9 @@ void FlipSolver::project()
             int fluidIndexIM1 = m_grid.linearFluidIndex(i-1,j);
             int fluidIndexJM1 = m_grid.linearFluidIndex(i,j-1);
             //U part
-            if(m_grid.getMaterial(i-1,j) == FluidCellMaterial::FLUID || m_grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if(m_grid.isFluid(i-1,j) || m_grid.isFluid(i,j))
             {
-                if(m_grid.getMaterial(i-1,j) == FluidCellMaterial::SOLID || m_grid.getMaterial(i,j) == FluidCellMaterial::SOLID)
+                if(m_grid.isSolid(i-1,j) || m_grid.isSolid(i,j))
                 {
                     m_grid.setU(i,j,0);//Solids are stationary
                 }
@@ -60,9 +60,9 @@ void FlipSolver::project()
             }
 
             //V part
-            if(m_grid.getMaterial(i,j-1) == FluidCellMaterial::FLUID || m_grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if(m_grid.isFluid(i,j-1) || m_grid.isFluid(i,j))
             {
-                if(m_grid.getMaterial(i,j-1) == FluidCellMaterial::SOLID || m_grid.getMaterial(i,j) == FluidCellMaterial::SOLID)
+                if(m_grid.isSolid(i,j-1) || m_grid.isSolid(i,j))
                 {
                     m_grid.velocityGridV().at(i,j) = 0;//Solids are stationary
                 }
@@ -96,6 +96,56 @@ void FlipSolver::updateSdf()
     }
 }
 
+void FlipSolver::updateSolids()
+{
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(m_grid.sdf(i,j) < 0)
+            {
+                m_grid.setMaterial(i,j,FluidCellMaterial::SOLID);
+            }
+        }
+    }
+}
+
+void FlipSolver::updateSources()
+{
+    float dx = SimSettings::dx();
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            for(Geometry2d& geo : m_sources)
+            {
+                if(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                {
+                    m_grid.setMaterial(i,j,FluidCellMaterial::SOURCE);
+                }
+            }
+        }
+    }
+}
+
+void FlipSolver::updateSinks()
+{
+    float dx = SimSettings::dx();
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            for(Geometry2d& geo : m_sinks)
+            {
+                if(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                {
+                    m_grid.setMaterial(i,j,FluidCellMaterial::SINK);
+                }
+            }
+        }
+    }
+}
+
 int FlipSolver::gridSizeI()
 {
     return m_grid.sizeI();
@@ -106,14 +156,34 @@ int FlipSolver::gridSizeJ()
     return m_grid.sizeJ();
 }
 
-void FlipSolver::addGeometry(Geometry2d geometry)
+void FlipSolver::addGeometry(Geometry2d& geometry)
 {
     m_geometry.push_back(geometry);
+}
+
+void FlipSolver::addSource(Geometry2d &geometry)
+{
+    m_sources.push_back(geometry);
+}
+
+void FlipSolver::addSink(Geometry2d &geometry)
+{
+    m_sinks.push_back(geometry);
 }
 
 std::vector<Geometry2d> &FlipSolver::geometryObjects()
 {
     return m_geometry;
+}
+
+std::vector<Geometry2d> &FlipSolver::sourceObjects()
+{
+    return m_sources;
+}
+
+std::vector<Geometry2d> &FlipSolver::sinkObjects()
+{
+    return m_sinks;
 }
 
 void FlipSolver::extrapolateVelocityField()
@@ -241,25 +311,25 @@ void FlipSolver::calcRhs(std::vector<double> &rhs)
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if (m_grid.getMaterial(i,j) == FluidCellMaterial::FLUID)
+            if (m_grid.isFluid(i,j))
             {
                 rhs[m_grid.linearFluidIndex(i,j)] = -scale * (m_grid.getU(i+1,j) - m_grid.getU(i,j)
                                                           +m_grid.getV(i,j+1) - m_grid.getV(i,j));
 
-                if(m_grid.getMaterial(i-1,j) == FluidCellMaterial::SOLID)
+                if(m_grid.isSolid(i-1,j))
                 {
                     rhs[m_grid.linearFluidIndex(i,j)] -= scale * (m_grid.getU(i,j) - 0);
                 }
-                if(m_grid.getMaterial(i+1,j) == FluidCellMaterial::SOLID)
+                if(m_grid.isSolid(i+1,j))
                 {
                     rhs[m_grid.linearFluidIndex(i,j)] += scale * (m_grid.getU(i+1,j) - 0);
                 }
 
-                if(m_grid.getMaterial(i,j-1) == FluidCellMaterial::SOLID)
+                if(m_grid.isSolid(i,j-1))
                 {
                     rhs[m_grid.linearFluidIndex(i,j)] -= scale * (m_grid.getV(i,j) - 0);
                 }
-                if(m_grid.getMaterial(i,j+1) == FluidCellMaterial::SOLID)
+                if(m_grid.isSolid(i,j+1))
                 {
                     rhs[m_grid.linearFluidIndex(i,j)] += scale * (m_grid.getV(i,j+1) - 0);
                 }

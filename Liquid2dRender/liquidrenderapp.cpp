@@ -56,8 +56,12 @@ void LiquidRenderApp::init()
 
     setupFluidrender();
     resizeFluidrenderQuad();
-    m_renderRequested = true;
     m_solver->updateSdf();
+    m_solver->updateSinks();
+    m_solver->updateSources();
+    m_solver->updateSolids();
+    m_fluidRenderer.updateGrid();
+    m_renderRequested = true;
 }
 
 void LiquidRenderApp::run()
@@ -149,13 +153,13 @@ void LiquidRenderApp::setupGeometry()
     geo.addVertex(Vertex(10,5));
     geo.addVertex(Vertex(10,10));
     geo.addVertex(Vertex(5,10));
-    m_solver->addGeometry(geo);
+    m_solver->addSource(geo);
 
     geo = Geometry2d();
     geo.addVertex(Vertex(15,15));
     geo.addVertex(Vertex(20,25));
     geo.addVertex(Vertex(25,10));
-    m_solver->addGeometry(geo);
+    m_solver->addSink(geo);
 
     geo = Geometry2d();
     geo.addVertex(Vertex(10,70));
@@ -375,10 +379,7 @@ void LiquidRenderApp::initGridForProjection()
         {
             //m_solver->grid().setU(i,j,static_cast<float>(rand() % 20 - 10) / 10);
             //m_solver->grid().setV(i,j,static_cast<float>(rand() % 20 - 10) / 10);
-            if(m_solver->grid().sdf(i,j) < 0)
-            {
-                m_solver->grid().setMaterial(i,j,FluidCellMaterial::SOLID);
-            }
+            m_solver->updateSolids();
             m_solver->grid().setU(i,j,u);
             m_solver->grid().setV(i,j,v);
         }
