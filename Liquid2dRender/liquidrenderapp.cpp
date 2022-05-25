@@ -168,6 +168,9 @@ void LiquidRenderApp::setupGeometry()
     geo.addVertex(Vertex(35,30));
     geo.addVertex(Vertex(30,30));
     m_solver->addGeometry(geo);
+
+    m_solver->addMarkerParticle(Vertex(35,35));
+    m_solver->addMarkerParticle(Vertex(35,45));
 }
 
 void LiquidRenderApp::setupFluidrender()

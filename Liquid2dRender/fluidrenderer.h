@@ -83,17 +83,20 @@ protected:
     void addGridQuad(Vertex topLeft, Vertex bottomRight, Color c);
     void addVectorVertex(Vertex v, Color c = Color());
     void addVector(Vertex start, Vertex end, Color c);
+    void addParticle(Vertex particle, Color c);
     void setupGl();
     void setupOffscreenBuffer();
     void setupBuffers();
     void setupGridVerts();
     void setupVectorVerts();
     void setupGeometryVerts();
+    void setupParticleVerts();
     void loadGeometry();
     void addGeometry(Geometry2d &geometry);
     void updateGridVerts();
     void updateVectorVerts();
     void updateGeometryVerts();
+    void updateParticleVerts();
     void updateGridFromMaterial();
     void updateGridFromVelocity();
     void updateGridFromUComponent();
@@ -101,6 +104,7 @@ protected:
     void updateGridFromSdf();
     void updateVectorsStaggered();
     void updateVectorsCentered();
+    void reloadParticles();
     void updateVector(int x, int y, Vertex newVector);
     void setCellVertexColor(int vIndex, Color c);
     void setCellColor(int x, int y, Color c);
@@ -116,6 +120,8 @@ protected:
     unsigned int m_vbo_geometry;
     unsigned int m_vao_geometry;
     unsigned int m_ebo_geometry;
+    unsigned int m_vbo_particles;
+    unsigned int m_vao_particles;
     unsigned int m_vertexShader;
     unsigned int m_fragShader;
     unsigned int m_shaderProgram;
@@ -141,18 +147,21 @@ protected:
     static const Color m_sourceColor;
     static const Color m_sinkColor;
     static const Color m_velocityVectorColor;
+    static const Color m_markerParticleColor;
     static const Color m_geometryColor;
 
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;
     std::vector<float> m_vectorVerts;
     std::vector<float> m_geometryVerts;
+    std::vector<float> m_particleVerts;
     std::vector<unsigned int> m_geometryIndices;
     glm::mat4 m_projection;
     FluidRenderMode m_gridRenderMode;
     VectorRenderMode m_vectorRenderMode;
     bool m_vectorsEnabled;
     bool m_geometryEnabled;
+    bool m_particlesEnabled;
 
     std::shared_ptr<FlipSolver> m_solver;
 };

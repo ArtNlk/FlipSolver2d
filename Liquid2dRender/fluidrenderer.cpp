@@ -17,6 +17,7 @@ const Color FluidRenderer::m_sourceColor = Color(22, 196, 193);
 const Color FluidRenderer::m_sinkColor = Color(11, 6, 64);
 const Color FluidRenderer::m_velocityVectorColor = Color(255,255,255);
 const Color FluidRenderer::m_geometryColor = Color(0,255,0);
+const Color FluidRenderer::m_markerParticleColor = Color(37,0,82);
 
 const char *FluidRenderer::m_vertexShaderSource =
         "#version 330 core\n"
@@ -48,6 +49,7 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
     m_vectorRenderMode(VectorRenderMode::VECTOR_RENDER_CENTER),
     m_vectorsEnabled(true),
     m_geometryEnabled(true),
+    m_particlesEnabled(true),
     m_textureWidth(textureWidth),
     m_textureHeight(textureHeight)
 {
@@ -83,6 +85,7 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
 void FluidRenderer::init()
 {
     loadGeometry();
+    reloadParticles();
     setupGl();
     updateGrid();
     updateVectors();
@@ -113,6 +116,12 @@ void FluidRenderer::render()
     {
         glBindVertexArray(m_vao_geometry);
         glDrawElements(GL_LINES,m_geometryIndices.size(),GL_UNSIGNED_INT,0);
+    }
+    if(m_particlesEnabled)
+    {
+        glPointSize(3);
+        glBindVertexArray(m_vao_particles);
+        glDrawArrays(GL_POINTS,0,m_particleVerts.size());
     }
     glBindVertexArray(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -166,6 +175,16 @@ void FluidRenderer::addVector(Vertex start, Vertex end, Color c)
     addVectorVertex(end,c);
 }
 
+void FluidRenderer::addParticle(Vertex particle, Color c)
+{
+    m_particleVerts.push_back(particle.x());
+    m_particleVerts.push_back(particle.y());
+    m_particleVerts.push_back(0.9f);
+    m_particleVerts.push_back(c.rf());
+    m_particleVerts.push_back(c.gf());
+    m_particleVerts.push_back(c.bf());
+}
+
 void FluidRenderer::setupGl()
 {
     int success;
@@ -212,6 +231,10 @@ void FluidRenderer::setupGl()
     glGenVertexArrays(1, &m_vao_geometry);
     glGenBuffers(1,&m_vbo_geometry);
     glGenBuffers(1,&m_ebo_geometry);
+
+    //Particle buffers
+    glGenVertexArrays(1, &m_vao_particles);
+    glGenBuffers(1,&m_vbo_particles);
 
     setupBuffers();
     //Frame buffers
@@ -279,6 +302,14 @@ void FluidRenderer::setupBuffers()
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(float) * 6, reinterpret_cast<void*>(sizeof(float)*3));
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
+
+    setupParticleVerts();
+    glBindVertexArray(m_vao_particles);
+    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(float) * 6, 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(float) * 6, reinterpret_cast<void*>(sizeof(float)*3));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
 }
 
 void FluidRenderer::setupGridVerts()
@@ -302,6 +333,14 @@ void FluidRenderer::setupGeometryVerts()
     glBindVertexArray(m_vao_geometry);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo_geometry);
     glBufferData(GL_ARRAY_BUFFER,sizeof(float) * m_geometryVerts.size(),m_geometryVerts.data(),GL_DYNAMIC_DRAW);
+    glBindVertexArray(0);
+}
+
+void FluidRenderer::setupParticleVerts()
+{
+    glBindVertexArray(m_vao_particles);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particles);
+    glBufferData(GL_ARRAY_BUFFER,sizeof(float) * m_particleVerts.size(),m_particleVerts.data(),GL_DYNAMIC_DRAW);
     glBindVertexArray(0);
 }
 
@@ -369,6 +408,14 @@ void FluidRenderer::updateGeometryVerts()
     glBindVertexArray(0);
 }
 
+void FluidRenderer::updateParticleVerts()
+{
+    glBindVertexArray(m_vao_particles);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_particles);
+    glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(float) * m_particleVerts.size(),m_particleVerts.data());
+    glBindVertexArray(0);
+}
+
 void FluidRenderer::updateGrid()
 {
     m_solver->updateSinks();
@@ -397,6 +444,7 @@ void FluidRenderer::updateGrid()
         break;
     }
     updateGridVerts();
+    updateParticleVerts();
 }
 
 unsigned int FluidRenderer::renderTexture()
@@ -604,6 +652,16 @@ void FluidRenderer::updateVectorsCentered()
             updateVector(i,j,newVector);
         }
     }
+}
+
+void FluidRenderer::reloadParticles()
+{
+    m_particleVerts.clear();
+    for(Vertex &particle : m_solver->markerParticles())
+    {
+        addParticle(particle,m_markerParticleColor);
+    }
+    updateParticleVerts();
 }
 
 void FluidRenderer::updateVector(int x, int y, Vertex newVector)

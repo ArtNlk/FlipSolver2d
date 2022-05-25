@@ -42,11 +42,15 @@ public:
 
     void addSink(Geometry2d& geometry);
 
+    void addMarkerParticle(Vertex particle);
+
     std::vector<Geometry2d> &geometryObjects();
 
     std::vector<Geometry2d> &sourceObjects();
 
     std::vector<Geometry2d> &sinkObjects();
+
+    std::vector<Vertex> &markerParticles();
 
 protected:
 

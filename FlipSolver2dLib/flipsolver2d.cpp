@@ -171,6 +171,11 @@ void FlipSolver::addSink(Geometry2d &geometry)
     m_sinks.push_back(geometry);
 }
 
+void FlipSolver::addMarkerParticle(Vertex particle)
+{
+    m_markerParticles.push_back(particle);
+}
+
 std::vector<Geometry2d> &FlipSolver::geometryObjects()
 {
     return m_geometry;
@@ -184,6 +189,11 @@ std::vector<Geometry2d> &FlipSolver::sourceObjects()
 std::vector<Geometry2d> &FlipSolver::sinkObjects()
 {
     return m_sinks;
+}
+
+std::vector<Vertex> &FlipSolver::markerParticles()
+{
+    return m_markerParticles;
 }
 
 void FlipSolver::extrapolateVelocityField()
