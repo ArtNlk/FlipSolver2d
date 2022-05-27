@@ -130,7 +130,7 @@ FluidCellMaterial MACFluidGrid::getMaterial(int i, int j) const
 void MACFluidGrid::setMaterial(Index2d index, FluidCellMaterial m)
 {
     FluidCellMaterial oldMat = getMaterial(index);
-    if(fluidTest(oldMat) && oldMat != m)
+    if(fluidTest(oldMat) && !fluidTest(m))
         m_fluidCellCount--;
     else if(!fluidTest(oldMat) && fluidTest(m))
         m_fluidCellCount++;
@@ -310,15 +310,15 @@ void MACFluidGrid::setSdf(Index2d index, float value)
 void MACFluidGrid::updateLinearToFluidMapping()
 {
     m_linearToFluidCellIndexMap.clear();
-    int fluidCellIndex = 0;
+    m_fluidCellCount = 0;
     for(int i = 0; i < m_sizeI; i++)
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
             if(fluidTest(getMaterial(i,j)))
             {
-                m_linearToFluidCellIndexMap[linearIndex(i,j)] = fluidCellIndex;
-                fluidCellIndex++;
+                m_linearToFluidCellIndexMap[linearIndex(i,j)] = m_fluidCellCount;
+                m_fluidCellCount++;
             }
         }
     }
