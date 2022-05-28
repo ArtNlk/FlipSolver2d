@@ -32,6 +32,7 @@ public:
     void update();
     void updateGrid();
     void updateVectors();
+    void updateParticles();
 
     inline void setRenderMode(FluidRenderMode mode)
     {

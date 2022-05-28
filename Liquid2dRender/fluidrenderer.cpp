@@ -110,7 +110,7 @@ void FluidRenderer::render()
     if(m_vectorsEnabled)
     {
         glBindVertexArray(m_vao_vectors);
-        glDrawArrays(GL_LINES,0,m_vectorVerts.size());
+        glDrawArrays(GL_LINES,0,m_vectorVerts.size() / m_vertexSize);
     }
     if(m_geometryEnabled)
     {
@@ -119,9 +119,9 @@ void FluidRenderer::render()
     }
     if(m_particlesEnabled)
     {
-        glPointSize(3);
+        glPointSize(1);
         glBindVertexArray(m_vao_particles);
-        glDrawArrays(GL_POINTS,0,m_particleVerts.size());
+        glDrawArrays(GL_POINTS,0,m_particleVerts.size() / m_vertexSize);
     }
     glBindVertexArray(0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -131,6 +131,7 @@ void FluidRenderer::update()
 {
     updateGrid();
     updateVectors();
+    updateParticles();
 }
 
 void FluidRenderer::addGridVertex(Vertex v, Color c)
@@ -177,8 +178,8 @@ void FluidRenderer::addVector(Vertex start, Vertex end, Color c)
 
 void FluidRenderer::addParticle(Vertex particle, Color c)
 {
-    m_particleVerts.push_back(particle.x());
-    m_particleVerts.push_back(particle.y());
+    m_particleVerts.push_back(particle.y()*SimSettings::dx());
+    m_particleVerts.push_back(particle.x()*SimSettings::dx());
     m_particleVerts.push_back(0.9f);
     m_particleVerts.push_back(c.rf());
     m_particleVerts.push_back(c.gf());
@@ -444,7 +445,6 @@ void FluidRenderer::updateGrid()
         break;
     }
     updateGridVerts();
-    updateParticleVerts();
 }
 
 unsigned int FluidRenderer::renderTexture()
@@ -610,6 +610,11 @@ void FluidRenderer::updateVectors()
     updateVectorVerts();
 }
 
+void FluidRenderer::updateParticles()
+{
+    reloadParticles();
+}
+
 void FluidRenderer::updateVectorsStaggered()
 {
     float unitLengthVelocity = 0.75; //Velocity len(v) at which draw vector will be exactly length 1 grid cell side
@@ -656,12 +661,20 @@ void FluidRenderer::updateVectorsCentered()
 
 void FluidRenderer::reloadParticles()
 {
+    int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
     for(Vertex &particle : m_solver->markerParticles())
     {
         addParticle(particle,m_markerParticleColor);
     }
-    updateParticleVerts();
+    if(m_particleVerts.size() > oldParticlesSize)
+    {
+        setupParticleVerts();
+    }
+    else
+    {
+        updateParticleVerts();
+    }
 }
 
 void FluidRenderer::updateVector(int x, int y, Vertex newVector)

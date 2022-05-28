@@ -2,6 +2,7 @@
 #define FLIPSOLVER_H
 
 #include <vector>
+#include <random>
 
 #include "pcgsolver.h"
 #include "fluidgrid.h"
@@ -44,6 +45,8 @@ public:
 
     void addMarkerParticle(Vertex particle);
 
+    void reseedParticles();
+
     std::vector<Geometry2d> &geometryObjects();
 
     std::vector<Geometry2d> &sourceObjects();
@@ -56,11 +59,16 @@ protected:
 
     void calcRhs(std::vector<double> &rhs);
 
+    Vertex jitteredPosInCell(int i, int j);
+
+    void countParticles(Grid2d<int> &output);
+
     int m_extrapolationRadius;
     bool m_useVonNeumannNeighborhood;
     MACFluidGrid m_grid;
     std::vector<Vertex> m_markerParticles;
     PCGSolver m_pcgSolver;
+    std::mt19937 m_randEngine;
     std::vector<Geometry2d> m_geometry;
     std::vector<Geometry2d> m_sources;
     std::vector<Geometry2d> m_sinks;

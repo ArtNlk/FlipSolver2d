@@ -27,12 +27,24 @@ public:
         return m_instance.m_density;
     }
 
+    static inline unsigned int& randomSeed()
+    {
+        return m_instance.m_seed;
+    }
+
+    static inline int& particlesPerCell()
+    {
+        return m_instance.m_particlesPerCell;
+    }
+
 protected:
     static SimSettings m_instance;
 
     double m_dt;
     double m_dx;
     double m_density;
+    unsigned int m_seed;
+    int m_particlesPerCell;
 };
 
 #endif // SIMSETTINGS_H

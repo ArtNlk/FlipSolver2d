@@ -15,6 +15,9 @@ FlipSolver::FlipSolver(int sizeX, int sizeY, double fluidDensity, double timeste
     SimSettings::density() = fluidDensity;
     SimSettings::dt() = timestepSize;
     SimSettings::dx() = sideLength;
+    SimSettings::randomSeed() = 0;
+    SimSettings::particlesPerCell() = 8;
+    m_randEngine = std::mt19937(SimSettings::randomSeed());
 }
 
 void FlipSolver::project()
@@ -174,6 +177,29 @@ void FlipSolver::addSink(Geometry2d &geometry)
 void FlipSolver::addMarkerParticle(Vertex particle)
 {
     m_markerParticles.push_back(particle);
+}
+
+void FlipSolver::reseedParticles()
+{
+    Grid2d<int> particleCounts(m_grid.sizeI(),m_grid.sizeJ());
+    countParticles(particleCounts);
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(m_grid.isSource(i,j))
+            {
+                int particleCount = particleCounts.at(i,j);
+                //std::cout << particleCount << " at " << i << " , " << j << std::endl;
+                int additionalParticles = SimSettings::particlesPerCell() - particleCount;
+                if(additionalParticles <= 0) continue;
+                for(int p = 0; p < additionalParticles; p++)
+                {
+                    addMarkerParticle(jitteredPosInCell(i,j));
+                }
+            }
+        }
+    }
 }
 
 std::vector<Geometry2d> &FlipSolver::geometryObjects()
@@ -344,6 +370,30 @@ void FlipSolver::calcRhs(std::vector<double> &rhs)
                     rhs[m_grid.linearFluidIndex(i,j)] += scale * (m_grid.getV(i,j+1) - 0);
                 }
             }
+        }
+    }
+}
+
+Vertex FlipSolver::jitteredPosInCell(int i, int j)
+{
+    static std::uniform_real_distribution<float> dist(0.f,1.f);
+    float x = (static_cast<float>(i) + dist(m_randEngine));
+    float y = (static_cast<float>(j) + dist(m_randEngine));
+    return Vertex(x,y);
+}
+
+void FlipSolver::countParticles(Grid2d<int> &output)
+{
+    ASSERT(output.sizeI() == m_grid.sizeI());
+    ASSERT(output.sizeJ() == m_grid.sizeJ());
+    output.fill(0);
+    for(Vertex& p : m_markerParticles)
+    {
+        int i = std::floor(p.x());
+        int j = std::floor(p.y());
+        if(m_grid.isSource(i,j))
+        {
+            output.at(i,j) += 1;
         }
     }
 }

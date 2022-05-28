@@ -96,6 +96,11 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_fluidRenderer.updateGrid();
                 break;
 
+                case GLFW_KEY_R:
+                    m_solver->reseedParticles();
+                    m_fluidRenderer.update();
+                break;
+
                 case GLFW_KEY_V:
                     if(mods & GLFW_MOD_SHIFT)
                     {
@@ -151,9 +156,9 @@ void LiquidRenderApp::setupGeometry()
     Geometry2d geo;
     geo.addVertex(Vertex(5,5));
     geo.addVertex(Vertex(10,5));
-    geo.addVertex(Vertex(10,10));
+    geo.addVertex(Vertex(10,15));
     geo.addVertex(Vertex(5,10));
-    m_solver->addSource(geo);
+    m_solver->addGeometry(geo);
 
     geo = Geometry2d();
     geo.addVertex(Vertex(15,15));
@@ -167,10 +172,7 @@ void LiquidRenderApp::setupGeometry()
     geo.addVertex(Vertex(35,50));
     geo.addVertex(Vertex(35,30));
     geo.addVertex(Vertex(30,30));
-    m_solver->addGeometry(geo);
-
-    m_solver->addMarkerParticle(Vertex(35,35));
-    m_solver->addMarkerParticle(Vertex(35,45));
+    m_solver->addSource(geo);
 }
 
 void LiquidRenderApp::setupFluidrender()
