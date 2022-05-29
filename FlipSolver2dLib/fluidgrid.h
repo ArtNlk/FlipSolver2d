@@ -8,6 +8,7 @@
 #include "customassert.h"
 #include "index2d.h"
 #include "logger.h"
+#include "geometry2d.h"
 
 class MACFluidGrid : public LinearIndexable2d
 {
@@ -28,15 +29,15 @@ public:
 
     void fillVelocityU(float value);
 
-    void fillVelocityURect(double value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
+    void fillVelocityURect(float value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
 
-    void fillVelocityURect(double value, Index2d topLeft, Index2d bottomRight);
+    void fillVelocityURect(float value, Index2d topLeft, Index2d bottomRight);
 
     void fillVelocityV(float value);
 
-    void fillVelocityVRect(double value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
+    void fillVelocityVRect(float value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
 
-    void fillVelocityVRect(double value, Index2d topLeft, Index2d bottomRight);
+    void fillVelocityVRect(float value, Index2d topLeft, Index2d bottomRight);
 
     void fillKnownFlagsU(bool value);
 
@@ -68,29 +69,29 @@ public:
 
     bool isSink(int i, int j);
 
-    void setU(Index2d index, double value, bool knownStatus);
+    void setU(Index2d index, float value, bool knownStatus);
 
-    void setU(Index2d index, double value);
+    void setU(Index2d index, float value);
 
-    void setU(int i, int j, double value, bool knownStatus);
+    void setU(int i, int j, float value, bool knownStatus);
 
-    void setU(int i, int j, double value);
+    void setU(int i, int j, float value);
 
-    void setV(Index2d index, double value, bool knownStatus);
+    void setV(Index2d index, float value, bool knownStatus);
 
-    void setV(Index2d index, double value);
+    void setV(Index2d index, float value);
 
-    void setV(int i, int j, double value, bool knownStatus);
+    void setV(int i, int j, float value, bool knownStatus);
 
-    void setV(int i, int j, double value);
+    void setV(int i, int j, float value);
 
-    double getU(Index2d index) const;
+    float getU(Index2d index) const;
 
-    double getU(int i, int j) const;
+    float getU(int i, int j) const;
 
-    double getV(Index2d index) const;
+    float getV(Index2d index) const;
 
-    double getV(int i, int j) const;
+    float getV(int i, int j) const;
 
     void getSize(int& sizeI, int& sizeJ) const;
 
@@ -98,9 +99,11 @@ public:
 
     int fluidCellCount() const;
 
-    float trueU(int i, int j);
+    float lerpU(int i, int j, float factor);
 
-    float trueV(int i, int j);
+    float lerpV(int i, int j, float factor);
+
+    Vertex velocityAt(float i, float j);
 
 //    inline FluidCell at(int i, int j)
 //    {

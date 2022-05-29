@@ -63,7 +63,7 @@ protected:
     static const int m_startWindowWidth = 900;
     static const int m_startWindowHeight = 900;
 
-    static constexpr float m_gridDrawFraction = 0.75;
+    static constexpr float m_gridDrawFraction = 0.85;
 
     //Taken from https://stackoverflow.com/questions/7676971/pointing-to-a-function-that-is-a-class-member-glfw-setkeycallback
     class GLFWCallbackWrapper

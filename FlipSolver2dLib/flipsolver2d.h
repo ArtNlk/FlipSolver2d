@@ -9,6 +9,14 @@
 #include "uppertriangularmatrix.h"
 #include "geometry2d.h"
 
+class LiquidRenderApp;
+
+struct MarkerParticle
+{
+    Vertex position;
+    Vertex velocity;
+};
+
 class FlipSolver
 {
 public:
@@ -24,6 +32,8 @@ public:
     void extrapolateVelocityField();
 
     void project();
+
+    void advect();
 
     void updateSdf();
 
@@ -45,7 +55,7 @@ public:
 
     void addMarkerParticle(Vertex particle);
 
-    void reseedParticles();
+    void addMarkerParticle(MarkerParticle particle);
 
     std::vector<Geometry2d> &geometryObjects();
 
@@ -53,20 +63,26 @@ public:
 
     std::vector<Geometry2d> &sinkObjects();
 
-    std::vector<Vertex> &markerParticles();
+    std::vector<MarkerParticle> &markerParticles();
 
 protected:
+
+    friend class ::LiquidRenderApp;
 
     void calcRhs(std::vector<double> &rhs);
 
     Vertex jitteredPosInCell(int i, int j);
 
+    void reseedParticles(Grid2d<int> &particleCounts);
+
     void countParticles(Grid2d<int> &output);
+
+    void updateMaterialsFromParticles(Grid2d<int> &particleCount);
 
     int m_extrapolationRadius;
     bool m_useVonNeumannNeighborhood;
     MACFluidGrid m_grid;
-    std::vector<Vertex> m_markerParticles;
+    std::vector<MarkerParticle> m_markerParticles;
     PCGSolver m_pcgSolver;
     std::mt19937 m_randEngine;
     std::vector<Geometry2d> m_geometry;

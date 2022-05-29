@@ -96,8 +96,13 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_fluidRenderer.updateGrid();
                 break;
 
-                case GLFW_KEY_R:
-                    m_solver->reseedParticles();
+                case GLFW_KEY_A:
+                    m_solver->advect();
+                    m_fluidRenderer.update();
+                break;
+
+                case GLFW_KEY_T:
+                    m_solver->addMarkerParticle(Vertex(33.3f,14.7f));
                     m_fluidRenderer.update();
                 break;
 

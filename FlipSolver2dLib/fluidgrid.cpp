@@ -1,5 +1,9 @@
 #include "fluidgrid.h"
 
+#include <cmath>
+
+#include "functions.h"
+
 MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
     m_materialGrid(sizeI,sizeJ,FluidCellMaterial::EMPTY),
@@ -60,12 +64,12 @@ void MACFluidGrid::fillVelocityU(float value)
     m_velocityGridU.fill(value);
 }
 
-void MACFluidGrid::fillVelocityURect(double value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
+void MACFluidGrid::fillVelocityURect(float value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
 {
     m_velocityGridU.fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
 }
 
-void MACFluidGrid::fillVelocityURect(double value, Index2d topLeft, Index2d bottomRight)
+void MACFluidGrid::fillVelocityURect(float value, Index2d topLeft, Index2d bottomRight)
 {
     m_velocityGridU.fillRect(value,topLeft,bottomRight);
 }
@@ -75,12 +79,12 @@ void MACFluidGrid::fillVelocityV(float value)
     m_velocityGridV.fill(value);
 }
 
-void MACFluidGrid::fillVelocityVRect(double value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
+void MACFluidGrid::fillVelocityVRect(float value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
 {
     m_velocityGridV.fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
 }
 
-void MACFluidGrid::fillVelocityVRect(double value, Index2d topLeft, Index2d bottomRight)
+void MACFluidGrid::fillVelocityVRect(float value, Index2d topLeft, Index2d bottomRight)
 {
     m_velocityGridV.fillRect(value,topLeft,bottomRight);
 }
@@ -172,66 +176,66 @@ bool MACFluidGrid::isSink(int i, int j)
     return sinkTest(m_materialGrid.at(i,j));
 }
 
-void MACFluidGrid::setU(Index2d index, double value, bool knownStatus)
+void MACFluidGrid::setU(Index2d index, float value, bool knownStatus)
 {
     m_velocityGridU.at(index) = value;
     m_knownFlagsU.at(index) = knownStatus;
 }
 
-void MACFluidGrid::setU(Index2d index, double value)
+void MACFluidGrid::setU(Index2d index, float value)
 {
     m_velocityGridU.at(index) = value;
 }
 
-void MACFluidGrid::setU(int i, int j, double value, bool knownStatus)
+void MACFluidGrid::setU(int i, int j, float value, bool knownStatus)
 {
     m_velocityGridU.at(i,j) = value;
     m_knownFlagsU.at(i,j) = knownStatus;
 }
 
-void MACFluidGrid::setU(int i, int j, double value)
+void MACFluidGrid::setU(int i, int j, float value)
 {
     m_velocityGridU.at(i,j) = value;
 }
 
-void MACFluidGrid::setV(Index2d index, double value, bool knownStatus)
+void MACFluidGrid::setV(Index2d index, float value, bool knownStatus)
 {
     m_velocityGridV.at(index) = value;
     m_knownFlagsV.at(index) = knownStatus;
 }
 
-void MACFluidGrid::setV(Index2d index, double value)
+void MACFluidGrid::setV(Index2d index, float value)
 {
     m_velocityGridV.at(index) = value;
 }
 
-void MACFluidGrid::setV(int i, int j, double value, bool knownStatus)
+void MACFluidGrid::setV(int i, int j, float value, bool knownStatus)
 {
     m_velocityGridV.at(i,j) = value;
     m_knownFlagsV.at(i,j) = knownStatus;
 }
 
-void MACFluidGrid::setV(int i, int j, double value)
+void MACFluidGrid::setV(int i, int j, float value)
 {
     m_velocityGridV.at(i,j) = value;
 }
 
-double MACFluidGrid::getU(Index2d index) const
+float MACFluidGrid::getU(Index2d index) const
 {
     return m_velocityGridU.at(index);
 }
 
-double MACFluidGrid::getU(int i, int j) const
+float MACFluidGrid::getU(int i, int j) const
 {
     return m_velocityGridU.at(i,j);
 }
 
-double MACFluidGrid::getV(Index2d index) const
+float MACFluidGrid::getV(Index2d index) const
 {
     return m_velocityGridV.at(index);
 }
 
-double MACFluidGrid::getV(int i, int j) const
+float MACFluidGrid::getV(int i, int j) const
 {
     return m_velocityGridV.at(i,j);
 }
@@ -252,14 +256,24 @@ int MACFluidGrid::fluidCellCount() const
     return m_fluidCellCount;
 }
 
-float MACFluidGrid::trueU(int i, int j)
+float MACFluidGrid::lerpU(int i, int j, float factor)
 {
-    return ((getU(i,j) + getU(i+1,j))/2.f);
+    return std::lerp(getU(i,j),getU(i+1,j),factor);
 }
 
-float MACFluidGrid::trueV(int i, int j)
+float MACFluidGrid::lerpV(int i, int j, float factor)
 {
-    return ((getV(i,j) + getV(i,j+1))/2.f);
+    return std::lerp(getV(i,j),getV(i,j+1),factor);
+}
+
+Vertex MACFluidGrid::velocityAt(float i, float j)
+{
+    int iIdx = static_cast<int>(std::floor(i));
+    int jIdx = static_cast<int>(std::floor(j));
+    float iLerp = math::frac(i);
+    float jLerp = math::frac(j);
+
+    return Vertex(lerpU(iIdx, jIdx, iLerp),lerpV(iIdx, jIdx, jLerp));
 }
 
 const Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()

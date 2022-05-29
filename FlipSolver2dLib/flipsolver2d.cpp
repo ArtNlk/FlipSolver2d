@@ -6,6 +6,7 @@
 #include "simsettings.h"
 #include "dynamicuppertriangularsparsematrix.h"
 #include "logger.h"
+#include "functions.h"
 
 FlipSolver::FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize,  double sideLength, int extrapRadius, bool vonNeumannNeighbors) :
     m_grid(sizeX, sizeY),
@@ -80,6 +81,14 @@ void FlipSolver::project()
             }
         }
     }
+}
+
+void FlipSolver::advect()
+{
+    Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
+    countParticles(particleCounts);
+    reseedParticles(particleCounts);
+    updateMaterialsFromParticles(particleCounts);
 }
 
 void FlipSolver::updateSdf()
@@ -176,13 +185,19 @@ void FlipSolver::addSink(Geometry2d &geometry)
 
 void FlipSolver::addMarkerParticle(Vertex particle)
 {
+    MarkerParticle p;
+    p.position = particle;
+    p.velocity = m_grid.velocityAt(particle.x(), particle.y());
+    m_markerParticles.push_back(p);
+}
+
+void FlipSolver::addMarkerParticle(MarkerParticle particle)
+{
     m_markerParticles.push_back(particle);
 }
 
-void FlipSolver::reseedParticles()
+void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
 {
-    Grid2d<int> particleCounts(m_grid.sizeI(),m_grid.sizeJ());
-    countParticles(particleCounts);
     for (int i = 0; i < m_grid.sizeI(); i++)
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
@@ -217,7 +232,7 @@ std::vector<Geometry2d> &FlipSolver::sinkObjects()
     return m_sinks;
 }
 
-std::vector<Vertex> &FlipSolver::markerParticles()
+std::vector<MarkerParticle> &FlipSolver::markerParticles()
 {
     return m_markerParticles;
 }
@@ -350,7 +365,7 @@ void FlipSolver::calcRhs(std::vector<double> &rhs)
             if (m_grid.isFluid(i,j))
             {
                 rhs[m_grid.linearFluidIndex(i,j)] = -scale * (m_grid.getU(i+1,j) - m_grid.getU(i,j)
-                                                          +m_grid.getV(i,j+1) - m_grid.getV(i,j));
+                                                              +m_grid.getV(i,j+1) - m_grid.getV(i,j));
 
                 if(m_grid.isSolid(i-1,j))
                 {
@@ -387,13 +402,40 @@ void FlipSolver::countParticles(Grid2d<int> &output)
     ASSERT(output.sizeI() == m_grid.sizeI());
     ASSERT(output.sizeJ() == m_grid.sizeJ());
     output.fill(0);
-    for(Vertex& p : m_markerParticles)
+    for(MarkerParticle& p : m_markerParticles)
     {
-        int i = std::floor(p.x());
-        int j = std::floor(p.y());
-        if(m_grid.isSource(i,j))
+        int i = std::floor(p.position.x());
+        int j = std::floor(p.position.y());
+        output.at(i,j) += 1;
+        if(m_grid.isSolid(i,j))
         {
-            output.at(i,j) += 1;
+            std::cout << "Particle in solid at " << i << "," << j << '\n';
+            debug() << "Particle in solid at " << i << "," << j;
+        }
+    }
+}
+
+void FlipSolver::updateMaterialsFromParticles(Grid2d<int> &particleCount)
+{
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(particleCount.at(i,j) != 0)
+            {
+                if(m_grid.isEmpty(i,j))
+                {
+                    m_grid.setMaterial(i,j,FluidCellMaterial::FLUID);
+                }
+            }
+            else
+            {
+                FluidCellMaterial m = m_grid.getMaterial(i,j);
+                if(m == FluidCellMaterial::FLUID)
+                {
+                    m_grid.setMaterial(i,j,FluidCellMaterial::EMPTY);
+                }
+            }
         }
     }
 }

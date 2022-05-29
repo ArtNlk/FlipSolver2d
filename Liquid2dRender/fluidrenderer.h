@@ -23,6 +23,13 @@ inline VectorRenderMode& operator++(VectorRenderMode& state, int) {
     return state;
 }
 
+enum ParticleRenderMode : int {PARTICLE_RENDER_VEOCITY,PARTICLE_RENDER_SOLID,PARTICLE_RENDER_ITER_END};
+inline ParticleRenderMode& operator++(ParticleRenderMode& state, int) {
+    const int i = static_cast<int>(state)+1;
+    state = static_cast<ParticleRenderMode>((i) % PARTICLE_RENDER_ITER_END);
+    return state;
+}
+
 class FluidRenderer
 {
 public:
@@ -47,6 +54,11 @@ public:
     inline VectorRenderMode& vectorRenderMode()
     {
         return m_vectorRenderMode;
+    }
+
+    inline ParticleRenderMode& particleRenderMode()
+    {
+        return m_particleRenderMode;
     }
 
     inline bool& vectorRenderEnabled()
@@ -105,12 +117,14 @@ protected:
     void updateGridFromSdf();
     void updateVectorsStaggered();
     void updateVectorsCentered();
-    void reloadParticles();
+    void reloadParticlesSolid();
+    void reloadParticlesVelocity();
     void updateVector(int x, int y, Vertex newVector);
     void setCellVertexColor(int vIndex, Color c);
     void setCellColor(int x, int y, Color c);
     void setVectorVertexColor(int vIndex, Color c);
     void setVectorColor(int x, int y, Color c);
+    void setParticleColor(int idx, Color c);
 
     unsigned int m_vbo_grid;
     unsigned int m_vao_grid;
@@ -151,6 +165,8 @@ protected:
     static const Color m_markerParticleColor;
     static const Color m_geometryColor;
 
+    static constexpr float m_velocityRangeMax = 5;
+
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;
     std::vector<float> m_vectorVerts;
@@ -160,6 +176,7 @@ protected:
     glm::mat4 m_projection;
     FluidRenderMode m_gridRenderMode;
     VectorRenderMode m_vectorRenderMode;
+    ParticleRenderMode m_particleRenderMode;
     bool m_vectorsEnabled;
     bool m_geometryEnabled;
     bool m_particlesEnabled;
