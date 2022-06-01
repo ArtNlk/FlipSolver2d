@@ -19,6 +19,11 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER] = "Vector center avg velocity";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_STAGGERED] = "Vector staggered velocity";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_ITER_END] = "Vectors off";
+
+    m_particleRenderModeTexts.assign(ParticleRenderMode::PARTICLE_RENDER_ITER_END + 1,"");
+    m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_VELOCITY] = "Particle velocity";
+    m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_SOLID] = "Particle render solid";
+    m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_ITER_END] = "Particles off";
 }
 
 void TextMenuRenderer::init()
@@ -51,6 +56,13 @@ void TextMenuRenderer::render()
 
     currentTextPos += m_geometryRenderModeOffset;
     m_textRenderer.renderText(m_fluidRenderer.geometryEnabled() ? "Geometry on" : "Geometry off",
+                                currentTextPos.x + widthBaseline,
+                                m_height - currentTextPos.y,
+                                1.0f,
+                                Color(255,255,255));
+
+    currentTextPos += m_vectorRenderModeOffset;
+    m_textRenderer.renderText(m_particleRenderModeTexts[m_fluidRenderer.particlesEnabled() ? m_fluidRenderer.particleRenderMode() : ParticleRenderMode::PARTICLE_RENDER_ITER_END],
                                 currentTextPos.x + widthBaseline,
                                 m_height - currentTextPos.y,
                                 1.0f,

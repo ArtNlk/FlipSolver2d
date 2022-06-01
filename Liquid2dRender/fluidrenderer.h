@@ -23,7 +23,7 @@ inline VectorRenderMode& operator++(VectorRenderMode& state, int) {
     return state;
 }
 
-enum ParticleRenderMode : int {PARTICLE_RENDER_VEOCITY,PARTICLE_RENDER_SOLID,PARTICLE_RENDER_ITER_END};
+enum ParticleRenderMode : int {PARTICLE_RENDER_VELOCITY,PARTICLE_RENDER_SOLID,PARTICLE_RENDER_ITER_END};
 inline ParticleRenderMode& operator++(ParticleRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
     state = static_cast<ParticleRenderMode>((i) % PARTICLE_RENDER_ITER_END);
@@ -81,6 +81,17 @@ public:
     {
         m_geometryEnabled = !m_geometryEnabled;
         return m_geometryEnabled;
+    }
+
+    inline bool& particlesEnabled()
+    {
+        return m_particlesEnabled;
+    }
+
+    inline bool toggleParticles()
+    {
+        m_particlesEnabled = !m_particlesEnabled;
+        return m_particlesEnabled;
     }
 
     static const Color &velocityVectorColor();
@@ -165,7 +176,8 @@ protected:
     static const Color m_markerParticleColor;
     static const Color m_geometryColor;
 
-    static constexpr float m_velocityRangeMax = 5;
+    static constexpr float m_velocityRangeMax = 1;
+    static constexpr float m_velocityComponentRangeMax = 1;
 
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;

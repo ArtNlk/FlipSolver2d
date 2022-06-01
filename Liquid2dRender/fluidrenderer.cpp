@@ -47,6 +47,7 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
     m_gridVertexCount(0),
     m_gridRenderMode(FluidRenderMode::RENDER_MATERIAL),
     m_vectorRenderMode(VectorRenderMode::VECTOR_RENDER_CENTER),
+    m_particleRenderMode(ParticleRenderMode::PARTICLE_RENDER_VELOCITY),
     m_vectorsEnabled(true),
     m_geometryEnabled(true),
     m_particlesEnabled(true),
@@ -540,7 +541,7 @@ void FluidRenderer::updateGridFromUComponent()
         for (int j = 0; j < gridWidth; j++)
         {
             float brightness = std::clamp(std::abs(m_solver->grid().getU(i,j))
-                    / m_velocityRangeMax,0.f,1.f);
+                    / m_velocityComponentRangeMax,0.f,1.f);
             setCellColor(i,j,Color(brightness,brightness,brightness));
         }
     }
@@ -556,7 +557,7 @@ void FluidRenderer::updateGridFromVComponent()
         for (int j = 0; j < gridWidth; j++)
         {
             float brightness = std::clamp(std::abs(m_solver->grid().getV(i,j))
-                    / m_velocityRangeMax,0.f,1.f);
+                    / m_velocityComponentRangeMax,0.f,1.f);
             setCellColor(i,j,Color(brightness,brightness,brightness));
         }
     }
@@ -608,15 +609,16 @@ void FluidRenderer::updateVectors()
 void FluidRenderer::updateParticles()
 {
     switch (m_particleRenderMode) {
-    case PARTICLE_RENDER_VEOCITY:
+    case PARTICLE_RENDER_VELOCITY:
+        reloadParticlesVelocity();
         break;
     case PARTICLE_RENDER_SOLID:
+        reloadParticlesSolid();
         break;
     case PARTICLE_RENDER_ITER_END:
         std::cout << "Invalid particle render mode!";
         break;
     }
-    reloadParticlesSolid();
 }
 
 void FluidRenderer::updateVectorsStaggered()
@@ -652,8 +654,8 @@ void FluidRenderer::updateVectorsCentered()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceVelocity(m_solver->grid().lerpU(i,j,0.5),
-                                     m_solver->grid().lerpV(i,j,0.5));
+            Vertex gridspaceVelocity(m_solver->grid().lerpU(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5),
+                                     m_solver->grid().lerpV(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5));
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceVelocity.distFromZero() / unitLengthVelocity;
             //float scaleFactor = 1;
@@ -688,7 +690,9 @@ void FluidRenderer::reloadParticlesVelocity()
     m_particleVerts.clear();
     for(MarkerParticle &particle : m_solver->markerParticles())
     {
-        addParticle(particle.position,m_markerParticleColor);
+        float r = std::abs(particle.velocity.x()) / m_velocityRangeMax;
+        float g = std::abs(particle.velocity.y()) / m_velocityRangeMax;
+        addParticle(particle.position,Color(r,g,0.f));
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {

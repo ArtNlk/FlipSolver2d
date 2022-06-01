@@ -102,7 +102,15 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                 break;
 
                 case GLFW_KEY_T:
-                    m_solver->addMarkerParticle(Vertex(33.3f,14.7f));
+                    if(mods & GLFW_MOD_SHIFT)
+                    {
+                        initGridForProjection();
+                    }
+                    else
+                    {
+                        m_solver->project();
+                        m_fluidRenderer.updateGrid();
+                    }
                     m_fluidRenderer.update();
                 break;
 
@@ -142,12 +150,11 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                 case GLFW_KEY_P:
                     if(mods & GLFW_MOD_SHIFT)
                     {
-                        initGridForProjection();
+                        m_fluidRenderer.toggleParticles();
                     }
                     else
                     {
-                        m_solver->project();
-                        m_fluidRenderer.updateGrid();
+                        m_fluidRenderer.particleRenderMode()++;
                     }
                     m_fluidRenderer.update();
                 break;
@@ -163,7 +170,7 @@ void LiquidRenderApp::setupGeometry()
     geo.addVertex(Vertex(10,5));
     geo.addVertex(Vertex(10,15));
     geo.addVertex(Vertex(5,10));
-    m_solver->addGeometry(geo);
+    m_solver->addSource(geo);
 
     geo = Geometry2d();
     geo.addVertex(Vertex(15,15));
@@ -379,19 +386,20 @@ void LiquidRenderApp::initGridForProjection()
     resetGrid();
     Index2d fluidTopLeft(15,0);
     Index2d fluidBottomRight(99,99);
+    srand(0);
     //m_solver->grid().fillMaterialRect(FluidCellMaterial::SOLID,0,0,99,99);
     m_solver->grid().fillMaterialRect(FluidCellMaterial::FLUID,fluidTopLeft,fluidBottomRight);
-    float u = static_cast<float>(rand() % 20 - 10) / 10;
-    float v = static_cast<float>(rand() % 20 - 10) / 10;
+    float u = static_cast<float>(rand() % 1);
+    float v = static_cast<float>(rand() % 1);
     for (int i = 0; i < m_solver->grid().sizeI(); i++)
     {
         for (int j = 0; j < m_solver->grid().sizeJ(); j++)
         {
-            //m_solver->grid().setU(i,j,static_cast<float>(rand() % 20 - 10) / 10);
-            //m_solver->grid().setV(i,j,static_cast<float>(rand() % 20 - 10) / 10);
+            m_solver->grid().setU(i,j,static_cast<float>(rand()) / RAND_MAX);
+            m_solver->grid().setV(i,j,static_cast<float>(rand()) / RAND_MAX);
             m_solver->updateSolids();
-            m_solver->grid().setU(i,j,u);
-            m_solver->grid().setV(i,j,v);
+            //m_solver->grid().setU(i,j,u);
+            //m_solver->grid().setV(i,j,v);
         }
     }
     m_solver->grid().fillKnownFlagsU(true);

@@ -256,24 +256,69 @@ int MACFluidGrid::fluidCellCount() const
     return m_fluidCellCount;
 }
 
-float MACFluidGrid::lerpU(int i, int j, float factor)
+float MACFluidGrid::lerpU(float i, float j)
 {
-    return std::lerp(getU(i,j),getU(i+1,j),factor);
+    //Cells align in two ways:
+    //c2 or 2c
+    //43    34
+    Index2d currentCell(math::integr(i),math::integr(j));
+
+    Index2d cell2(currentCell.m_i,math::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
+
+    Index2d cell3(cell2.m_i + 1, cell2.m_j);
+
+    Index2d cell4(currentCell.m_i + 1, currentCell.m_j);
+
+    float iLerpFactor = math::frac(i);
+    float jLerpFactor = math::frac(j) < 0.5f ? 0.5f - math::frac(j) : math::frac(j) - 0.5f;
+
+    float v1 = math::lerp(getU(currentCell),getU(cell4),iLerpFactor);
+    float v2 = 0;
+    if(m_velocityGridU.inBounds(cell3))
+    {
+        v2 = math::lerp(getU(cell2),getU(cell3),iLerpFactor);
+    }
+    else
+    {
+        v2 = v1;
+    }
+
+    return math::lerp(v1,v2,jLerpFactor);
 }
 
-float MACFluidGrid::lerpV(int i, int j, float factor)
+float MACFluidGrid::lerpV(float i, float j)
 {
-    return std::lerp(getV(i,j),getV(i,j+1),factor);
+    //Cells align in two ways:
+    //c4 or 23
+    //23    c4
+    Index2d currentCell(math::integr(i),math::integr(j));
+
+    Index2d cell2(math::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1,currentCell.m_j);
+
+    Index2d cell3(cell2.m_i, cell2.m_j + 1);
+
+    Index2d cell4(currentCell.m_i, currentCell.m_j + 1);
+
+    float iLerpFactor = math::frac(i) < 0.5f ? 0.5f - math::frac(i) : math::frac(i) - 0.5f;
+    float jLerpFactor = math::frac(j);
+
+    float v1 = math::lerp(getV(currentCell),getV(cell4),jLerpFactor);
+    float v2 = 0;
+    if(m_velocityGridV.inBounds(cell3))
+    {
+        v2 = math::lerp(getV(cell2),getV(cell3),jLerpFactor);
+    }
+    else
+    {
+        v2 = v1;
+    }
+
+    return math::lerp(v1,v2,iLerpFactor);
 }
 
 Vertex MACFluidGrid::velocityAt(float i, float j)
 {
-    int iIdx = static_cast<int>(std::floor(i));
-    int jIdx = static_cast<int>(std::floor(j));
-    float iLerp = math::frac(i);
-    float jLerp = math::frac(j);
-
-    return Vertex(lerpU(iIdx, jIdx, iLerp),lerpV(iIdx, jIdx, jLerp));
+    return Vertex(lerpU(i, j),lerpV(i, j));
 }
 
 const Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()

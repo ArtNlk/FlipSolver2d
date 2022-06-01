@@ -30,6 +30,7 @@ protected:
     TextRenderer m_textRenderer;
     std::vector<std::string> m_renderModeTexts;
     std::vector<std::string> m_vectorRenderModeTexts;
+    std::vector<std::string> m_particleRenderModeTexts;
 
     int m_x;
     int m_y;

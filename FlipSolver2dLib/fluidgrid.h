@@ -99,9 +99,9 @@ public:
 
     int fluidCellCount() const;
 
-    float lerpU(int i, int j, float factor);
+    float lerpU(float i, float j);
 
-    float lerpV(int i, int j, float factor);
+    float lerpV(float i, float j);
 
     Vertex velocityAt(float i, float j);
 
