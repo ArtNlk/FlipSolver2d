@@ -9,7 +9,7 @@ namespace vmath
 {
 inline double dot(std::vector<double> &v1, std::vector<double> &v2)
 {
-    ASSERT(v1.size() == v2.size())
+    ASSERT(v1.size() == v2.size());
     double result = 0;
     for(int i = 0; i < v1.size(); i++)
     {
@@ -34,7 +34,7 @@ inline double isZero(const std::vector<double> &v1,const double eps = 1.0e-15)
 
 inline void addMul(std::vector<double> &output,const std::vector<double> &vec1, const std::vector<double> &vec2, double value)
 {
-    ASSERT(output.size() == vec1.size() && output.size() == vec2.size())
+    ASSERT(output.size() == vec1.size() && output.size() == vec2.size());
     for(int i = 0; i < output.size(); i++)
     {
         output[i] = vec1[i] + vec2[i]*value;
@@ -43,7 +43,7 @@ inline void addMul(std::vector<double> &output,const std::vector<double> &vec1, 
 
 inline void subMul(std::vector<double> &output,const std::vector<double> &vec1, const std::vector<double> &vec2, double value)
 {
-    ASSERT(output.size() == vec1.size() && output.size() == vec2.size())
+    ASSERT(output.size() == vec1.size() && output.size() == vec2.size());
     for(int i = 0; i < output.size(); i++)
     {
         output[i] = vec1[i] - vec2[i]*value;

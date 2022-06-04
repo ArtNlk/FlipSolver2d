@@ -20,7 +20,7 @@ struct MarkerParticle
 class FlipSolver
 {
 public:
-    FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize, double sideLength, int extrapRadius = 1, bool vonNeumannNeighbors = false);
+    FlipSolver(int sizeX, int sizeY, int extrapRadius = 1, bool vonNeumannNeighbors = false);
 
     inline MACFluidGrid &grid() {return m_grid;}
 
@@ -34,6 +34,8 @@ public:
     void project();
 
     void advect();
+
+    void step();
 
     void updateSdf();
 
@@ -78,6 +80,12 @@ protected:
     void countParticles(Grid2d<int> &output);
 
     void updateMaterialsFromParticles(Grid2d<int> &particleCount);
+
+    Vertex rk3Integrate(Vertex currentPosition, float dt);
+
+    void particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gridV);
+
+    void applyGlobalAcceleration();
 
     int m_extrapolationRadius;
     bool m_useVonNeumannNeighborhood;

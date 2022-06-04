@@ -19,15 +19,13 @@ public:
     inline float &y() {return m_y;}
     inline float &z() {return m_z;}
 
-    inline Vertex operator-(Vertex rhs)
-    {
-        return Vertex(m_x - rhs.m_x, m_y - rhs.m_y, m_z - rhs.m_z);
-    }
+    friend Vertex operator-(Vertex lhs, Vertex rhs);
 
-    inline Vertex operator*(float rhs)
-    {
-        return Vertex(m_x*rhs, m_y*rhs, m_z*rhs);
-    }
+    friend Vertex operator*(Vertex lhs, float rhs);
+
+    friend Vertex operator*(float lhs, Vertex rhs);
+
+    friend Vertex operator+(Vertex lhs, Vertex rhs);
 
     inline float dot(Vertex rhs)
     {

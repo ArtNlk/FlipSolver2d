@@ -6,18 +6,19 @@
 #include "simsettings.h"
 #include "dynamicuppertriangularsparsematrix.h"
 #include "logger.h"
-#include "functions.h"
+#include "mathfuncs.h"
 
-FlipSolver::FlipSolver(int sizeX, int sizeY, double fluidDensity, double timestepSize,  double sideLength, int extrapRadius, bool vonNeumannNeighbors) :
-    m_grid(sizeX, sizeY),
+FlipSolver::FlipSolver(int sizeX, int sizeY, int extrapRadius, bool vonNeumannNeighbors) :
     m_extrapolationRadius(extrapRadius),
-    m_useVonNeumannNeighborhood(vonNeumannNeighbors)
+    m_useVonNeumannNeighborhood(vonNeumannNeighbors),
+    m_grid(sizeX, sizeY)
 {
-    SimSettings::density() = fluidDensity;
-    SimSettings::dt() = timestepSize;
-    SimSettings::dx() = sideLength;
+    SimSettings::density() = 1;
+    SimSettings::dt() = 0.1;
+    SimSettings::dx() = 1;
     SimSettings::randomSeed() = 0;
-    SimSettings::particlesPerCell() = 8;
+    SimSettings::particlesPerCell() = 4;
+    SimSettings::globalAcceleration() = Vertex(9.8 / SimSettings::dx(),0);
     m_randEngine = std::mt19937(SimSettings::randomSeed());
 }
 
@@ -85,10 +86,44 @@ void FlipSolver::project()
 
 void FlipSolver::advect()
 {
+    for(int i = m_markerParticles.size() - 1; i >= 0; i--)
+    {
+        MarkerParticle &p = m_markerParticles[i];
+        p.position = rk3Integrate(p.position,SimSettings::dt());
+        if(m_grid.sdfAt(p.position.x(),p.position.y()) < 0.f)
+        {
+            p.position = m_grid.closestSurfacePoint(p.position);
+        }
+        if(!m_grid.inBounds(math::integr(p.position.x()),math::integr(p.position.y())))
+        {
+            m_markerParticles.erase(markerParticles().begin() + i);
+        }
+
+    }
+}
+
+void FlipSolver::step()
+{
     Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
     countParticles(particleCounts);
     reseedParticles(particleCounts);
     updateMaterialsFromParticles(particleCounts);
+    particleVelocityToGrid(m_grid.velocityGridU(),m_grid.velocityGridV());
+    extrapolateVelocityField();
+    Grid2d<float> prevU = m_grid.velocityGridU();
+    Grid2d<float> prevV = m_grid.velocityGridV();
+    applyGlobalAcceleration();
+    project();
+    extrapolateVelocityField();
+    float picRatio = 0.02f;
+    for(int i = m_markerParticles.size() - 1; i >= 0; i--)
+    {
+        MarkerParticle &p = m_markerParticles[i];
+        Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU),math::lerpVGrid(p.position.x(),p.position.y(),prevV));
+        Vertex newVelocity = m_grid.velocityAt(p.position);
+        p.velocity = picRatio * oldVelocity + (1.f-picRatio) * (p.velocity + (newVelocity - oldVelocity));
+    }
+    advect();
 }
 
 void FlipSolver::updateSdf()
@@ -101,7 +136,7 @@ void FlipSolver::updateSdf()
             float dist = std::numeric_limits<float>().max();
             for(Geometry2d& geo : m_geometry)
             {
-                dist = std::min(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx),dist);
+                dist = std::min(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) / dx,dist);
             }
             m_grid.setSdf(i,j,dist);
         }
@@ -210,7 +245,7 @@ void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
                 if(additionalParticles <= 0) continue;
                 for(int p = 0; p < additionalParticles; p++)
                 {
-                    addMarkerParticle(jitteredPosInCell(i,j));
+                    addMarkerParticle(MarkerParticle{jitteredPosInCell(i,j),Vertex()});
                 }
             }
         }
@@ -436,6 +471,89 @@ void FlipSolver::updateMaterialsFromParticles(Grid2d<int> &particleCount)
                     m_grid.setMaterial(i,j,FluidCellMaterial::EMPTY);
                 }
             }
+        }
+    }
+}
+
+Vertex FlipSolver::rk3Integrate(Vertex currentPosition, float dt)
+{
+    Vertex k1 = m_grid.velocityAt(currentPosition);
+    Vertex k2 = m_grid.velocityAt(currentPosition + dt * k1);
+    Vertex k3 = m_grid.velocityAt(currentPosition + 0.75f * dt * k2);
+
+    return currentPosition + (2.f/9.f) * dt * k1 + (3.f/9.f) * dt * k2 + (4.f/9.f) * dt * k3;
+}
+
+void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gridV)
+{
+    ASSERT(gridU.sizeI() == m_grid.velocityGridU().sizeI() && gridU.sizeJ() == m_grid.velocityGridU().sizeJ());
+    ASSERT(gridV.sizeI() == m_grid.velocityGridV().sizeI() && gridV.sizeJ() == m_grid.velocityGridV().sizeJ());
+
+    Grid2d<float> uWeights(gridU.sizeI(),gridU.sizeJ(),1e-10f);
+    Grid2d<float> vWeights(gridV.sizeI(),gridV.sizeJ(),1e-10f);
+
+    gridU.fill(0.f);
+    gridV.fill(0.f);
+    m_grid.knownFlagsGridU().fill(false);
+    m_grid.knownFlagsGridV().fill(false);
+
+    for(MarkerParticle &p : m_markerParticles)
+    {
+        int i = math::integr(p.position.x());
+        int j = math::integr(p.position.y());
+        //Run over all cells that this particle might affect
+        for (int iOffset = -1; iOffset < 3; iOffset++)
+        {
+            for (int jOffset = -1; jOffset < 3; jOffset++)
+            {
+                int iIdx = i+iOffset;
+                int jIdx = j+jOffset;
+                float weightU = math::qudraticBSpline(p.position.x() - (iIdx),
+                                                     p.position.y() - (static_cast<float>(jIdx) + 0.5f));
+
+                float weightV = math::qudraticBSpline(p.position.x() - static_cast<float>(iIdx) + 0.5f,
+                                                     p.position.y() - (jIdx));
+                if(uWeights.inBounds(iIdx,jIdx))
+                {
+                    uWeights.at(iIdx,jIdx) += weightU;
+                    gridU.at(iIdx,jIdx) += weightU * p.velocity.x();
+                    if(std::abs(weightU) < 1e-9f)
+                    {
+                        m_grid.knownFlagsGridU().at(iIdx,jIdx) = true;
+                    }
+                }
+
+                if(vWeights.inBounds(iIdx,jIdx))
+                {
+                    vWeights.at(iIdx,jIdx) += weightV;
+                    gridV.at(iIdx,jIdx) += weightV * p.velocity.y();
+                    if(std::abs(weightV) < 1e-9f)
+                    {
+                        m_grid.knownFlagsGridV().at(iIdx,jIdx) = true;
+                    }
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < m_grid.sizeI() + 1; i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ() + 1; j++)
+        {
+            if(gridU.inBounds(i,j)) gridU.at(i,j) /= uWeights.at(i,j);
+            if(gridV.inBounds(i,j)) gridV.at(i,j) /= vWeights.at(i,j);
+        }
+    }
+}
+
+void FlipSolver::applyGlobalAcceleration()
+{
+    for (int i = 0; i < m_grid.sizeI() + 1; i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ() + 1; j++)
+        {
+            if(m_grid.velocityGridU().inBounds(i,j)) m_grid.velocityGridU().at(i,j) += SimSettings::dt() * SimSettings::globalAcceleration().x();
+            if(m_grid.velocityGridV().inBounds(i,j)) m_grid.velocityGridV().at(i,j) += SimSettings::dt() * SimSettings::globalAcceleration().y();
         }
     }
 }

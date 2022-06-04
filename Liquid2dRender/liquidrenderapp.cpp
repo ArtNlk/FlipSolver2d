@@ -11,7 +11,7 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,1,0.5,1,false)),
+    m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,true)),
     m_fluidRenderer(m_solver,m_startWindowWidth,m_startWindowHeight),
     m_textMenuRenderer(0,0,m_startWindowWidth,m_startWindowHeight,m_fluidRenderer),
     m_renderRequested(false)
@@ -158,6 +158,11 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     }
                     m_fluidRenderer.update();
                 break;
+
+                case GLFW_KEY_S:
+                    m_solver->step();
+                    m_fluidRenderer.update();
+                break;
             }
         break;
     }
@@ -167,24 +172,27 @@ void LiquidRenderApp::setupGeometry()
 {
     Geometry2d geo;
     geo.addVertex(Vertex(5,5));
-    geo.addVertex(Vertex(10,5));
-    geo.addVertex(Vertex(10,15));
-    geo.addVertex(Vertex(5,10));
+    geo.addVertex(Vertex(15,5));
+    geo.addVertex(Vertex(15,20));
+    geo.addVertex(Vertex(5,15));
     m_solver->addSource(geo);
 
     geo = Geometry2d();
-    geo.addVertex(Vertex(15,15));
-    geo.addVertex(Vertex(20,25));
-    geo.addVertex(Vertex(25,10));
-    m_solver->addSink(geo);
+    geo.addVertex(Vertex(15,10));
+    geo.addVertex(Vertex(25,15));
+    geo.addVertex(Vertex(25,5));
+    m_solver->addGeometry(geo);
 
     geo = Geometry2d();
-    geo.addVertex(Vertex(10,70));
-    geo.addVertex(Vertex(40,70));
-    geo.addVertex(Vertex(35,50));
-    geo.addVertex(Vertex(35,30));
-    geo.addVertex(Vertex(30,30));
-    m_solver->addSource(geo);
+    geo.addVertex(Vertex(20,40));
+    geo.addVertex(Vertex(40,55));
+    geo.addVertex(Vertex(35,35));
+    geo.addVertex(Vertex(35,15));
+    geo.addVertex(Vertex(30,15));
+    m_solver->addGeometry(geo);
+
+    //m_solver->addMarkerParticle(MarkerParticle{Vertex(3.99,3.99),Vertex(0.75,0.75)});
+    //m_solver->addMarkerParticle(MarkerParticle{Vertex(3.01,3.01),Vertex(0.75,0.75)});
 }
 
 void LiquidRenderApp::setupFluidrender()
@@ -386,11 +394,14 @@ void LiquidRenderApp::initGridForProjection()
     resetGrid();
     Index2d fluidTopLeft(15,0);
     Index2d fluidBottomRight(99,99);
-    srand(0);
+    static int seed = 0;
+    srand(seed);
+    rand();
+    seed++;
     //m_solver->grid().fillMaterialRect(FluidCellMaterial::SOLID,0,0,99,99);
-    m_solver->grid().fillMaterialRect(FluidCellMaterial::FLUID,fluidTopLeft,fluidBottomRight);
-    float u = static_cast<float>(rand() % 1);
-    float v = static_cast<float>(rand() % 1);
+    //m_solver->grid().fillMaterialRect(FluidCellMaterial::FLUID,fluidTopLeft,fluidBottomRight);
+    float u = (static_cast<float>(rand()) / RAND_MAX) - 0.5f;
+    float v = (static_cast<float>(rand()) / RAND_MAX) - 0.5f;
     for (int i = 0; i < m_solver->grid().sizeI(); i++)
     {
         for (int j = 0; j < m_solver->grid().sizeJ(); j++)
@@ -398,8 +409,8 @@ void LiquidRenderApp::initGridForProjection()
             m_solver->grid().setU(i,j,static_cast<float>(rand()) / RAND_MAX);
             m_solver->grid().setV(i,j,static_cast<float>(rand()) / RAND_MAX);
             m_solver->updateSolids();
-            //m_solver->grid().setU(i,j,u);
-            //m_solver->grid().setV(i,j,v);
+            //m_solver->grid().setU(i,j,0);
+            //m_solver->grid().setV(i,j,1);
         }
     }
     m_solver->grid().fillKnownFlagsU(true);

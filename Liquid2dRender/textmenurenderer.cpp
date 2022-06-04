@@ -18,6 +18,7 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_vectorRenderModeTexts.assign(VectorRenderMode::VECTOR_RENDER_ITER_END + 1,"");
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER] = "Vector center avg velocity";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_STAGGERED] = "Vector staggered velocity";
+    m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_SDF_GRADIENT] = "Vector SDF gradient";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_ITER_END] = "Vectors off";
 
     m_particleRenderModeTexts.assign(ParticleRenderMode::PARTICLE_RENDER_ITER_END + 1,"");

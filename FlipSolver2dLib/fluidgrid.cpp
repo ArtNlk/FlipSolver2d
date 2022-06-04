@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "functions.h"
+#include "mathfuncs.h"
 
 MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
@@ -121,13 +121,13 @@ void MACFluidGrid::fillKnownFlagVRect(bool value, Index2d topLeft, Index2d botto
 
 FluidCellMaterial MACFluidGrid::getMaterial(Index2d index) const
 {
-    if(!inBounds(index)) return FluidCellMaterial::SOLID;
+    if(!inBounds(index)) return FluidCellMaterial::EMPTY;
     return m_materialGrid.at(index);
 }
 
 FluidCellMaterial MACFluidGrid::getMaterial(int i, int j) const
 {
-    if(!inBounds(i,j)) return FluidCellMaterial::SOLID;
+    if(!inBounds(i,j)) return FluidCellMaterial::EMPTY;
     return m_materialGrid.at(i,j);
 }
 
@@ -154,13 +154,13 @@ bool MACFluidGrid::isFluid(int i, int j)
 
 bool MACFluidGrid::isSolid(int i, int j)
 {
-    if(!inBounds(i,j)) return true;
+    if(!inBounds(i,j)) return false;
     return solidTest(m_materialGrid.at(i,j));
 }
 
 bool MACFluidGrid::isEmpty(int i, int j)
 {
-    if(!inBounds(i,j)) return false;
+    if(!inBounds(i,j)) return true;
     return emptyTest(m_materialGrid.at(i,j));
 }
 
@@ -172,7 +172,7 @@ bool MACFluidGrid::isSource(int i, int j)
 
 bool MACFluidGrid::isSink(int i, int j)
 {
-    if(!inBounds(i,j)) return false;
+    if(!inBounds(i,j)) return true;
     return sinkTest(m_materialGrid.at(i,j));
 }
 
@@ -256,69 +256,14 @@ int MACFluidGrid::fluidCellCount() const
     return m_fluidCellCount;
 }
 
-float MACFluidGrid::lerpU(float i, float j)
-{
-    //Cells align in two ways:
-    //c2 or 2c
-    //43    34
-    Index2d currentCell(math::integr(i),math::integr(j));
-
-    Index2d cell2(currentCell.m_i,math::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
-
-    Index2d cell3(cell2.m_i + 1, cell2.m_j);
-
-    Index2d cell4(currentCell.m_i + 1, currentCell.m_j);
-
-    float iLerpFactor = math::frac(i);
-    float jLerpFactor = math::frac(j) < 0.5f ? 0.5f - math::frac(j) : math::frac(j) - 0.5f;
-
-    float v1 = math::lerp(getU(currentCell),getU(cell4),iLerpFactor);
-    float v2 = 0;
-    if(m_velocityGridU.inBounds(cell3))
-    {
-        v2 = math::lerp(getU(cell2),getU(cell3),iLerpFactor);
-    }
-    else
-    {
-        v2 = v1;
-    }
-
-    return math::lerp(v1,v2,jLerpFactor);
-}
-
-float MACFluidGrid::lerpV(float i, float j)
-{
-    //Cells align in two ways:
-    //c4 or 23
-    //23    c4
-    Index2d currentCell(math::integr(i),math::integr(j));
-
-    Index2d cell2(math::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1,currentCell.m_j);
-
-    Index2d cell3(cell2.m_i, cell2.m_j + 1);
-
-    Index2d cell4(currentCell.m_i, currentCell.m_j + 1);
-
-    float iLerpFactor = math::frac(i) < 0.5f ? 0.5f - math::frac(i) : math::frac(i) - 0.5f;
-    float jLerpFactor = math::frac(j);
-
-    float v1 = math::lerp(getV(currentCell),getV(cell4),jLerpFactor);
-    float v2 = 0;
-    if(m_velocityGridV.inBounds(cell3))
-    {
-        v2 = math::lerp(getV(cell2),getV(cell3),jLerpFactor);
-    }
-    else
-    {
-        v2 = v1;
-    }
-
-    return math::lerp(v1,v2,iLerpFactor);
-}
-
 Vertex MACFluidGrid::velocityAt(float i, float j)
 {
-    return Vertex(lerpU(i, j),lerpV(i, j));
+    return Vertex(math::lerpUGrid(i, j, m_velocityGridU),math::lerpVGrid(i, j, m_velocityGridV));
+}
+
+Vertex MACFluidGrid::velocityAt(Vertex position)
+{
+    return velocityAt(position.x(),position.y());
 }
 
 const Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
@@ -346,9 +291,19 @@ Grid2d<bool> &MACFluidGrid::knownFlagsGridV()
     return m_knownFlagsV;
 }
 
+Grid2d<float> &MACFluidGrid::sdfGrid()
+{
+    return m_sdf;
+}
+
 float MACFluidGrid::sdf(int i, int j)
 {
     return m_sdf.at(i,j);
+}
+
+float MACFluidGrid::sdfAt(float i, float j)
+{
+    return math::lerpCenteredGrid(i,j,m_sdf);
 }
 
 float MACFluidGrid::sdf(Index2d index)
@@ -364,6 +319,41 @@ void MACFluidGrid::setSdf(int i, int j, float value)
 void MACFluidGrid::setSdf(Index2d index, float value)
 {
     m_sdf.at(index) = value;
+}
+
+Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
+{
+    Vertex closestPoint = pos;
+    float sdf = math::lerpCenteredGrid(pos.x(),pos.y(),m_sdf);
+    Vertex grad = math::gradCenteredGrid(pos.x(),pos.y(),m_sdf);
+    static const int iterationLimit = 100;
+    static const int internalIterationLimit = 10;
+    for(int i = 0; i < iterationLimit; i++)
+    {
+        float alpha = 1;
+        for(int j = 0; j < internalIterationLimit; j++)
+        {
+            Vertex q = closestPoint - alpha*sdf*grad;
+            float temp = std::abs(math::lerpCenteredGrid(q.x(),q.y(),m_sdf));
+            if(std::abs(math::lerpCenteredGrid(q.x(),q.y(),m_sdf)) < std::abs(sdf))
+            {
+                closestPoint = q;
+                sdf = math::lerpCenteredGrid(q.x(),q.y(),m_sdf);
+                grad = math::gradCenteredGrid(q.x(),q.y(),m_sdf);
+                if(std::abs(sdf) < 1e-5f)
+                {
+                    std::cout << "returned true" << std::endl;
+                    return closestPoint;
+                }
+            }
+            else
+            {
+                alpha *= 0.7f;
+            }
+        }
+    }
+    std::cout << "returned best guess" << std::endl;
+    return closestPoint;
 }
 
 void MACFluidGrid::updateLinearToFluidMapping()

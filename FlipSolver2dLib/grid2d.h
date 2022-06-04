@@ -15,6 +15,13 @@ public:
         m_data.assign(sizeI*sizeJ,initValue);
     }
 
+    inline void swap(Grid2d<T> other)
+    {
+        std::swap(m_sizeI,other.m_sizeI);
+        std::swap(m_sizeJ,other.m_sizeJ);
+        m_data.swap(other.m_data);
+    }
+
     inline T& at(int i, int j)
     {
         ASSERT_BETWEEN(i,-1,m_sizeI);

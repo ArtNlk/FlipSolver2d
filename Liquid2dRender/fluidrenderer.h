@@ -16,7 +16,7 @@ inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
     return state;
 }
 
-enum VectorRenderMode : int {VECTOR_RENDER_CENTER,VECTOR_RENDER_STAGGERED,VECTOR_RENDER_ITER_END};
+enum VectorRenderMode : int {VECTOR_RENDER_CENTER,VECTOR_RENDER_STAGGERED,VECTOR_RENDER_SDF_GRADIENT,VECTOR_RENDER_ITER_END};
 inline VectorRenderMode& operator++(VectorRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
     state = static_cast<VectorRenderMode>((i) % VECTOR_RENDER_ITER_END);
@@ -128,6 +128,7 @@ protected:
     void updateGridFromSdf();
     void updateVectorsStaggered();
     void updateVectorsCentered();
+    void updateVectorsSdfGrad();
     void reloadParticlesSolid();
     void reloadParticlesVelocity();
     void updateVector(int x, int y, Vertex newVector);
@@ -177,7 +178,7 @@ protected:
     static const Color m_geometryColor;
 
     static constexpr float m_velocityRangeMax = 1;
-    static constexpr float m_velocityComponentRangeMax = 1;
+    static constexpr float m_velocityComponentRangeMax = 5;
 
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;

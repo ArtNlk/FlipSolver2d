@@ -9,6 +9,7 @@
 
 #include "globalcallbackhandler.h"
 #include "simsettings.h"
+#include "mathfuncs.h"
 
 const Color FluidRenderer::m_emptyColor = Color(255,255,255);
 const Color FluidRenderer::m_fluidColor = Color(44, 95, 150);
@@ -86,7 +87,7 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
 void FluidRenderer::init()
 {
     loadGeometry();
-    reloadParticlesSolid();
+    updateParticles();
     setupGl();
     updateGrid();
     updateVectors();
@@ -516,8 +517,8 @@ void FluidRenderer::updateGridFromVelocity()
         {
             //float r = (m_solver->grid().getU(i,j) - min) / diff;
             //float g = (m_solver->grid().getV(i,j) - min) / diff;
-            float r = (std::abs(m_solver->grid().getU(i,j))) / m_velocityRangeMax;
-            float g = (std::abs(m_solver->grid().getV(i,j))) / m_velocityRangeMax;
+            float r = (std::abs(m_solver->grid().getU(i,j))) / m_velocityComponentRangeMax;
+            float g = (std::abs(m_solver->grid().getV(i,j))) / m_velocityComponentRangeMax;
             setCellColor(i,j,Color(r,g,0.0));
         }
     }
@@ -575,6 +576,11 @@ void FluidRenderer::updateGridFromSdf()
         {
             float dist = m_solver->grid().sdf(i,j);
             float brightness = std::pow(std::abs(dist) / max,0.4);
+//            if (std::abs(dist - 10.f) < 1e-0f)
+//            {
+//                setCellColor(i,j,Color(255,255,255));
+//                continue;
+//            }
             if(dist <= 0.f)
             {
                 setCellColor(i,j,Color(static_cast<int>(87 * brightness), static_cast<int>(202 * brightness), static_cast<int>(255 * brightness)));
@@ -597,6 +603,9 @@ void FluidRenderer::updateVectors()
         break;
     case VECTOR_RENDER_STAGGERED:
         updateVectorsStaggered();
+        break;
+    case VECTOR_RENDER_SDF_GRADIENT:
+        updateVectorsSdfGrad();
         break;
     case VECTOR_RENDER_ITER_END:
         std::cout << "Invalid vector render mode!";
@@ -636,8 +645,8 @@ void FluidRenderer::updateVectorsStaggered()
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceVelocity.distFromZero() / unitLengthVelocity;
             //float scaleFactor = 1;
-            Vertex newVector = Vertex(gridspaceVelocity.x() * scaleFactor,
-                                       gridspaceVelocity.y() * scaleFactor);
+            Vertex newVector = Vertex(gridspaceVelocity.y() * scaleFactor,
+                                       gridspaceVelocity.x() * scaleFactor);
             updateVector(i,j,newVector);
         }
     }
@@ -654,13 +663,33 @@ void FluidRenderer::updateVectorsCentered()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceVelocity(m_solver->grid().lerpU(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5),
-                                     m_solver->grid().lerpV(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5));
+            Vertex gridspaceVelocity(math::lerpUGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().velocityGridU()),
+                                     math::lerpVGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().velocityGridV()));
             //Vertex gridspaceVelocity(1,0);
-            float scaleFactor = gridspaceVelocity.distFromZero() / unitLengthVelocity;
+            float scaleFactor = gridspaceVelocity.distFromZero() / SimSettings::dx();
             //float scaleFactor = 1;
-            Vertex newVector = Vertex((gridspaceVelocity.x() * scaleFactor),
-                                       (gridspaceVelocity.y() * scaleFactor));
+            Vertex newVector = Vertex((gridspaceVelocity.y() / scaleFactor),
+                                       (gridspaceVelocity.x() / scaleFactor));
+            updateVector(i,j,newVector);
+        }
+    }
+}
+
+void FluidRenderer::updateVectorsSdfGrad()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    Vertex vEnd;
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            Vertex gridspaceSdf = math::gradCenteredGrid(static_cast<float>(i) +0.5f,static_cast<float>(j) +0.5f, m_solver->grid().sdfGrid());
+            //Vertex gridspaceVelocity(1,0);
+            float scaleFactor = gridspaceSdf.distFromZero() / SimSettings::dx();
+            //float scaleFactor = 1;
+            Vertex newVector = Vertex((gridspaceSdf.y() / scaleFactor),
+                                       (gridspaceSdf.x() / scaleFactor));
             updateVector(i,j,newVector);
         }
     }

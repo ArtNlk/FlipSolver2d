@@ -99,11 +99,9 @@ public:
 
     int fluidCellCount() const;
 
-    float lerpU(float i, float j);
-
-    float lerpV(float i, float j);
-
     Vertex velocityAt(float i, float j);
+
+    Vertex velocityAt(Vertex position);
 
 //    inline FluidCell at(int i, int j)
 //    {
@@ -133,13 +131,19 @@ public:
 
     Grid2d<bool> &knownFlagsGridV();
 
+    Grid2d<float> &sdfGrid();
+
     float sdf(int i, int j);
+
+    float sdfAt(float i, float j);
 
     float sdf(Index2d index);
 
     void setSdf(int i, int j, float value);
 
     void setSdf(Index2d index, float value);
+
+    Vertex closestSurfacePoint(Vertex pos);
 
     void updateLinearToFluidMapping();
 

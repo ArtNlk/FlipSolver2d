@@ -1,6 +1,7 @@
 #ifndef SIMSETTINGS_H
 #define SIMSETTINGS_H
 
+#include "geometry2d.h"
 
 class SimSettings
 {
@@ -37,6 +38,11 @@ public:
         return m_instance.m_particlesPerCell;
     }
 
+    static inline Vertex& globalAcceleration()
+    {
+        return m_instance.m_globalAcceleration;
+    }
+
 protected:
     static SimSettings m_instance;
 
@@ -45,6 +51,7 @@ protected:
     double m_density;
     unsigned int m_seed;
     int m_particlesPerCell;
+    Vertex m_globalAcceleration;
 };
 
 #endif // SIMSETTINGS_H

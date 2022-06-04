@@ -1,5 +1,25 @@
 #include "geometry2d.h"
 
+Vertex operator-(Vertex lhs, Vertex rhs)
+{
+    return Vertex(lhs.m_x - rhs.m_x, lhs.m_y - rhs.m_y, lhs.m_z - rhs.m_z);
+}
+
+Vertex operator*(Vertex lhs, float rhs)
+{
+    return Vertex(lhs.m_x*rhs, lhs.m_y*rhs, lhs.m_z*rhs);
+}
+
+Vertex operator*(float lhs, Vertex rhs)
+{
+    return Vertex(rhs.m_x*lhs, rhs.m_y*lhs, rhs.m_z*lhs);
+}
+
+Vertex operator+(Vertex lhs, Vertex rhs)
+{
+    return Vertex(lhs.m_x + rhs.m_x, lhs.m_y + rhs.m_y, lhs.m_z + rhs.m_z);
+}
+
 Geometry2d::Geometry2d()
 {
 }
