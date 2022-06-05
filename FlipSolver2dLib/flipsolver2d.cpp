@@ -8,17 +8,11 @@
 #include "logger.h"
 #include "mathfuncs.h"
 
-FlipSolver::FlipSolver(int sizeX, int sizeY, int extrapRadius, bool vonNeumannNeighbors) :
+FlipSolver::FlipSolver(int extrapRadius, bool vonNeumannNeighbors) :
     m_extrapolationRadius(extrapRadius),
     m_useVonNeumannNeighborhood(vonNeumannNeighbors),
-    m_grid(sizeX, sizeY)
+    m_grid(SimSettings::gridSizeI(), SimSettings::gridSizeJ())
 {
-    SimSettings::density() = 1;
-    SimSettings::dt() = 0.1;
-    SimSettings::dx() = 1;
-    SimSettings::randomSeed() = 0;
-    SimSettings::particlesPerCell() = 4;
-    SimSettings::globalAcceleration() = Vertex(9.8 / SimSettings::dx(),0);
     m_randEngine = std::mt19937(SimSettings::randomSeed());
 }
 
@@ -38,7 +32,7 @@ void FlipSolver::project()
 
     debug() << "pressures = " << pressures;
 
-    double scale = SimSettings::dt() / (SimSettings::density() * SimSettings::dx());
+    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx());
 
     for (int i = m_grid.sizeI() - 1; i >= 0; i--)
     {
@@ -86,20 +80,42 @@ void FlipSolver::project()
 
 void FlipSolver::advect()
 {
+    int maxSubsteps = -1;
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-        p.position = rk3Integrate(p.position,SimSettings::dt());
-        if(m_grid.sdfAt(p.position.x(),p.position.y()) < 0.f)
+        float substepTime = 0.f;
+        bool finished = false;
+        int substepCount = 0;
+        while(!finished)
         {
-            p.position = m_grid.closestSurfacePoint(p.position);
+            Vertex velocity = m_grid.velocityAt(p.position.x(),p.position.y());
+            float maxSubstepSize = 1.f/(velocity.distFromZero() + 1e-15f);
+            if(substepTime + maxSubstepSize >= SimSettings::stepDt())
+            {
+                maxSubstepSize = SimSettings::stepDt() - substepTime;
+                finished = true;
+            }
+            else if(substepTime + 2.f*maxSubstepSize >= SimSettings::stepDt())
+            {
+                maxSubstepSize = 0.5f*(SimSettings::stepDt() - substepTime);
+            }
+            p.position = rk3Integrate(p.position,maxSubstepSize);
+            if(m_grid.sdfAt(p.position.x(),p.position.y()) < 0.f)
+            {
+                p.position = m_grid.closestSurfacePoint(p.position);
+            }
+            substepTime += maxSubstepSize;
+            substepCount++;
         }
+        maxSubsteps = std::max(substepCount,maxSubsteps);
         if(!m_grid.inBounds(math::integr(p.position.x()),math::integr(p.position.y())))
         {
             m_markerParticles.erase(markerParticles().begin() + i);
         }
 
     }
+    std::cout << "Advection done in max " << maxSubsteps << " substeps" << std::endl;
 }
 
 void FlipSolver::step()
@@ -124,6 +140,14 @@ void FlipSolver::step()
         p.velocity = picRatio * oldVelocity + (1.f-picRatio) * (p.velocity + (newVelocity - oldVelocity));
     }
     advect();
+}
+
+void FlipSolver::stepFrame()
+{
+    for(int i = 0; i < SimSettings::substeps(); i++)
+    {
+        step();
+    }
 }
 
 void FlipSolver::updateSdf()
@@ -240,6 +264,10 @@ void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
             if(m_grid.isSource(i,j))
             {
                 int particleCount = particleCounts.at(i,j);
+                if(particleCount > 20)
+                {
+                    std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
+                }
                 //std::cout << particleCount << " at " << i << " , " << j << std::endl;
                 int additionalParticles = SimSettings::particlesPerCell() - particleCount;
                 if(additionalParticles <= 0) continue;
@@ -552,8 +580,8 @@ void FlipSolver::applyGlobalAcceleration()
     {
         for (int j = 0; j < m_grid.sizeJ() + 1; j++)
         {
-            if(m_grid.velocityGridU().inBounds(i,j)) m_grid.velocityGridU().at(i,j) += SimSettings::dt() * SimSettings::globalAcceleration().x();
-            if(m_grid.velocityGridV().inBounds(i,j)) m_grid.velocityGridV().at(i,j) += SimSettings::dt() * SimSettings::globalAcceleration().y();
+            if(m_grid.velocityGridU().inBounds(i,j)) m_grid.velocityGridU().at(i,j) += SimSettings::stepDt() * SimSettings::globalAcceleration().x();
+            if(m_grid.velocityGridV().inBounds(i,j)) m_grid.velocityGridV().at(i,j) += SimSettings::stepDt() * SimSettings::globalAcceleration().y();
         }
     }
 }

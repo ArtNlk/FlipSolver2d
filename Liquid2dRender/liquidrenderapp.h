@@ -57,9 +57,6 @@ protected:
 
     bool m_renderRequested;
 
-    static const int m_gridSizeI = 100;
-    static const int m_gridSizeJ = 140;
-
     static const int m_startWindowWidth = 900;
     static const int m_startWindowHeight = 900;
 

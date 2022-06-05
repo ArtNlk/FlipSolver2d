@@ -25,7 +25,7 @@ DynamicSparseMatrix::DynamicSparseMatrix(MACFluidGrid &grid) :
     {
         m_rows[i].reserve(7);
     }
-    double scale = SimSettings::dt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
+    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
 
     for(int i = 0; i < m_sizeI; i++)
     {

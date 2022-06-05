@@ -13,9 +13,9 @@ public:
         return m_instance;
     }
 
-    static inline double& dt()
+    static inline double& stepDt()
     {
-        return m_instance.m_dt;
+        return m_instance.m_stepDt;
     }
 
     static inline double& dx()
@@ -43,15 +43,57 @@ public:
         return m_instance.m_globalAcceleration;
     }
 
+    static inline int& domainSizeI()
+    {
+        return m_instance.m_domainSizeI;
+    }
+
+    static inline int& domainSizeJ()
+    {
+        return m_instance.m_domainSizeJ;
+    }
+
+    static inline int& gridSizeI()
+    {
+        return m_instance.m_gridSizeI;
+    }
+
+    static inline int& gridSizeJ()
+    {
+        return m_instance.m_gridSizeJ;
+    }
+
+    static inline float& resolution()
+    {
+        return m_instance.m_resolution;
+    }
+
+    static inline int& fps()
+    {
+        return m_instance.m_fps;
+    }
+
+    static inline int& substeps()
+    {
+        return m_instance.m_substeps;
+    }
+
 protected:
     static SimSettings m_instance;
 
-    double m_dt;
+    double m_stepDt;
     double m_dx;
     double m_density;
     unsigned int m_seed;
     int m_particlesPerCell;
     Vertex m_globalAcceleration;
+    int m_domainSizeI;
+    int m_domainSizeJ;
+    int m_gridSizeI;
+    int m_gridSizeJ;
+    float m_resolution;
+    int m_fps;
+    int m_substeps;
 };
 
 #endif // SIMSETTINGS_H

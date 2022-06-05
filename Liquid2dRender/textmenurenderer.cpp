@@ -1,4 +1,5 @@
 #include "textmenurenderer.h"
+#include "simsettings.h"
 
 TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRenderer &fluidRenderer) :
     m_fluidRenderer(fluidRenderer),
@@ -41,28 +42,102 @@ void TextMenuRenderer::init()
 void TextMenuRenderer::render()
 {
     float widthBaseline = m_width - m_menuWidth;
-    glm::vec2 currentTextPos = m_renderModeTextPosition;
+    glm::vec2 currentTextPos = m_nextLineOffset;
+    std::string temp;
+
+    temp = "Domain size (IxJ): " + std::to_string(SimSettings::domainSizeI()) + " x " + std::to_string(SimSettings::domainSizeJ());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Grid size (IxJ): " + std::to_string(SimSettings::gridSizeI()) + " x " + std::to_string(SimSettings::gridSizeJ());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "dX: " + std::to_string(SimSettings::dx());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Step dT: " + std::to_string(SimSettings::stepDt());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Substeps: " + std::to_string(SimSettings::substeps());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Target FPS: " + std::to_string(SimSettings::fps());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Global accel: ";
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "          I: " + std::to_string(SimSettings::globalAcceleration().x());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "          J: " + std::to_string(SimSettings::globalAcceleration().y());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
     m_textRenderer.renderText(m_renderModeTexts[m_fluidRenderer.gridRenderMode()],
                                 currentTextPos.x + widthBaseline,
                                 m_height - currentTextPos.y,
                                 1.0f,
                                 Color(255,255,255));
 
-    currentTextPos += m_vectorRenderModeOffset;
+    currentTextPos += m_nextLineOffset;
     m_textRenderer.renderText(m_vectorRenderModeTexts[m_fluidRenderer.vectorRenderEnabled() ? m_fluidRenderer.vectorRenderMode() : VectorRenderMode::VECTOR_RENDER_ITER_END],
                                 currentTextPos.x + widthBaseline,
                                 m_height - currentTextPos.y,
                                 1.0f,
                                 Color(255,255,255));
 
-    currentTextPos += m_geometryRenderModeOffset;
+    currentTextPos += m_nextLineOffset;
     m_textRenderer.renderText(m_fluidRenderer.geometryEnabled() ? "Geometry on" : "Geometry off",
                                 currentTextPos.x + widthBaseline,
                                 m_height - currentTextPos.y,
                                 1.0f,
                                 Color(255,255,255));
 
-    currentTextPos += m_vectorRenderModeOffset;
+    currentTextPos += m_nextLineOffset;
     m_textRenderer.renderText(m_particleRenderModeTexts[m_fluidRenderer.particlesEnabled() ? m_fluidRenderer.particleRenderMode() : ParticleRenderMode::PARTICLE_RENDER_ITER_END],
                                 currentTextPos.x + widthBaseline,
                                 m_height - currentTextPos.y,

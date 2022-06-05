@@ -342,7 +342,6 @@ Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
                 grad = math::gradCenteredGrid(q.x(),q.y(),m_sdf);
                 if(std::abs(sdf) < 1e-5f)
                 {
-                    std::cout << "returned true" << std::endl;
                     return closestPoint;
                 }
             }
@@ -352,7 +351,6 @@ Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
             }
         }
     }
-    std::cout << "returned best guess" << std::endl;
     return closestPoint;
 }
 

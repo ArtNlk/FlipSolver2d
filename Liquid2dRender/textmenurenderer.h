@@ -37,9 +37,7 @@ protected:
     int m_width;
     int m_height;
 
-    glm::vec2 m_renderModeTextPosition = glm::vec2(0.f,20.f);
-    glm::vec2 m_vectorRenderModeOffset = glm::vec2(0.f,20.f);
-    glm::vec2 m_geometryRenderModeOffset = glm::vec2(0.f,20.f);
+    glm::vec2 m_nextLineOffset = glm::vec2(0.f,20.f);
 
     float m_menuWidth = 300.f;
 };

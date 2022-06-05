@@ -5,13 +5,14 @@
 #include "linearindexable2d.h"
 #include "customassert.h"
 #include "globalcallbackhandler.h"
+#include "simsettings.h"
 
 LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(m_gridSizeI,m_gridSizeJ,1,true)),
+    m_solver(new FlipSolver(1,true)),
     m_fluidRenderer(m_solver,m_startWindowWidth,m_startWindowHeight),
     m_textMenuRenderer(0,0,m_startWindowWidth,m_startWindowHeight,m_fluidRenderer),
     m_renderRequested(false)
@@ -160,8 +161,12 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                 break;
 
                 case GLFW_KEY_S:
-                    m_solver->step();
+                for(int i = 0; i < SimSettings::fps(); i++)
+                {
+                    m_solver->stepFrame();
                     m_fluidRenderer.update();
+                    render();
+                }
                 break;
             }
         break;
@@ -406,11 +411,11 @@ void LiquidRenderApp::initGridForProjection()
     {
         for (int j = 0; j < m_solver->grid().sizeJ(); j++)
         {
-            m_solver->grid().setU(i,j,static_cast<float>(rand()) / RAND_MAX);
-            m_solver->grid().setV(i,j,static_cast<float>(rand()) / RAND_MAX);
+            //m_solver->grid().setU(i,j,static_cast<float>(rand()) / RAND_MAX);
+            //m_solver->grid().setV(i,j,static_cast<float>(rand()) / RAND_MAX);
             m_solver->updateSolids();
-            //m_solver->grid().setU(i,j,0);
-            //m_solver->grid().setV(i,j,1);
+            m_solver->grid().setU(i,j,0);
+            m_solver->grid().setV(i,j,10);
         }
     }
     m_solver->grid().fillKnownFlagsU(true);

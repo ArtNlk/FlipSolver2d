@@ -20,7 +20,7 @@ struct MarkerParticle
 class FlipSolver
 {
 public:
-    FlipSolver(int sizeX, int sizeY, int extrapRadius = 1, bool vonNeumannNeighbors = false);
+    FlipSolver(int extrapRadius = 1, bool vonNeumannNeighbors = false);
 
     inline MACFluidGrid &grid() {return m_grid;}
 
@@ -36,6 +36,8 @@ public:
     void advect();
 
     void step();
+
+    void stepFrame();
 
     void updateSdf();
 
