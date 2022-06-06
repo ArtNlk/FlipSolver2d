@@ -15,6 +15,8 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_renderModeTexts[FluidRenderMode::RENDER_U] = "Render U component";
     m_renderModeTexts[FluidRenderMode::RENDER_V] = "Render V component";
     m_renderModeTexts[FluidRenderMode::RENDER_SDF] = "Render SDF";
+    m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_U] = "Render U flag";
+    m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_V] = "Render V flag";
 
     m_vectorRenderModeTexts.assign(VectorRenderMode::VECTOR_RENDER_ITER_END + 1,"");
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER] = "Vector center avg velocity";
@@ -26,6 +28,17 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_VELOCITY] = "Particle velocity";
     m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_SOLID] = "Particle render solid";
     m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_ITER_END] = "Particles off";
+
+    m_stepStageTexts.assign(SimulationStepStage::STAGE_ITER_END + 1,"");
+    m_stepStageTexts[SimulationStepStage::STAGE_RESEED] = "reseed";
+    m_stepStageTexts[SimulationStepStage::STAGE_UPDATE_MATERIALS] = "material update";
+    m_stepStageTexts[SimulationStepStage::STAGE_TRANSFER_PARTICLE_VELOCITY] = "particle to grid transfer";
+    m_stepStageTexts[SimulationStepStage::STAGE_EXTRAPOLATE_VELOCITY] = "extrapolate after transfer";
+    m_stepStageTexts[SimulationStepStage::STAGE_APPLY_GLOBAL_ACCELERATION] = "apply global accel";
+    m_stepStageTexts[SimulationStepStage::STAGE_PROJECT] = "pressure projection";
+    m_stepStageTexts[SimulationStepStage::STAGE_EXTRAPOLATE_AFTER_PROJECTION] = "extrapolate after projection";
+    m_stepStageTexts[SimulationStepStage::STAGE_UPDATE_PARTICLE_VELOCITIES] = "particle velocity update";
+    m_stepStageTexts[SimulationStepStage::STAGE_ADVECT] = "particle advection";
 }
 
 void TextMenuRenderer::init()
@@ -115,6 +128,24 @@ void TextMenuRenderer::render()
                               m_height - currentTextPos.y,
                               1.0f,
                               Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    m_textRenderer.renderText(std::string("Prev step: ") + m_stepStageTexts[m_fluidRenderer.solver()->stepStage()],
+                                currentTextPos.x + widthBaseline,
+                                m_height - currentTextPos.y,
+                                1.0f,
+                                Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    {
+        SimulationStepStage stepStage = m_fluidRenderer.solver()->stepStage();
+        stepStage++;
+        m_textRenderer.renderText(std::string("Next step: ") + m_stepStageTexts[stepStage],
+                                    currentTextPos.x + widthBaseline,
+                                    m_height - currentTextPos.y,
+                                    1.0f,
+                                    Color(255,255,255));
+    }
 
     currentTextPos += m_nextLineOffset;
     m_textRenderer.renderText(m_renderModeTexts[m_fluidRenderer.gridRenderMode()],

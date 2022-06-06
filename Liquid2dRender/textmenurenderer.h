@@ -31,6 +31,7 @@ protected:
     std::vector<std::string> m_renderModeTexts;
     std::vector<std::string> m_vectorRenderModeTexts;
     std::vector<std::string> m_particleRenderModeTexts;
+    std::vector<std::string> m_stepStageTexts;
 
     int m_x;
     int m_y;

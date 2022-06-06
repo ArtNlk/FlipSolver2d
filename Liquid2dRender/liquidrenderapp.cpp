@@ -1,6 +1,7 @@
 #include "liquidrenderapp.h"
 #include <stdexcept>
 #include <cstdlib>
+#include <filesystem>
 
 #include "linearindexable2d.h"
 #include "customassert.h"
@@ -161,6 +162,46 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                 break;
 
                 case GLFW_KEY_S:
+                if(mods & GLFW_MOD_SHIFT)
+                {
+                    for(int i = 0; i < SimulationStepStage::STAGE_ITER_END; i++)
+                    {
+                        m_solver->stagedStep();
+                    }
+                }
+                else
+                {
+                    m_solver->stagedStep();
+                }
+                m_fluidRenderer.update();
+                break;
+
+                case GLFW_KEY_R:
+                {
+                    int frame = 0;
+                    std::filesystem::create_directory("./output");
+                    for (const auto& entry : std::filesystem::directory_iterator("./output"))
+                            std::filesystem::remove_all(entry.path());
+                    for(int second; second < 10; second++)
+                    {
+                        for(int i = 0; i < SimSettings::fps(); i++)
+                        {
+                            m_solver->stepFrame();
+                            m_fluidRenderer.update();
+                            render();
+                            m_fluidRenderer.dumpToPng(std::to_string(SimSettings::fps()) + "fps_" + std::to_string(frame) + ".png");
+                            frame++;
+                            glfwPollEvents();
+                        }
+                    }
+                }
+                break;
+
+                case GLFW_KEY_F:
+                    m_fluidRenderer.dumpToPng("frame.png");
+                break;
+
+                case GLFW_KEY_SPACE:
                 for(int i = 0; i < SimSettings::fps(); i++)
                 {
                     m_solver->stepFrame();

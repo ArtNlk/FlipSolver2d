@@ -17,6 +17,22 @@ struct MarkerParticle
     Vertex velocity;
 };
 
+enum SimulationStepStage : int {STAGE_RESEED,
+                                STAGE_UPDATE_MATERIALS,
+                                STAGE_TRANSFER_PARTICLE_VELOCITY,
+                                STAGE_EXTRAPOLATE_VELOCITY,
+                                STAGE_APPLY_GLOBAL_ACCELERATION,
+                                STAGE_PROJECT,
+                                STAGE_EXTRAPOLATE_AFTER_PROJECTION,
+                                STAGE_UPDATE_PARTICLE_VELOCITIES,
+                                STAGE_ADVECT,
+                                STAGE_ITER_END};
+inline SimulationStepStage& operator++(SimulationStepStage& state, int) {
+    const int i = static_cast<int>(state)+1;
+    state = static_cast<SimulationStepStage>((i) % STAGE_ITER_END);
+    return state;
+}
+
 class FlipSolver
 {
 public:
@@ -36,6 +52,8 @@ public:
     void advect();
 
     void step();
+
+    void stagedStep();
 
     void stepFrame();
 
@@ -69,6 +87,8 @@ public:
 
     std::vector<MarkerParticle> &markerParticles();
 
+    SimulationStepStage stepStage();
+
 protected:
 
     friend class ::LiquidRenderApp;
@@ -98,6 +118,7 @@ protected:
     std::vector<Geometry2d> m_geometry;
     std::vector<Geometry2d> m_sources;
     std::vector<Geometry2d> m_sinks;
+    SimulationStepStage m_stepStage;
 };
 
 #endif // FLIPSOLVER_H

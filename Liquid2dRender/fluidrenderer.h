@@ -9,7 +9,7 @@
 #include "color.h"
 #include "geometry2d.h"
 
-enum FluidRenderMode : int {RENDER_MATERIAL,RENDER_VELOCITY,RENDER_U,RENDER_V,RENDER_SDF,GRID_RENDER_ITER_END};
+enum FluidRenderMode : int {RENDER_MATERIAL,RENDER_VELOCITY,RENDER_U,RENDER_V,RENDER_SDF,RENDER_KNOWN_FLAG_U,RENDER_KNOWN_FLAG_V,GRID_RENDER_ITER_END};
 inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
     state = static_cast<FluidRenderMode>((i) % GRID_RENDER_ITER_END);
@@ -98,9 +98,13 @@ public:
 
     unsigned int renderTexture();
 
+    void dumpToPng(std::string fileName);
+
     void resizeTexture(int width, int height);
 
     float fluidGridAspect();
+
+    std::shared_ptr<FlipSolver> solver();
 
 protected:
     void addGridVertex(Vertex v, Color c = Color());
@@ -125,6 +129,8 @@ protected:
     void updateGridFromVelocity();
     void updateGridFromUComponent();
     void updateGridFromVComponent();
+    void updateGridFromUKnownFlag();
+    void updateGridFromVKnownFlag();
     void updateGridFromSdf();
     void updateVectorsStaggered();
     void updateVectorsCentered();

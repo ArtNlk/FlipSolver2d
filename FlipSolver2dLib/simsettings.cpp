@@ -5,8 +5,8 @@ SimSettings SimSettings::m_instance;
 SimSettings::SimSettings()
 {
     m_domainSizeI = 50;
-    m_domainSizeJ = 75;
-    m_resolution = 100;
+    m_domainSizeJ = 50;
+    m_resolution = 50;
     if(m_domainSizeI > m_domainSizeJ)
     {
         m_dx = static_cast<float>(m_domainSizeI) / m_resolution;
@@ -19,8 +19,8 @@ SimSettings::SimSettings()
         m_gridSizeJ = m_resolution;
         m_gridSizeI = (static_cast<float>(m_domainSizeI) / static_cast<float>(m_domainSizeJ)) * m_resolution;
     }
-    m_fps = 10;
-    m_substeps = 6;
+    m_fps = 30;
+    m_substeps = 2;
     m_density = 1;
     m_stepDt = 1.f/ (m_fps * m_substeps);
     m_seed = 0;

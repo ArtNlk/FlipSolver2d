@@ -11,7 +11,8 @@
 FlipSolver::FlipSolver(int extrapRadius, bool vonNeumannNeighbors) :
     m_extrapolationRadius(extrapRadius),
     m_useVonNeumannNeighborhood(vonNeumannNeighbors),
-    m_grid(SimSettings::gridSizeI(), SimSettings::gridSizeJ())
+    m_grid(SimSettings::gridSizeI(), SimSettings::gridSizeJ()),
+    m_stepStage(SimulationStepStage::STAGE_ADVECT)
 {
     m_randEngine = std::mt19937(SimSettings::randomSeed());
 }
@@ -131,15 +132,67 @@ void FlipSolver::step()
     applyGlobalAcceleration();
     project();
     extrapolateVelocityField();
-    float picRatio = 0.02f;
+    float picRatio = 0.03f;
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
         Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU),math::lerpVGrid(p.position.x(),p.position.y(),prevV));
         Vertex newVelocity = m_grid.velocityAt(p.position);
-        p.velocity = picRatio * oldVelocity + (1.f-picRatio) * (p.velocity + (newVelocity - oldVelocity));
+        p.velocity = picRatio * newVelocity + (1.f-picRatio) * (p.velocity + newVelocity - oldVelocity);
     }
     advect();
+}
+
+void FlipSolver::stagedStep()
+{
+    static Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
+    static Grid2d<float> prevU(m_grid.velocityGridU().sizeI(), m_grid.velocityGridU().sizeJ());
+    static Grid2d<float> prevV(m_grid.velocityGridV().sizeI(), m_grid.velocityGridV().sizeJ());
+    float picRatio = 0.03f;
+    m_stepStage++;
+    switch(m_stepStage)
+    {
+    case STAGE_RESEED:
+        particleCounts.fill(0);
+        countParticles(particleCounts);
+        reseedParticles(particleCounts);
+        break;
+    case STAGE_UPDATE_MATERIALS:
+        updateMaterialsFromParticles(particleCounts);
+        break;
+    case STAGE_TRANSFER_PARTICLE_VELOCITY:
+        particleVelocityToGrid(m_grid.velocityGridU(),m_grid.velocityGridV());
+        break;
+    case STAGE_EXTRAPOLATE_VELOCITY:
+        extrapolateVelocityField();
+        break;
+    case STAGE_APPLY_GLOBAL_ACCELERATION:
+        prevU = m_grid.velocityGridU();
+        prevV = m_grid.velocityGridV();
+        applyGlobalAcceleration();
+        break;
+    case STAGE_PROJECT:
+        project();
+        break;
+    case STAGE_EXTRAPOLATE_AFTER_PROJECTION:
+        extrapolateVelocityField();
+        break;
+    case STAGE_UPDATE_PARTICLE_VELOCITIES:
+        for(int i = m_markerParticles.size() - 1; i >= 0; i--)
+        {
+            MarkerParticle &p = m_markerParticles[i];
+            Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU),math::lerpVGrid(p.position.x(),p.position.y(),prevV));
+            Vertex newVelocity = m_grid.velocityAt(p.position);
+            p.velocity = picRatio * newVelocity + (1.f-picRatio) * (p.velocity + newVelocity - oldVelocity);
+        }
+        break;
+    case STAGE_ADVECT:
+        advect();
+        std::cout << "Simulation step finished" << std::endl;
+        break;
+    case STAGE_ITER_END:
+        break;
+    }
 }
 
 void FlipSolver::stepFrame()
@@ -298,6 +351,11 @@ std::vector<Geometry2d> &FlipSolver::sinkObjects()
 std::vector<MarkerParticle> &FlipSolver::markerParticles()
 {
     return m_markerParticles;
+}
+
+SimulationStepStage FlipSolver::stepStage()
+{
+    return m_stepStage;
 }
 
 void FlipSolver::extrapolateVelocityField()
@@ -470,11 +528,11 @@ void FlipSolver::countParticles(Grid2d<int> &output)
         int i = std::floor(p.position.x());
         int j = std::floor(p.position.y());
         output.at(i,j) += 1;
-        if(m_grid.isSolid(i,j))
-        {
-            std::cout << "Particle in solid at " << i << "," << j << '\n';
-            debug() << "Particle in solid at " << i << "," << j;
-        }
+//        if(m_grid.isSolid(i,j))
+//        {
+//            std::cout << "Particle in solid at " << i << "," << j << '\n';
+//            debug() << "Particle in solid at " << i << "," << j;
+//        }
     }
 }
 
@@ -543,20 +601,20 @@ void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gri
                                                      p.position.y() - (jIdx));
                 if(uWeights.inBounds(iIdx,jIdx))
                 {
-                    uWeights.at(iIdx,jIdx) += weightU;
-                    gridU.at(iIdx,jIdx) += weightU * p.velocity.x();
-                    if(std::abs(weightU) < 1e-9f)
+                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
+                        uWeights.at(iIdx,jIdx) += weightU;
+                        gridU.at(iIdx,jIdx) += weightU * p.velocity.x();
                         m_grid.knownFlagsGridU().at(iIdx,jIdx) = true;
                     }
                 }
 
                 if(vWeights.inBounds(iIdx,jIdx))
                 {
-                    vWeights.at(iIdx,jIdx) += weightV;
-                    gridV.at(iIdx,jIdx) += weightV * p.velocity.y();
-                    if(std::abs(weightV) < 1e-9f)
+                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
+                        vWeights.at(iIdx,jIdx) += weightV;
+                        gridV.at(iIdx,jIdx) += weightV * p.velocity.y();
                         m_grid.knownFlagsGridV().at(iIdx,jIdx) = true;
                     }
                 }

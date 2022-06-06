@@ -6,6 +6,7 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "png.h"
 
 #include "globalcallbackhandler.h"
 #include "simsettings.h"
@@ -441,6 +442,12 @@ void FluidRenderer::updateGrid()
     case FluidRenderMode::RENDER_SDF:
         updateGridFromSdf();
         break;
+    case RENDER_KNOWN_FLAG_U:
+        updateGridFromUKnownFlag();
+        break;
+    case RENDER_KNOWN_FLAG_V:
+        updateGridFromVKnownFlag();
+        break;
 
     default:
         std::cout << "Bad render mode";
@@ -464,6 +471,11 @@ void FluidRenderer::resizeTexture(int width, int height)
 float FluidRenderer::fluidGridAspect()
 {
     return static_cast<float>(m_solver->gridSizeI()) / m_solver->gridSizeJ();
+}
+
+std::shared_ptr<FlipSolver> FluidRenderer::solver()
+{
+    return m_solver;
 }
 
 void FluidRenderer::updateGridFromMaterial()
@@ -559,6 +571,34 @@ void FluidRenderer::updateGridFromVComponent()
         {
             float brightness = std::clamp(std::abs(m_solver->grid().getV(i,j))
                     / m_velocityComponentRangeMax,0.f,1.f);
+            setCellColor(i,j,Color(brightness,brightness,brightness));
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromUKnownFlag()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = m_solver->grid().knownFlagsGridU().at(i,j)? 1.f : 0.f;
+            setCellColor(i,j,Color(brightness,brightness,brightness));
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromVKnownFlag()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = m_solver->grid().knownFlagsGridV().at(i,j)? 1.f : 0.f;
             setCellColor(i,j,Color(brightness,brightness,brightness));
         }
     }
@@ -783,4 +823,58 @@ void FluidRenderer::setParticleColor(int idx, Color c)
     m_particleVerts[linearIndex + 0] = c.rf();
     m_particleVerts[linearIndex + 1] = c.gf();
     m_particleVerts[linearIndex + 2] = c.bf();
+}
+
+void FluidRenderer::dumpToPng(std::string fileName)
+{
+    FILE *fp = fopen(("./output/" + fileName).c_str(), "wb");
+    if (!fp) {
+        std::cout << "cannot open for png frame dump: " << fileName << '\n';
+        return;
+    }
+
+    unsigned char data[m_textureWidth*m_textureHeight*3], argb_data[m_textureWidth*m_textureHeight*4];
+    unsigned char *rows[m_textureHeight];
+    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr) {
+        goto close_file;
+    }
+    png_infop png_info;
+    if (!(png_info = png_create_info_struct(png_ptr))) {
+        goto destroy_write;
+    }
+
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        goto destroy_write;
+    }
+
+    png_init_io(png_ptr, fp);
+    png_set_IHDR(png_ptr, png_info, m_textureWidth, m_textureHeight, 8, PNG_COLOR_TYPE_RGB,
+        PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+        PNG_FILTER_TYPE_DEFAULT);
+
+    render();
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+    glReadPixels(0, 0, m_textureWidth, m_textureHeight, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, argb_data);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    for (int i = 0; i < m_textureHeight; ++i) {
+        rows[m_textureHeight - i - 1] = data + (i*m_textureWidth*3);
+        for (int j = 0; j < m_textureWidth; ++j) {
+            int i1 = (i*m_textureWidth+j)*3;
+            int i2 = (i*m_textureWidth+j)*4;
+            data[i1++] = argb_data[++i2];
+            data[i1++] = argb_data[++i2];
+            data[i1++] = argb_data[++i2];
+        }
+    }
+
+    png_set_rows(png_ptr, png_info, rows);
+    png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
+    png_write_end(png_ptr, png_info);
+
+destroy_write:
+    png_destroy_write_struct(&png_ptr, nullptr);
+close_file:
+    fclose(fp);
 }

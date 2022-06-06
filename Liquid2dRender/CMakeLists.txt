@@ -4,6 +4,23 @@ include_directories(include/glad)
 include_directories(include/KHR)
 include_directories(include/external)
 
+include (FindPkgConfig)
+if (NOT PKG_CONFIG_FOUND)
+    message (FATAL_ERROR "pkg-config not found")
+endif ()
+
+find_package(OpenGL REQUIRED)
+find_package(glfw3 REQUIRED)
+find_package(Freetype REQUIRED)
+find_package(glm REQUIRED)
+find_package(ZLIB REQUIRED)
+include_directories(${ZLIB_INCLUDE_DIR})
+#find_package(libpng REQUIRED)
+
+if(NOT DEFINED GLFW3_LIBRARY)
+    set(GLFW3_LIBRARY glfw)
+endif()
+
 set(HEADERS
     include/glad/glad.h
     liquidrenderapp.h
@@ -25,19 +42,22 @@ set(SOURCES
     textmenurenderer.cpp
     globalcallbackhandler.cpp)
 
-find_package(OpenGL REQUIRED)
-find_package(glfw3 REQUIRED)
-find_package(Freetype REQUIRED)
-find_package(glm REQUIRED)
-
-if(NOT DEFINED GLFW3_LIBRARY)
-    set(GLFW3_LIBRARY glfw)
-endif()
-
 add_executable(LiquidRenderApp ${HEADERS} ${SOURCES})
 
+## check for libpng
+pkg_check_modules(LIBPNG libpng16 REQUIRED)
+if (NOT LIBPNG_FOUND)
+    message(FATAL_ERROR "You don't seem to have libpng libraries installed")
+else ()
+    include_directories (${LIBPNG_INCLUDE_DIRS})
+    target_link_directories (LiquidRenderApp PRIVATE "F:/Files/Libraries/libpng/lib")
+    target_link_libraries (LiquidRenderApp "F:/Files/Libraries/libpng/lib/libpng.a" ${ZLIB_LIBRARY})
+endif ()
+message(LIBS ${GLM_LIBRARY_DIRS})
+message(INCLUDES ${LIBPNG_INCLUDE_DIRS})
+
 target_link_libraries(LiquidRenderApp FlipSolver2d)
-target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} ${GLFW3_LIBRARY})
+target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} ${GLFW3_LIBRARY} -static-libgcc -static-libstdc++)
 target_link_libraries(LiquidRenderApp ${FREETYPE_LIBRARIES})
 if(UNIX)
 target_link_libraries(LiquidRenderApp ${CMAKE_DL_LIBS})
