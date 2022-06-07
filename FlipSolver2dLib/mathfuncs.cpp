@@ -39,7 +39,7 @@ float math::bSpline(float value)
     return 0;
 }
 
-float math::qudraticBSpline(float x, float y)
+float math::quadraticBSpline(float x, float y)
 {
     return math::bSpline(x) * math::bSpline(y) * math::bSpline(0.f);
 }
@@ -122,4 +122,22 @@ Vertex math::gradCenteredGrid(float i, float j, Grid2d<float> &grid)
     float gradJ = math::frac(i) >= 0.5f ? grid.at(currentCell) - grid.at(neighborJ) : grid.at(neighborJ) - grid.at(currentCell);
 
     return Vertex(gradI, gradJ);
+}
+
+float math::linearHat(float value)
+{
+    if(value >= 0 && value <= 1)
+    {
+        return 1-value;
+    }
+    else if(value < 0 && value >= -1)
+    {
+        return 1+value;
+    }
+    return 0;
+}
+
+float math::bilinearHat(float x, float y)
+{
+    return math::linearHat(x) * math::linearHat(y) * math::linearHat(0.f);
 }

@@ -126,18 +126,18 @@ void FlipSolver::step()
     reseedParticles(particleCounts);
     updateMaterialsFromParticles(particleCounts);
     particleVelocityToGrid(m_grid.velocityGridU(),m_grid.velocityGridV());
-    extrapolateVelocityField();
+    extrapolateVelocityField(1);
     Grid2d<float> prevU = m_grid.velocityGridU();
     Grid2d<float> prevV = m_grid.velocityGridV();
     applyGlobalAcceleration();
     project();
-    extrapolateVelocityField();
+    extrapolateVelocityField(1);
     float picRatio = 0.03f;
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-        Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU),math::lerpVGrid(p.position.x(),p.position.y(),prevV));
-        Vertex newVelocity = m_grid.velocityAt(p.position);
+        Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
+        Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
         p.velocity = picRatio * newVelocity + (1.f-picRatio) * (p.velocity + newVelocity - oldVelocity);
     }
     advect();
@@ -164,7 +164,7 @@ void FlipSolver::stagedStep()
         particleVelocityToGrid(m_grid.velocityGridU(),m_grid.velocityGridV());
         break;
     case STAGE_EXTRAPOLATE_VELOCITY:
-        extrapolateVelocityField();
+        extrapolateVelocityField(1);
         break;
     case STAGE_APPLY_GLOBAL_ACCELERATION:
         prevU = m_grid.velocityGridU();
@@ -175,7 +175,7 @@ void FlipSolver::stagedStep()
         project();
         break;
     case STAGE_EXTRAPOLATE_AFTER_PROJECTION:
-        extrapolateVelocityField();
+        extrapolateVelocityField(1);
         break;
     case STAGE_UPDATE_PARTICLE_VELOCITIES:
         for(int i = m_markerParticles.size() - 1; i >= 0; i--)
@@ -358,7 +358,7 @@ SimulationStepStage FlipSolver::stepStage()
     return m_stepStage;
 }
 
-void FlipSolver::extrapolateVelocityField()
+void FlipSolver::extrapolateVelocityField(int steps)
 {
     Grid2d<int> markers(m_grid.sizeI(),m_grid.sizeJ(),std::numeric_limits<int>().max());
     std::queue<Index2d> wavefront;
@@ -405,7 +405,7 @@ void FlipSolver::extrapolateVelocityField()
                 avg += m_grid.velocityGridU().at(neighborIndex);
                 count++;
             }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max())
+            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= steps)
             {
                 markers.at(neighborIndex) = markers.at(index) + 1;
                 wavefront.push(neighborIndex);
@@ -462,7 +462,7 @@ void FlipSolver::extrapolateVelocityField()
                 avg += m_grid.velocityGridV().at(neighborIndex);
                 count++;
             }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max())
+            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= steps)
             {
                 markers.at(neighborIndex) = markers.at(index) + 1;
                 wavefront.push(neighborIndex);
@@ -594,17 +594,17 @@ void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gri
             {
                 int iIdx = i+iOffset;
                 int jIdx = j+jOffset;
-                float weightU = math::qudraticBSpline(p.position.x() - (iIdx),
+                float weightU = math::quadraticBSpline(p.position.x() - (iIdx),
                                                      p.position.y() - (static_cast<float>(jIdx) + 0.5f));
 
-                float weightV = math::qudraticBSpline(p.position.x() - static_cast<float>(iIdx) + 0.5f,
+                float weightV = math::quadraticBSpline(p.position.x() - static_cast<float>(iIdx) + 0.5f,
                                                      p.position.y() - (jIdx));
                 if(uWeights.inBounds(iIdx,jIdx))
                 {
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         uWeights.at(iIdx,jIdx) += weightU;
-                        gridU.at(iIdx,jIdx) += weightU * p.velocity.x();
+                        gridU.at(iIdx,jIdx) += weightU * (p.velocity.x() * SimSettings::dx());
                         m_grid.knownFlagsGridU().at(iIdx,jIdx) = true;
                     }
                 }
@@ -614,7 +614,7 @@ void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gri
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         vWeights.at(iIdx,jIdx) += weightV;
-                        gridV.at(iIdx,jIdx) += weightV * p.velocity.y();
+                        gridV.at(iIdx,jIdx) += weightV * (p.velocity.y() * SimSettings::dx());
                         m_grid.knownFlagsGridV().at(iIdx,jIdx) = true;
                     }
                 }

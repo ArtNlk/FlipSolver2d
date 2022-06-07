@@ -10,6 +10,12 @@ Vertex operator*(Vertex lhs, float rhs)
     return Vertex(lhs.m_x*rhs, lhs.m_y*rhs, lhs.m_z*rhs);
 }
 
+Vertex operator/(Vertex lhs, float rhs)
+{
+    return Vertex(lhs.m_x/rhs, lhs.m_y/rhs, lhs.m_z/rhs);
+}
+
+
 Vertex operator*(float lhs, Vertex rhs)
 {
     return Vertex(rhs.m_x*lhs, rhs.m_y*lhs, rhs.m_z*lhs);

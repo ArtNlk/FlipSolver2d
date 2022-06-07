@@ -24,6 +24,7 @@ bool PCGSolver::solve(const UpperTriangularMatrix &matrix, MACFluidGrid &grid, s
     {
         return false;
     }
+    calcPrecond(matrix,grid);
     m_residual = vec;
     m_aux = vec;
     applyICPrecond(matrix,m_residual,m_aux,grid);

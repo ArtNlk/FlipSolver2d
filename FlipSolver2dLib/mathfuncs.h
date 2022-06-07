@@ -10,7 +10,9 @@ namespace math
     int integr(float v);
     float lerp(float a, float b, float f);
     float bSpline(float value);
-    float qudraticBSpline(float x, float y);
+    float quadraticBSpline(float x, float y);
+    float linearHat(float value);
+    float bilinearHat(float x, float y);
     float lerpUGrid(float i, float j, Grid2d<float> &gridU);
     float lerpVGrid(float i, float j, Grid2d<float> &gridV);
     float lerpCenteredGrid(float i, float j, Grid2d<float> &grid);

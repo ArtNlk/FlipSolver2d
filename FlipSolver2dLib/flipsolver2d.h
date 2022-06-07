@@ -45,7 +45,7 @@ public:
         m_extrapolationRadius = radius;
     }
 
-    void extrapolateVelocityField();
+    void extrapolateVelocityField(int steps = std::numeric_limits<int>().max());
 
     void project();
 

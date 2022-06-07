@@ -23,6 +23,8 @@ public:
 
     friend Vertex operator*(Vertex lhs, float rhs);
 
+    friend Vertex operator/(Vertex lhs, float rhs);
+
     friend Vertex operator*(float lhs, Vertex rhs);
 
     friend Vertex operator+(Vertex lhs, Vertex rhs);

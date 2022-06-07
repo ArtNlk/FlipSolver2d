@@ -20,10 +20,10 @@ SimSettings::SimSettings()
         m_gridSizeI = (static_cast<float>(m_domainSizeI) / static_cast<float>(m_domainSizeJ)) * m_resolution;
     }
     m_fps = 30;
-    m_substeps = 2;
-    m_density = 1;
+    m_substeps = 1;
+    m_density = 100;
     m_stepDt = 1.f/ (m_fps * m_substeps);
     m_seed = 0;
     m_particlesPerCell = 4;
-    m_globalAcceleration = Vertex(9.8f / SimSettings::dx(),0);
+    m_globalAcceleration = Vertex(9.8f,0);
 }

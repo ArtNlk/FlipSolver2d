@@ -13,7 +13,7 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(1,true)),
+    m_solver(new FlipSolver(2,true)),
     m_fluidRenderer(m_solver,m_startWindowWidth,m_startWindowHeight),
     m_textMenuRenderer(0,0,m_startWindowWidth,m_startWindowHeight,m_fluidRenderer),
     m_renderRequested(false)
@@ -182,7 +182,7 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     std::filesystem::create_directory("./output");
                     for (const auto& entry : std::filesystem::directory_iterator("./output"))
                             std::filesystem::remove_all(entry.path());
-                    for(int second; second < 10; second++)
+                    for(int second; second < 30; second++)
                     {
                         for(int i = 0; i < SimSettings::fps(); i++)
                         {
@@ -207,6 +207,7 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_solver->stepFrame();
                     m_fluidRenderer.update();
                     render();
+                    glfwPollEvents();
                 }
                 break;
             }
