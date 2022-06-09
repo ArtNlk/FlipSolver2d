@@ -15,6 +15,7 @@ find_package(Freetype REQUIRED)
 find_package(glm REQUIRED)
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIR})
+find_package(nlohmann_json 3.2.0 REQUIRED)
 #find_package(libpng REQUIRED)
 
 if(NOT DEFINED GLFW3_LIBRARY)
@@ -42,7 +43,14 @@ set(SOURCES
     textmenurenderer.cpp
     globalcallbackhandler.cpp)
 
-add_executable(LiquidRenderApp ${HEADERS} ${SOURCES})
+file(GLOB SCENES
+     "scenes/*.json"
+)
+
+add_executable(LiquidRenderApp ${HEADERS} ${SOURCES} ${SCENES})
+add_custom_command(TARGET LiquidRenderApp POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       ${CMAKE_CURRENT_SOURCE_DIR}/scenes/ $<TARGET_FILE_DIR:LiquidRenderApp>/scenes)
 
 ## check for libpng
 pkg_check_modules(LIBPNG libpng16 REQUIRED)
@@ -53,12 +61,13 @@ else ()
     target_link_directories (LiquidRenderApp PRIVATE ${LIBPNG_LIBRARY_DIRS})
     target_link_libraries (LiquidRenderApp ${LIBPNG_LIBRARIES} ${ZLIB_LIBRARY})
 endif ()
-message(LIBS ${GLM_LIBRARY_DIRS})
-message(INCLUDES ${LIBPNG_INCLUDE_DIRS})
 
 target_link_libraries(LiquidRenderApp FlipSolver2d)
 target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} ${GLFW3_LIBRARY} -static-libgcc -static-libstdc++)
 target_link_libraries(LiquidRenderApp ${FREETYPE_LIBRARIES})
+target_link_libraries(LiquidRenderApp nlohmann_json::nlohmann_json)
+#target_include_directories(LiquidRenderApp ${nlohmann_json::nlohmann_json::INTERFACE_INCLUDE_DIRECTORIES})
+
 if(UNIX)
 target_link_libraries(LiquidRenderApp ${CMAKE_DL_LIBS})
 endif()

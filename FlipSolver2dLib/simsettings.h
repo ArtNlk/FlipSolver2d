@@ -13,9 +13,14 @@ public:
         return m_instance;
     }
 
-    static inline double& stepDt()
+    static inline float& stepDt()
     {
         return m_instance.m_stepDt;
+    }
+
+    static inline float& frameDt()
+    {
+        return m_instance.m_frameDt;
     }
 
     static inline double& dx()
@@ -81,7 +86,8 @@ public:
 protected:
     static SimSettings m_instance;
 
-    double m_stepDt;
+    float m_stepDt;
+    float m_frameDt;
     double m_dx;
     double m_density;
     unsigned int m_seed;

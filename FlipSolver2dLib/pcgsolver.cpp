@@ -38,14 +38,15 @@ bool PCGSolver::solve(const UpperTriangularMatrix &matrix, MACFluidGrid &grid, s
         vmath::addMul(result,result,m_search,alpha);
         vmath::subMul(m_residual,m_residual,m_aux,alpha);
         err = vmath::maxAbs(m_residual);
-        if(i % 5 == 0)
-        {
-            std::cout << "Solver: " << i << " : " << err << "\n";
-            debug() << "Solver: " << i << " : " << err;
-        }
+//        if(i % 5 == 0)
+//        {
+//            std::cout << "Solver: " << i << " : " << err << "\n";
+//            debug() << "Solver: " << i << " : " << err;
+//        }
         if (err <= m_tol)
         {
             debug() << "Solver done, i = " << i << " err = " << err;
+            std::cout << "Solver done, i = " << i << " err = " << err << '\n';
             return true;
         }
         m_aux = m_residual;

@@ -88,26 +88,26 @@ void FlipSolver::advect()
         float substepTime = 0.f;
         bool finished = false;
         int substepCount = 0;
-        while(!finished)
+//        while(!finished)
+//        {
+//            Vertex velocity = m_grid.velocityAt(p.position.x(),p.position.y());
+//            float maxSubstepSize = 1.f/(velocity.distFromZero() + 1e-15f);
+//            if(substepTime + maxSubstepSize >= SimSettings::stepDt())
+//            {
+//                maxSubstepSize = SimSettings::stepDt() - substepTime;
+//                finished = true;
+//            }
+//            else if(substepTime + 2.f*maxSubstepSize >= SimSettings::stepDt())
+//            {
+//                maxSubstepSize = 0.5f*(SimSettings::stepDt() - substepTime);
+//            }
+//            substepTime += maxSubstepSize;
+//            substepCount++;
+//        }
+        p.position = rk3Integrate(p.position,SimSettings::stepDt());
+        if(m_grid.sdfAt(p.position.x(),p.position.y()) < 0.f)
         {
-            Vertex velocity = m_grid.velocityAt(p.position.x(),p.position.y());
-            float maxSubstepSize = 1.f/(velocity.distFromZero() + 1e-15f);
-            if(substepTime + maxSubstepSize >= SimSettings::stepDt())
-            {
-                maxSubstepSize = SimSettings::stepDt() - substepTime;
-                finished = true;
-            }
-            else if(substepTime + 2.f*maxSubstepSize >= SimSettings::stepDt())
-            {
-                maxSubstepSize = 0.5f*(SimSettings::stepDt() - substepTime);
-            }
-            p.position = rk3Integrate(p.position,maxSubstepSize);
-            if(m_grid.sdfAt(p.position.x(),p.position.y()) < 0.f)
-            {
-                p.position = m_grid.closestSurfacePoint(p.position);
-            }
-            substepTime += maxSubstepSize;
-            substepCount++;
+            p.position = m_grid.closestSurfacePoint(p.position);
         }
         maxSubsteps = std::max(substepCount,maxSubsteps);
         if(!m_grid.inBounds(math::integr(p.position.x()),math::integr(p.position.y())))
@@ -132,7 +132,7 @@ void FlipSolver::step()
     applyGlobalAcceleration();
     project();
     extrapolateVelocityField(1);
-    float picRatio = 0.03f;
+    float picRatio = 0.05f;
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
@@ -197,10 +197,30 @@ void FlipSolver::stagedStep()
 
 void FlipSolver::stepFrame()
 {
-    for(int i = 0; i < SimSettings::substeps(); i++)
+    float substepTime = 0.f;
+    bool finished = false;
+    int substepCount = 0;
+    while(!finished)
     {
+        float vel = maxParticleVelocity();
+        float maxSubstepSize = 1.f/(vel + 1e-15f);
+        if(substepTime + maxSubstepSize >= SimSettings::frameDt())
+        {
+            maxSubstepSize = SimSettings::frameDt() - substepTime;
+            finished = true;
+        }
+        else if(substepTime + 2.f*maxSubstepSize >= SimSettings::frameDt())
+        {
+            maxSubstepSize = 0.5f*(SimSettings::frameDt() - substepTime);
+        }
+        SimSettings::stepDt() = maxSubstepSize;
+        std::cout << "Substep " << substepCount << " substep dt: " << SimSettings::stepDt() << " vel " << vel << std::endl;
         step();
+        substepTime += maxSubstepSize;
+        substepCount++;
+        if(substepCount > 50) break;
     }
+    std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
 }
 
 void FlipSolver::updateSdf()
@@ -642,4 +662,16 @@ void FlipSolver::applyGlobalAcceleration()
             if(m_grid.velocityGridV().inBounds(i,j)) m_grid.velocityGridV().at(i,j) += SimSettings::stepDt() * SimSettings::globalAcceleration().y();
         }
     }
+}
+
+float FlipSolver::maxParticleVelocity()
+{
+    float maxVelocitySqr = std::numeric_limits<float>().min();
+    for(MarkerParticle& p : m_markerParticles)
+    {
+        float velocitySqr = p.velocity.x()*p.velocity.x() + p.velocity.y()*p.velocity.y();
+        if(velocitySqr > maxVelocitySqr) maxVelocitySqr = velocitySqr;
+    }
+
+    return std::sqrt(maxVelocitySqr);
 }

@@ -109,6 +109,8 @@ protected:
 
     void applyGlobalAcceleration();
 
+    float maxParticleVelocity();
+
     int m_extrapolationRadius;
     bool m_useVonNeumannNeighborhood;
     MACFluidGrid m_grid;

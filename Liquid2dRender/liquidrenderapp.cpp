@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <filesystem>
 
+#include "nlohmann/json.hpp"
+
 #include "linearindexable2d.h"
 #include "customassert.h"
 #include "globalcallbackhandler.h"
