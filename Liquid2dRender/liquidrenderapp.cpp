@@ -3,8 +3,6 @@
 #include <cstdlib>
 #include <filesystem>
 
-#include "nlohmann/json.hpp"
-
 #include "linearindexable2d.h"
 #include "customassert.h"
 #include "globalcallbackhandler.h"
@@ -35,8 +33,7 @@ void LiquidRenderApp::init()
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
 
-    setupGeometry();
-
+    loadJson("./scenes/test_scene.json");
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
     {
@@ -217,31 +214,61 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
     }
 }
 
-void LiquidRenderApp::setupGeometry()
+void LiquidRenderApp::loadJson(std::string fileName)
 {
+    std::ifstream sceneFile(fileName);
+    if(!sceneFile.is_open())
+    {
+        std::cout << "errorOpening scene file " << fileName;
+    }
+    json sceneJson;
+    sceneFile >> sceneJson;
+    settingsFromJson(sceneJson["settings"]);
+    solverFromJson(sceneJson["solver"]);
+}
+
+void LiquidRenderApp::settingsFromJson(json settingsJson)
+{
+    SimSettings::domainSizeI() = settingsJson["domainSizeI"].get<int>();
+    SimSettings::domainSizeJ() = settingsJson["domainSizeJ"].get<int>();
+    SimSettings::resolution() = settingsJson["resolution"].get<int>();
+    SimSettings::fps() = settingsJson["fps"].get<int>();
+    SimSettings::randomSeed() = settingsJson["seed"].get<int>();
+}
+
+void LiquidRenderApp::solverFromJson(json solverJson)
+{
+    std::vector<json> objects = solverJson["objects"]
+                                        .get<std::vector<json>>();
+    for(json &geo : objects)
+    {
+        addGeometryFromJson(geo);
+    }
+}
+
+void LiquidRenderApp::addGeometryFromJson(json geometryJson)
+{
+    std::vector<std::pair<float,float>> verts = geometryJson["verts"]
+                                                .get<std::vector<std::pair<float,float>>>();
+    std::string geoType = geometryJson["type"].get<std::string>();
     Geometry2d geo;
-    geo.addVertex(Vertex(5,5));
-    geo.addVertex(Vertex(15,5));
-    geo.addVertex(Vertex(15,20));
-    geo.addVertex(Vertex(5,15));
-    m_solver->addSource(geo);
+    for(auto v : verts)
+    {
+        geo.addVertex(Vertex(v.first,v.second));
+    }
 
-    geo = Geometry2d();
-    geo.addVertex(Vertex(15,10));
-    geo.addVertex(Vertex(25,15));
-    geo.addVertex(Vertex(25,5));
-    m_solver->addGeometry(geo);
-
-    geo = Geometry2d();
-    geo.addVertex(Vertex(20,40));
-    geo.addVertex(Vertex(40,55));
-    geo.addVertex(Vertex(35,35));
-    geo.addVertex(Vertex(35,15));
-    geo.addVertex(Vertex(30,15));
-    m_solver->addGeometry(geo);
-
-    //m_solver->addMarkerParticle(MarkerParticle{Vertex(3.99,3.99),Vertex(0.75,0.75)});
-    //m_solver->addMarkerParticle(MarkerParticle{Vertex(3.01,3.01),Vertex(0.75,0.75)});
+    if(geoType == "solid")
+    {
+        m_solver->addGeometry(geo);
+    }
+    else if(geoType == "source")
+    {
+        m_solver->addSource(geo);
+    }
+    else if(geoType == "sink")
+    {
+        m_solver->addSink(geo);
+    }
 }
 
 void LiquidRenderApp::setupFluidrender()

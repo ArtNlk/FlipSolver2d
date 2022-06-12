@@ -1,42 +1,46 @@
 {
-  "simType": "fluid",
-  "domainSizeI": 50,
-  "domainSizeJ": 50,
-  "resolution": 100,
-  "fps": 30,
-  "seed": 0,
-  "particlesPerCell": 4,
-  "globalAcceleration": [
-    9.8,
-    0
-  ],
-  "objects": [
-    {
-      "type": "solid",
-      "verts": [
-        "15,10",
-        "25,15",
-        "25,5"
-      ]
-    },
-    {
-      "type": "solid",
-      "verts": [
-        "20,40",
-        "40,55",
-        "35,35",
-        "35,15",
-        "30,15"
-      ]
-    },
-    {
-      "type": "source",
-      "verts": [
-        "5,5",
-        "15,5",
-        "15,20",
-        "5,15"
-      ]
-    }
-  ]
+  "settings": {
+    "simType": "fluid",
+    "domainSizeI": 50,
+    "domainSizeJ": 50,
+    "resolution": 100,
+    "fps": 30,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "globalAcceleration": [
+      9.8,
+      0
+    ]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "solid",
+        "verts": [
+          [15,10],
+          [25,15],
+          [25,5]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [20,40],
+          [40,55],
+          [35,35],
+          [35,15],
+          [30,15]
+        ]
+      },
+      {
+        "type": "source",
+        "verts": [
+          [5,5],
+          [15,5],
+          [15,20],
+          [5,15]
+        ]
+      }
+    ]
+  }
 }

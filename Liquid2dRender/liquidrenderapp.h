@@ -7,10 +7,14 @@
 #include FT_FREETYPE_H
 #include <memory>
 
+#include "nlohmann/json.hpp"
+
 #include "flipsolver2d.h"
 #include "fluidrenderer.h"
 #include "geometry2d.h"
 #include "textmenurenderer.h"
+
+using json = nlohmann::json;
 
 class LiquidRenderApp
 {
@@ -25,7 +29,10 @@ protected:
     void resizeCallback(GLFWwindow* window, int width, int height);
     void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-    void setupGeometry();
+    void loadJson(std::string fileName);
+    void settingsFromJson(json settingsJson);
+    void solverFromJson(json solverJson);
+    void addGeometryFromJson(json geometryJson);
     void setupFluidrender();
     void setupFluidrenderQuad();
     void addVert(std::vector<float> &vertexVector, float x, float y, float u, float v);
