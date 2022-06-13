@@ -14,7 +14,7 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
     m_solver(new FlipSolver(2,true)),
-    m_fluidRenderer(m_solver,m_startWindowWidth,m_startWindowHeight),
+    m_fluidRenderer(m_startWindowWidth,m_startWindowHeight),
     m_textMenuRenderer(0,0,m_startWindowWidth,m_startWindowHeight,m_fluidRenderer),
     m_renderRequested(false)
 {
@@ -33,7 +33,7 @@ void LiquidRenderApp::init()
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
 
-    loadJson("./scenes/test_scene.json");
+    loadJson("./scenes/dam_break.json");
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
     {
@@ -52,7 +52,8 @@ void LiquidRenderApp::init()
     glfwSetFramebufferSizeCallback(m_window,LiquidRenderApp::GLFWCallbackWrapper::ResizeCallback);
     glfwSetKeyCallback(m_window, LiquidRenderApp::GLFWCallbackWrapper::KeyboardCallback);
 
-    m_fluidRenderer.init();
+    m_solver->init();
+    m_fluidRenderer.init(m_solver);
     m_textMenuRenderer.init();
 
     setupFluidrender();
@@ -178,19 +179,28 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                 case GLFW_KEY_R:
                 {
                     int frame = 0;
-                    std::filesystem::create_directory("./output");
-                    for (const auto& entry : std::filesystem::directory_iterator("./output"))
-                            std::filesystem::remove_all(entry.path());
-                    for(int second; second < 30; second++)
+                    static bool isFirst = true;
+                    if(isFirst)
+                    {
+                        std::filesystem::create_directory("./output");
+                        for (const auto& entry : std::filesystem::directory_iterator("./output"))
+                                std::filesystem::remove_all(entry.path());
+                        isFirst = false;
+                    }
+                    for(int second = 0; second < 30; second++)
                     {
                         for(int i = 0; i < SimSettings::fps(); i++)
                         {
                             m_solver->stepFrame();
                             m_fluidRenderer.update();
                             render();
-                            m_fluidRenderer.dumpToPng(std::to_string(SimSettings::fps()) + "fps_" + std::to_string(frame) + ".png");
+                            m_fluidRenderer.dumpToPng(std::to_string(SimSettings::fps()) + "fps_" + std::to_string(m_solver->frameNumber()) + ".png");
                             frame++;
                             glfwPollEvents();
+                            if(glfwWindowShouldClose(m_window))
+                            {
+                                glfwTerminate();
+                            }
                         }
                     }
                 }
@@ -233,7 +243,31 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::domainSizeJ() = settingsJson["domainSizeJ"].get<int>();
     SimSettings::resolution() = settingsJson["resolution"].get<int>();
     SimSettings::fps() = settingsJson["fps"].get<int>();
+    SimSettings::frameDt() = 1.f / SimSettings::fps();
+    SimSettings::maxSubsteps() = 3;
+    SimSettings::density() = 100;
     SimSettings::randomSeed() = settingsJson["seed"].get<int>();
+    SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
+    SimSettings::picRatio() = settingsJson["picRatio"].get<float>();
+    std::pair<float,float> v = settingsJson["globalAcceleration"]
+                                    .get<std::pair<float,float>>();
+    SimSettings::globalAcceleration() = Vertex(v.first,v.second);
+    if(SimSettings::domainSizeI() > SimSettings::domainSizeJ())
+    {
+        SimSettings::dx() = static_cast<float>(SimSettings::domainSizeI()) /
+                                                SimSettings::resolution();
+        SimSettings::gridSizeI() = SimSettings::resolution();
+        SimSettings::gridSizeJ() = (static_cast<float>(SimSettings::domainSizeJ()) /
+                    static_cast<float>(SimSettings::domainSizeI())) * SimSettings::resolution();
+    }
+    else
+    {
+        SimSettings::dx() = static_cast<float>(SimSettings::domainSizeJ()) /
+                                                SimSettings::resolution();
+        SimSettings::gridSizeJ() = SimSettings::resolution();
+        SimSettings::gridSizeI() = (static_cast<float>(SimSettings::domainSizeI()) /
+                    static_cast<float>(SimSettings::domainSizeJ())) * SimSettings::resolution();
+    }
 }
 
 void LiquidRenderApp::solverFromJson(json solverJson)
@@ -268,6 +302,10 @@ void LiquidRenderApp::addGeometryFromJson(json geometryJson)
     else if(geoType == "sink")
     {
         m_solver->addSink(geo);
+    }
+    else if(geoType == "fluid")
+    {
+        m_solver->addInitialFluid(geo);
     }
 }
 

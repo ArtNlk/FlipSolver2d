@@ -33,8 +33,8 @@ inline ParticleRenderMode& operator++(ParticleRenderMode& state, int) {
 class FluidRenderer
 {
 public:
-    FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidth, int textureHeight);
-    void init();
+    FluidRenderer(int textureWidth, int textureHeight);
+    void init(std::shared_ptr<FlipSolver> solver);
     void render();
     void update();
     void updateGrid();

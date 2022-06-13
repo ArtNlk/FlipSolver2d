@@ -17,6 +17,11 @@ FlipSolver::FlipSolver(int extrapRadius, bool vonNeumannNeighbors) :
     m_randEngine = std::mt19937(SimSettings::randomSeed());
 }
 
+void FlipSolver::init()
+{
+    m_grid = MACFluidGrid(SimSettings::gridSizeI(), SimSettings::gridSizeJ());
+}
+
 void FlipSolver::project()
 {
     m_grid.updateLinearToFluidMapping();
@@ -132,7 +137,7 @@ void FlipSolver::step()
     applyGlobalAcceleration();
     project();
     extrapolateVelocityField(1);
-    float picRatio = 0.05f;
+    float picRatio = SimSettings::picRatio();
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
@@ -197,6 +202,11 @@ void FlipSolver::stagedStep()
 
 void FlipSolver::stepFrame()
 {
+    if(m_frameNumber == 0)
+    {
+        updateInitialFluid();
+        seedInitialFluid();
+    }
     float substepTime = 0.f;
     bool finished = false;
     int substepCount = 0;
@@ -204,7 +214,8 @@ void FlipSolver::stepFrame()
     {
         float vel = maxParticleVelocity();
         float maxSubstepSize = 1.f/(vel + 1e-15f);
-        if(substepTime + maxSubstepSize >= SimSettings::frameDt())
+        if(substepTime + maxSubstepSize >= SimSettings::frameDt() ||
+                substepCount == (SimSettings::maxSubsteps() - 1))
         {
             maxSubstepSize = SimSettings::frameDt() - substepTime;
             finished = true;
@@ -221,6 +232,7 @@ void FlipSolver::stepFrame()
         if(substepCount > 50) break;
     }
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
+    m_frameNumber++;
 }
 
 void FlipSolver::updateSdf()
@@ -290,6 +302,24 @@ void FlipSolver::updateSinks()
     }
 }
 
+void FlipSolver::updateInitialFluid()
+{
+    float dx = SimSettings::dx();
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            for(Geometry2d& geo : m_initialFluid)
+            {
+                if(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                {
+                    m_grid.setMaterial(i,j,FluidCellMaterial::FLUID);
+                }
+            }
+        }
+    }
+}
+
 int FlipSolver::gridSizeI()
 {
     return m_grid.sizeI();
@@ -315,6 +345,11 @@ void FlipSolver::addSink(Geometry2d &geometry)
     m_sinks.push_back(geometry);
 }
 
+void FlipSolver::addInitialFluid(Geometry2d &geometry)
+{
+    m_initialFluid.push_back(geometry);
+}
+
 void FlipSolver::addMarkerParticle(Vertex particle)
 {
     MarkerParticle p;
@@ -326,6 +361,11 @@ void FlipSolver::addMarkerParticle(Vertex particle)
 void FlipSolver::addMarkerParticle(MarkerParticle particle)
 {
     m_markerParticles.push_back(particle);
+}
+
+int FlipSolver::frameNumber()
+{
+    return m_frameNumber;
 }
 
 void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
@@ -346,7 +386,28 @@ void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
                 if(additionalParticles <= 0) continue;
                 for(int p = 0; p < additionalParticles; p++)
                 {
-                    addMarkerParticle(MarkerParticle{jitteredPosInCell(i,j),Vertex()});
+                    Vertex pos = jitteredPosInCell(i,j);
+                    Vertex velocity = m_grid.velocityAt(pos);
+                    addMarkerParticle(MarkerParticle{pos,velocity});
+                }
+            }
+        }
+    }
+}
+
+void FlipSolver::seedInitialFluid()
+{
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(m_grid.isFluid(i,j))
+            {
+                for(int p = 0; p < SimSettings::particlesPerCell(); p++)
+                {
+                    Vertex pos = jitteredPosInCell(i,j);
+                    Vertex velocity = m_grid.velocityAt(pos);
+                    addMarkerParticle(MarkerParticle{pos,velocity});
                 }
             }
         }

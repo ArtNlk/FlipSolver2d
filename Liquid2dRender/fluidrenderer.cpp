@@ -44,8 +44,8 @@ const char *FluidRenderer::m_fragShaderSource =
         "    //FragColor = vec4(vertexColor.x, vertexColor.y, vertexColor.z, 1.0f);\n"
         "}\0";
 
-FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidth, int textureHeight) :
-    m_solver(solver),
+FluidRenderer::FluidRenderer(int textureWidth, int textureHeight) :
+    m_solver(nullptr),
     m_gridVertexCount(0),
     m_gridRenderMode(FluidRenderMode::RENDER_MATERIAL),
     m_vectorRenderMode(VectorRenderMode::VECTOR_RENDER_CENTER),
@@ -56,14 +56,20 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
     m_textureWidth(textureWidth),
     m_textureHeight(textureHeight)
 {
+
+}
+
+void FluidRenderer::init(std::shared_ptr<FlipSolver> solver)
+{
+    m_solver = solver;
     float gridHeightF = m_solver->grid().sizeI() * SimSettings::dx();
     float gridWidthF = m_solver->grid().sizeJ() * SimSettings::dx();
     m_projection = glm::ortho(0.f,static_cast<float>(gridWidthF),
                                 static_cast<float>(gridHeightF),0.f);
-    m_gridVerts.reserve(solver.get()->grid().cellCount()*m_vertexPerCell*m_vertexSize);
-    m_gridIndices.reserve(solver.get()->grid().cellCount()*m_vertexPerCell);
+    m_gridVerts.reserve(m_solver.get()->grid().cellCount()*m_vertexPerCell*m_vertexSize);
+    m_gridIndices.reserve(m_solver.get()->grid().cellCount()*m_vertexPerCell);
 
-    m_vectorVerts.reserve(solver.get()->grid().cellCount()*m_vectorVertsPerCell);
+    m_vectorVerts.reserve(m_solver.get()->grid().cellCount()*m_vectorVertsPerCell);
 
     int gridWidth = m_solver->gridSizeJ();
     int gridHeight = m_solver->gridSizeI();
@@ -83,10 +89,6 @@ FluidRenderer::FluidRenderer(std::shared_ptr<FlipSolver> solver, int textureWidt
             setVectorColor(i,j,Color(255,0,0));
         }
     }
-}
-
-void FluidRenderer::init()
-{
     loadGeometry();
     updateParticles();
     setupGl();

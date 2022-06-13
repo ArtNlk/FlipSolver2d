@@ -58,6 +58,14 @@ void TextMenuRenderer::render()
     glm::vec2 currentTextPos = m_nextLineOffset;
     std::string temp;
 
+    temp = "Frame: " + std::to_string(m_fluidRenderer.solver()->frameNumber());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
     temp = "Domain size (IxJ): " + std::to_string(SimSettings::domainSizeI()) + " x " + std::to_string(SimSettings::domainSizeJ());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
@@ -67,6 +75,22 @@ void TextMenuRenderer::render()
 
     currentTextPos += m_nextLineOffset;
     temp = "Grid size (IxJ): " + std::to_string(SimSettings::gridSizeI()) + " x " + std::to_string(SimSettings::gridSizeJ());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Particles per cell: " + std::to_string(SimSettings::particlesPerCell());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "PIC ratio: " + std::to_string(SimSettings::picRatio());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -90,7 +114,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Substeps: " + std::to_string(SimSettings::substeps());
+    temp = "Substeps: " + std::to_string(SimSettings::maxSubsteps());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,

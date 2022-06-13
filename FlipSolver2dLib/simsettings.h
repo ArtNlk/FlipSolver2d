@@ -78,9 +78,14 @@ public:
         return m_instance.m_fps;
     }
 
-    static inline int& substeps()
+    static inline int& maxSubsteps()
     {
-        return m_instance.m_substeps;
+        return m_instance.m_maxSubsteps;
+    }
+
+    static inline float& picRatio()
+    {
+        return m_instance.m_picRatio;
     }
 
 protected:
@@ -99,7 +104,8 @@ protected:
     int m_gridSizeJ;
     float m_resolution;
     int m_fps;
-    int m_substeps;
+    int m_maxSubsteps;
+    float m_picRatio;
 };
 
 #endif // SIMSETTINGS_H

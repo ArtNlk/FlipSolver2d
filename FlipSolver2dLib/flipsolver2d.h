@@ -45,6 +45,8 @@ public:
         m_extrapolationRadius = radius;
     }
 
+    void init();
+
     void extrapolateVelocityField(int steps = std::numeric_limits<int>().max());
 
     void project();
@@ -65,6 +67,8 @@ public:
 
     void updateSinks();
 
+    void updateInitialFluid();
+
     int gridSizeI();
 
     int gridSizeJ();
@@ -75,9 +79,13 @@ public:
 
     void addSink(Geometry2d& geometry);
 
+    void addInitialFluid(Geometry2d& geometry);
+
     void addMarkerParticle(Vertex particle);
 
     void addMarkerParticle(MarkerParticle particle);
+
+    int frameNumber();
 
     std::vector<Geometry2d> &geometryObjects();
 
@@ -99,6 +107,8 @@ protected:
 
     void reseedParticles(Grid2d<int> &particleCounts);
 
+    void seedInitialFluid();
+
     void countParticles(Grid2d<int> &output);
 
     void updateMaterialsFromParticles(Grid2d<int> &particleCount);
@@ -113,6 +123,7 @@ protected:
 
     int m_extrapolationRadius;
     bool m_useVonNeumannNeighborhood;
+    int m_frameNumber;
     MACFluidGrid m_grid;
     std::vector<MarkerParticle> m_markerParticles;
     PCGSolver m_pcgSolver;
@@ -120,6 +131,7 @@ protected:
     std::vector<Geometry2d> m_geometry;
     std::vector<Geometry2d> m_sources;
     std::vector<Geometry2d> m_sinks;
+    std::vector<Geometry2d> m_initialFluid;
     SimulationStepStage m_stepStage;
 };
 
