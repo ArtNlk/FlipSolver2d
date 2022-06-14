@@ -90,8 +90,8 @@ void FlipSolver::advect()
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-        float substepTime = 0.f;
-        bool finished = false;
+//        float substepTime = 0.f;
+//        bool finished = false;
         int substepCount = 0;
 //        while(!finished)
 //        {
@@ -143,7 +143,14 @@ void FlipSolver::step()
         MarkerParticle &p = m_markerParticles[i];
         Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
         Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
-        p.velocity = picRatio * newVelocity + (1.f-picRatio) * (p.velocity + newVelocity - oldVelocity);
+        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
+        {
+            p.velocity = newVelocity;
+        }
+        else
+        {
+            p.velocity = picRatio * newVelocity + (1.f-picRatio) * (p.velocity + newVelocity - oldVelocity);
+        }
     }
     advect();
 }
@@ -213,7 +220,7 @@ void FlipSolver::stepFrame()
     while(!finished)
     {
         float vel = maxParticleVelocity();
-        float maxSubstepSize = 1.f/(vel + 1e-15f);
+        float maxSubstepSize = SimSettings::cflNumber()/(vel + 1e-15f);
         if(substepTime + maxSubstepSize >= SimSettings::frameDt() ||
                 substepCount == (SimSettings::maxSubsteps() - 1))
         {

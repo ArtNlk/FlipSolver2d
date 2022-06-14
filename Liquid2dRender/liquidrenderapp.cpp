@@ -248,6 +248,7 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::density() = 100;
     SimSettings::randomSeed() = settingsJson["seed"].get<int>();
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
+    SimSettings::cflNumber() = settingsJson["cflNumber"].get<float>();
     SimSettings::picRatio() = settingsJson["picRatio"].get<float>();
     std::pair<float,float> v = settingsJson["globalAcceleration"]
                                     .get<std::pair<float,float>>();

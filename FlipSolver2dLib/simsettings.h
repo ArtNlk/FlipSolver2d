@@ -88,6 +88,11 @@ public:
         return m_instance.m_picRatio;
     }
 
+    static inline float& cflNumber()
+    {
+        return m_instance.m_cflNumber;
+    }
+
 protected:
     static SimSettings m_instance;
 
@@ -106,6 +111,7 @@ protected:
     int m_fps;
     int m_maxSubsteps;
     float m_picRatio;
+    float m_cflNumber;
 };
 
 #endif // SIMSETTINGS_H

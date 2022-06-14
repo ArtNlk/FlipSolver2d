@@ -98,6 +98,14 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
+    temp = "CFL: " + std::to_string(SimSettings::cflNumber());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
     temp = "dX: " + std::to_string(SimSettings::dx());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
