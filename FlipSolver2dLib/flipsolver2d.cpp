@@ -11,6 +11,7 @@
 FlipSolver::FlipSolver(int extrapRadius, bool vonNeumannNeighbors) :
     m_extrapolationRadius(extrapRadius),
     m_useVonNeumannNeighborhood(vonNeumannNeighbors),
+    m_frameNumber(0),
     m_grid(SimSettings::gridSizeI(), SimSettings::gridSizeJ()),
     m_stepStage(SimulationStepStage::STAGE_ADVECT)
 {
