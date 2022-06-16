@@ -5,7 +5,7 @@
     "domainSizeJ": 50,
     "resolution": 100,
     "fps": 30,
-    "maxSubsteps": 1,
+    "maxSubsteps": 10,
     "seed": 0,
     "particlesPerCell": 4,
     "picRatio": 0.03,
@@ -26,17 +26,26 @@
       {
         "type": "solid",
         "verts": [
-          [0,0],
-          [0,3],
+          [3,0],
+          [3,3],
           [47,3],
           [47,0]
+        ]
+      },
+          {
+        "type": "solid",
+        "verts": [
+          [0,0],
+          [0,50],
+          [3,50],
+          [3,0]
         ]
       },
       {
         "type": "solid",
         "verts": [
-          [0,47],
-          [0,50],
+          [3,47],
+          [3,50],
           [47,50],
           [47,47]
         ]

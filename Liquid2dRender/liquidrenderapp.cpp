@@ -34,6 +34,7 @@ void LiquidRenderApp::init()
                                            &m_textMenuRenderer);
 
     loadJson("./scenes/dam_break.json");
+    //loadJson("./scenes/test_scene.json");
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
     {
@@ -187,6 +188,7 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                                 std::filesystem::remove_all(entry.path());
                         isFirst = false;
                     }
+                    bool run = true;
                     for(int second = 0; second < 30; second++)
                     {
                         for(int i = 0; i < SimSettings::fps(); i++)
@@ -200,8 +202,11 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                             if(glfwWindowShouldClose(m_window))
                             {
                                 glfwTerminate();
+                                run = false;
                             }
+                            if(!run) break;
                         }
+                        if(!run) break;
                     }
                 }
                 break;
@@ -211,15 +216,20 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                 break;
 
                 case GLFW_KEY_SPACE:
-                for(int i = 0; i < SimSettings::fps(); i++)
                 {
-                    m_solver->stepFrame();
-                    m_fluidRenderer.update();
-                    render();
-                    glfwPollEvents();
-                    if(glfwWindowShouldClose(m_window))
+                    bool run = true;
+                    for(int i = 0; i < SimSettings::fps(); i++)
                     {
-                        glfwTerminate();
+                        m_solver->stepFrame();
+                        m_fluidRenderer.update();
+                        render();
+                        glfwPollEvents();
+                        if(glfwWindowShouldClose(m_window))
+                        {
+                            glfwTerminate();
+                            run = false;
+                        }
+                        if(!run) break;
                     }
                 }
                 break;

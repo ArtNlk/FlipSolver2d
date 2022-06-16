@@ -222,31 +222,31 @@ void FlipSolver::stepFrame()
     float substepTime = 0.f;
     bool finished = false;
     int substepCount = 0;
-    for(int i = 0; i < SimSettings::maxSubsteps(); i++)
-    {
-        step();
-    }
-//    while(!finished)
+//    for(int i = 0; i < SimSettings::maxSubsteps(); i++)
 //    {
-//        float vel = maxParticleVelocity();
-//        float maxSubstepSize = SimSettings::cflNumber()/(vel + 1e-15f);
-//        if(substepTime + maxSubstepSize >= SimSettings::frameDt() ||
-//                substepCount == (SimSettings::maxSubsteps() - 1))
-//        {
-//            maxSubstepSize = SimSettings::frameDt() - substepTime;
-//            finished = true;
-//        }
-//        else if(substepTime + 2.f*maxSubstepSize >= SimSettings::frameDt())
-//        {
-//            maxSubstepSize = 0.5f*(SimSettings::frameDt() - substepTime);
-//        }
-//        SimSettings::stepDt() = maxSubstepSize;
-//        std::cout << "Substep " << substepCount << " substep dt: " << SimSettings::stepDt() << " vel " << vel << std::endl;
 //        step();
-//        substepTime += maxSubstepSize;
-//        substepCount++;
-//        if(substepCount > 50) break;
 //    }
+    while(!finished)
+    {
+        float vel = maxParticleVelocity();
+        float maxSubstepSize = SimSettings::cflNumber()/(vel + 1e-15f);
+        if(substepTime + maxSubstepSize >= SimSettings::frameDt() ||
+                substepCount == (SimSettings::maxSubsteps() - 1))
+        {
+            maxSubstepSize = SimSettings::frameDt() - substepTime;
+            finished = true;
+        }
+        else if(substepTime + 2.f*maxSubstepSize >= SimSettings::frameDt())
+        {
+            maxSubstepSize = 0.5f*(SimSettings::frameDt() - substepTime);
+        }
+        SimSettings::stepDt() = maxSubstepSize;
+        std::cout << "Substep " << substepCount << " substep dt: " << SimSettings::stepDt() << " vel " << vel << std::endl;
+        step();
+        substepTime += maxSubstepSize;
+        substepCount++;
+        if(substepCount > 50) break;
+    }
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
     m_frameNumber++;
 }
@@ -483,6 +483,7 @@ void FlipSolver::extrapolateVelocityField(int steps)
                     {
                         markers.at(i,j) = 1;
                         wavefront.push(Index2d(i,j));
+                        break;
                     }
                 }
             }
@@ -540,6 +541,7 @@ void FlipSolver::extrapolateVelocityField(int steps)
                     {
                         markers.at(i,j) = 1;
                         wavefront.push(Index2d(i,j));
+                        break;
                     }
                 }
             }
@@ -685,16 +687,16 @@ void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gri
         int i = math::integr(p.position.x());
         int j = math::integr(p.position.y());
         //Run over all cells that this particle might affect
-        for (int iOffset = -1; iOffset < 3; iOffset++)
+        for (int iOffset = -3; iOffset < 3; iOffset++)
         {
-            for (int jOffset = -1; jOffset < 3; jOffset++)
+            for (int jOffset = -3; jOffset < 3; jOffset++)
             {
                 int iIdx = i+iOffset;
                 int jIdx = j+jOffset;
                 float weightU = math::quadraticBSpline(p.position.x() - (iIdx),
                                                      p.position.y() - (static_cast<float>(jIdx) + 0.5f));
 
-                float weightV = math::quadraticBSpline(p.position.x() - static_cast<float>(iIdx) + 0.5f,
+                float weightV = math::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
                                                      p.position.y() - (jIdx));
                 if(uWeights.inBounds(iIdx,jIdx))
                 {
