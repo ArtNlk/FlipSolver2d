@@ -20,13 +20,15 @@ public:
     {
     }
 
-    Color(float r, float g, float b, float a = 1) :
+    Color(float r, float g, float b, float a = 1.f) :
         m_r(r*255),
         m_g(g*255),
         m_b(b*255),
         m_a(a*255)
     {
     }
+
+    static Color fromHSVA(float h, float s, float v, float a = 1.f);
 
     inline int &r() {return m_r;}
     inline int &g() {return m_g;}

@@ -45,16 +45,16 @@ const char *FluidRenderer::m_fragShaderSource =
         "}\0";
 
 FluidRenderer::FluidRenderer(int textureWidth, int textureHeight) :
-    m_solver(nullptr),
     m_gridVertexCount(0),
+    m_textureWidth(textureWidth),
+    m_textureHeight(textureHeight),
     m_gridRenderMode(FluidRenderMode::RENDER_MATERIAL),
     m_vectorRenderMode(VectorRenderMode::VECTOR_RENDER_CENTER),
     m_particleRenderMode(ParticleRenderMode::PARTICLE_RENDER_VELOCITY),
     m_vectorsEnabled(true),
     m_geometryEnabled(true),
     m_particlesEnabled(true),
-    m_textureWidth(textureWidth),
-    m_textureHeight(textureHeight)
+    m_solver(nullptr)
 {
 
 }
@@ -674,7 +674,7 @@ void FluidRenderer::updateParticles()
 
 void FluidRenderer::updateVectorsStaggered()
 {
-    float unitLengthVelocity = 0.75; //Velocity len(v) at which draw vector will be exactly length 1 grid cell side
+    //float unitLengthVelocity = 0.75; //Velocity len(v) at which draw vector will be exactly length 1 grid cell side
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
@@ -685,18 +685,19 @@ void FluidRenderer::updateVectorsStaggered()
         {
             Vertex gridspaceVelocity(m_solver->grid().getU(i,j),m_solver->grid().getV(i,j));
             //Vertex gridspaceVelocity(1,0);
-            float scaleFactor = gridspaceVelocity.distFromZero() / unitLengthVelocity;
+            float scaleFactor = gridspaceVelocity.distFromZero() / SimSettings::dx();
             //float scaleFactor = 1;
-            Vertex newVector = Vertex(gridspaceVelocity.y() * scaleFactor,
-                                       gridspaceVelocity.x() * scaleFactor);
+            Vertex newVector = Vertex(gridspaceVelocity.y() / scaleFactor,
+                                       gridspaceVelocity.x() / scaleFactor);
             updateVector(i,j,newVector);
+            setVectorColor(i,j,velocityColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
         }
     }
 }
 
 void FluidRenderer::updateVectorsCentered()
 {
-    float unitLengthVelocity = 0.75;
+    //float unitLengthVelocity = 0.75;
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
@@ -713,6 +714,7 @@ void FluidRenderer::updateVectorsCentered()
             Vertex newVector = Vertex((gridspaceVelocity.y() / scaleFactor),
                                        (gridspaceVelocity.x() / scaleFactor));
             updateVector(i,j,newVector);
+            setVectorColor(i,j,velocityColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
         }
     }
 }
@@ -761,9 +763,7 @@ void FluidRenderer::reloadParticlesVelocity()
     m_particleVerts.clear();
     for(MarkerParticle &particle : m_solver->markerParticles())
     {
-        float r = std::abs(particle.velocity.x()) / m_velocityRangeMax;
-        float g = std::abs(particle.velocity.y()) / m_velocityRangeMax;
-        addParticle(particle.position,Color(r,g,0.f));
+        addParticle(particle.position,velocityColorRamp(particle.velocity.distFromZero() / m_velocityRangeMax));
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {
@@ -816,7 +816,7 @@ void FluidRenderer::setVectorColor(int x, int y, Color c)
 {
     int linearIndex = m_solver->grid().linearIndex(x,y) * m_vectorVertsPerCell;
     setVectorVertexColor(linearIndex, c);
-    //setVectorVertexColor(linearIndex + 1, c);
+    setVectorVertexColor(linearIndex + 1, c);
 }
 
 void FluidRenderer::setParticleColor(int idx, Color c)
@@ -825,6 +825,18 @@ void FluidRenderer::setParticleColor(int idx, Color c)
     m_particleVerts[linearIndex + 0] = c.rf();
     m_particleVerts[linearIndex + 1] = c.gf();
     m_particleVerts[linearIndex + 2] = c.bf();
+}
+
+Color FluidRenderer::velocityColorRamp(float val)
+{
+    float hue = std::clamp(val,0.f,1.f) * (m_hueMaxVelocity - m_hueMinVelocity) + m_hueMinVelocity;
+    return Color::fromHSVA(hue,1.f,1.f);
+}
+
+Color FluidRenderer::velocityComponentColorRamp(float val)
+{
+    float hue = std::clamp(val,0.f,1.f) * (m_hueMaxVelocityComponent - m_hueMinVelocityComponent) + m_hueMinVelocityComponent;
+    return Color::fromHSVA(hue,1.f,1.f);
 }
 
 void FluidRenderer::dumpToPng(std::string fileName)

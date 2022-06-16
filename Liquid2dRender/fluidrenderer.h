@@ -144,6 +144,9 @@ protected:
     void setVectorColor(int x, int y, Color c);
     void setParticleColor(int idx, Color c);
 
+    Color velocityColorRamp(float val);
+    Color velocityComponentColorRamp(float val);
+
     unsigned int m_vbo_grid;
     unsigned int m_vao_grid;
     unsigned int m_ebo_grid;
@@ -183,8 +186,12 @@ protected:
     static const Color m_markerParticleColor;
     static const Color m_geometryColor;
 
-    static constexpr float m_velocityRangeMax = 1;
+    static constexpr float m_velocityRangeMax = 50;
     static constexpr float m_velocityComponentRangeMax = 5;
+    static constexpr float m_hueMinVelocity = 0.66f;
+    static constexpr float m_hueMaxVelocity = 0.f;
+    static constexpr float m_hueMinVelocityComponent = 0.66f;
+    static constexpr float m_hueMaxVelocityComponent = 0.f;
 
     std::vector<float> m_gridVerts;
     std::vector<unsigned int> m_gridIndices;

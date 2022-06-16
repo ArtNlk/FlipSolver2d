@@ -13,7 +13,7 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(2,true)),
+    m_solver(new FlipSolver(1,true)),
     m_fluidRenderer(m_startWindowWidth,m_startWindowHeight),
     m_textMenuRenderer(0,0,m_startWindowWidth,m_startWindowHeight,m_fluidRenderer),
     m_renderRequested(false)
@@ -217,6 +217,10 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_fluidRenderer.update();
                     render();
                     glfwPollEvents();
+                    if(glfwWindowShouldClose(m_window))
+                    {
+                        glfwTerminate();
+                    }
                 }
                 break;
             }
@@ -244,7 +248,8 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::resolution() = settingsJson["resolution"].get<int>();
     SimSettings::fps() = settingsJson["fps"].get<int>();
     SimSettings::frameDt() = 1.f / SimSettings::fps();
-    SimSettings::maxSubsteps() = 3;
+    SimSettings::maxSubsteps() = settingsJson["maxSubsteps"].get<int>();
+    SimSettings::stepDt() = SimSettings::frameDt() / SimSettings::maxSubsteps();
     SimSettings::density() = 100;
     SimSettings::randomSeed() = settingsJson["seed"].get<int>();
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();

@@ -68,7 +68,6 @@ DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(MACFluidG
                 {
                     modifyAdiag(i,j,scale, grid);
                 }
-
             }
         }
     }

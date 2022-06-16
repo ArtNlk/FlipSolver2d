@@ -9,7 +9,7 @@
 #include "simsettings.h"
 #include "logger.h"
 
-const double PCGSolver::m_tol = 1.0e-12;
+const double PCGSolver::m_tol = 1.0e-14;
 
 PCGSolver::PCGSolver() :
     m_precondCache()
@@ -45,8 +45,8 @@ bool PCGSolver::solve(const UpperTriangularMatrix &matrix, MACFluidGrid &grid, s
 //        }
         if (err <= m_tol)
         {
-            debug() << "Solver done, i = " << i << " err = " << err;
-            std::cout << "Solver done, i = " << i << " err = " << err << '\n';
+            debug() << "Solver done, iter = " << i << " err = " << err;
+            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
             return true;
         }
         m_aux = m_residual;

@@ -5,6 +5,7 @@
     "domainSizeJ": 50,
     "resolution": 100,
     "fps": 30,
+    "maxSubsteps": 5,
     "seed": 0,
     "particlesPerCell": 4,
     "picRatio": 0.03,

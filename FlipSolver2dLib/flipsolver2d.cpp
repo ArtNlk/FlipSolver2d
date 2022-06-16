@@ -138,20 +138,19 @@ void FlipSolver::step()
     applyGlobalAcceleration();
     project();
     extrapolateVelocityField(1);
-    float picRatio = SimSettings::picRatio();
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
         Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
         Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
-        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
-        {
-            p.velocity = newVelocity;
-        }
-        else
-        {
-            p.velocity = picRatio * newVelocity + (1.f-picRatio) * (p.velocity + newVelocity - oldVelocity);
-        }
+//        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
+//        {
+//            p.velocity = newVelocity;
+//        }
+//        else
+//        {
+            p.velocity = SimSettings::picRatio() * newVelocity + (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
+//        }
     }
     advect();
 }
@@ -161,11 +160,15 @@ void FlipSolver::stagedStep()
     static Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
     static Grid2d<float> prevU(m_grid.velocityGridU().sizeI(), m_grid.velocityGridU().sizeJ());
     static Grid2d<float> prevV(m_grid.velocityGridV().sizeI(), m_grid.velocityGridV().sizeJ());
-    float picRatio = 0.03f;
     m_stepStage++;
     switch(m_stepStage)
     {
     case STAGE_RESEED:
+        if(m_frameNumber == 0)
+        {
+            updateInitialFluid();
+            seedInitialFluid();
+        }
         particleCounts.fill(0);
         countParticles(particleCounts);
         reseedParticles(particleCounts);
@@ -194,13 +197,14 @@ void FlipSolver::stagedStep()
         for(int i = m_markerParticles.size() - 1; i >= 0; i--)
         {
             MarkerParticle &p = m_markerParticles[i];
-            Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU),math::lerpVGrid(p.position.x(),p.position.y(),prevV));
-            Vertex newVelocity = m_grid.velocityAt(p.position);
-            p.velocity = picRatio * newVelocity + (1.f-picRatio) * (p.velocity + newVelocity - oldVelocity);
+            Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
+            Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
+            p.velocity = SimSettings::picRatio() * newVelocity + (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
         }
         break;
     case STAGE_ADVECT:
         advect();
+        m_frameNumber++;
         std::cout << "Simulation step finished" << std::endl;
         break;
     case STAGE_ITER_END:
@@ -218,27 +222,31 @@ void FlipSolver::stepFrame()
     float substepTime = 0.f;
     bool finished = false;
     int substepCount = 0;
-    while(!finished)
+    for(int i = 0; i < SimSettings::maxSubsteps(); i++)
     {
-        float vel = maxParticleVelocity();
-        float maxSubstepSize = SimSettings::cflNumber()/(vel + 1e-15f);
-        if(substepTime + maxSubstepSize >= SimSettings::frameDt() ||
-                substepCount == (SimSettings::maxSubsteps() - 1))
-        {
-            maxSubstepSize = SimSettings::frameDt() - substepTime;
-            finished = true;
-        }
-        else if(substepTime + 2.f*maxSubstepSize >= SimSettings::frameDt())
-        {
-            maxSubstepSize = 0.5f*(SimSettings::frameDt() - substepTime);
-        }
-        SimSettings::stepDt() = maxSubstepSize;
-        std::cout << "Substep " << substepCount << " substep dt: " << SimSettings::stepDt() << " vel " << vel << std::endl;
         step();
-        substepTime += maxSubstepSize;
-        substepCount++;
-        if(substepCount > 50) break;
     }
+//    while(!finished)
+//    {
+//        float vel = maxParticleVelocity();
+//        float maxSubstepSize = SimSettings::cflNumber()/(vel + 1e-15f);
+//        if(substepTime + maxSubstepSize >= SimSettings::frameDt() ||
+//                substepCount == (SimSettings::maxSubsteps() - 1))
+//        {
+//            maxSubstepSize = SimSettings::frameDt() - substepTime;
+//            finished = true;
+//        }
+//        else if(substepTime + 2.f*maxSubstepSize >= SimSettings::frameDt())
+//        {
+//            maxSubstepSize = 0.5f*(SimSettings::frameDt() - substepTime);
+//        }
+//        SimSettings::stepDt() = maxSubstepSize;
+//        std::cout << "Substep " << substepCount << " substep dt: " << SimSettings::stepDt() << " vel " << vel << std::endl;
+//        step();
+//        substepTime += maxSubstepSize;
+//        substepCount++;
+//        if(substepCount > 50) break;
+//    }
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
     m_frameNumber++;
 }
@@ -574,25 +582,25 @@ void FlipSolver::calcRhs(std::vector<double> &rhs)
         {
             if (m_grid.isFluid(i,j))
             {
-                rhs[m_grid.linearFluidIndex(i,j)] = -scale * (m_grid.getU(i+1,j) - m_grid.getU(i,j)
+                rhs[m_grid.linearFluidIndex(i,j)] = -scale * static_cast<double>(m_grid.getU(i+1,j) - m_grid.getU(i,j)
                                                               +m_grid.getV(i,j+1) - m_grid.getV(i,j));
 
                 if(m_grid.isSolid(i-1,j))
                 {
-                    rhs[m_grid.linearFluidIndex(i,j)] -= scale * (m_grid.getU(i,j) - 0);
+                    rhs[m_grid.linearFluidIndex(i,j)] -= scale * static_cast<double>(m_grid.getU(i,j) - 0);
                 }
                 if(m_grid.isSolid(i+1,j))
                 {
-                    rhs[m_grid.linearFluidIndex(i,j)] += scale * (m_grid.getU(i+1,j) - 0);
+                    rhs[m_grid.linearFluidIndex(i,j)] += scale * static_cast<double>(m_grid.getU(i+1,j) - 0);
                 }
 
                 if(m_grid.isSolid(i,j-1))
                 {
-                    rhs[m_grid.linearFluidIndex(i,j)] -= scale * (m_grid.getV(i,j) - 0);
+                    rhs[m_grid.linearFluidIndex(i,j)] -= scale * static_cast<double>(m_grid.getV(i,j) - 0);
                 }
                 if(m_grid.isSolid(i,j+1))
                 {
-                    rhs[m_grid.linearFluidIndex(i,j)] += scale * (m_grid.getV(i,j+1) - 0);
+                    rhs[m_grid.linearFluidIndex(i,j)] += scale * static_cast<double>(m_grid.getV(i,j+1) - 0);
                 }
             }
         }
@@ -653,8 +661,8 @@ void FlipSolver::updateMaterialsFromParticles(Grid2d<int> &particleCount)
 Vertex FlipSolver::rk3Integrate(Vertex currentPosition, float dt)
 {
     Vertex k1 = m_grid.velocityAt(currentPosition);
-    Vertex k2 = m_grid.velocityAt(currentPosition + dt * k1);
-    Vertex k3 = m_grid.velocityAt(currentPosition + 0.75f * dt * k2);
+    Vertex k2 = m_grid.velocityAt(currentPosition + 1.f/2.f * dt * k1);
+    Vertex k3 = m_grid.velocityAt(currentPosition + 3.f/4.f * dt * k2);
 
     return currentPosition + (2.f/9.f) * dt * k1 + (3.f/9.f) * dt * k2 + (4.f/9.f) * dt * k3;
 }
