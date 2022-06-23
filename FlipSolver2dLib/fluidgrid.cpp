@@ -266,7 +266,7 @@ Vertex MACFluidGrid::velocityAt(Vertex position)
     return velocityAt(position.x(),position.y());
 }
 
-const Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
+Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
 {
     return m_materialGrid;
 }

@@ -32,8 +32,8 @@ void LiquidRenderApp::init()
     GlobalCallbackHandler::instance().init(this,
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
-
-    loadJson("./scenes/dam_break.json");
+    loadJson("./scenes/waterfall.json");
+    //loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)

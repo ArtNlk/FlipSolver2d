@@ -121,7 +121,7 @@ public:
 //                         m_knownFlagsV.at(index));
 //    }
 
-    const Grid2d<FluidCellMaterial> &materialGrid();
+    Grid2d<FluidCellMaterial> &materialGrid();
 
     Grid2d<float> &velocityGridU();
 

@@ -29,7 +29,7 @@ void FlipSolver::project()
     std::vector<double> rhs(m_grid.fluidCellCount(),0.0);
     calcRhs(rhs);
     debug() << "Calculated rhs: " << rhs;
-    DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix(m_grid);
+    DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix::forPressureProjection(m_grid);
     UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
     std::vector<double> pressures(m_grid.fluidCellCount(),0.0);
     if(!m_pcgSolver.solve(mat,m_grid,pressures,rhs,200))
@@ -116,7 +116,9 @@ void FlipSolver::advect()
             p.position = m_grid.closestSurfacePoint(p.position);
         }
         maxSubsteps = std::max(substepCount,maxSubsteps);
-        if(!m_grid.inBounds(math::integr(p.position.x()),math::integr(p.position.y())))
+        int pI = math::integr(p.position.x());
+        int pJ = math::integr(p.position.y());
+        if(!m_grid.inBounds(pI,pJ) || m_grid.isSink(pI,pJ))
         {
             m_markerParticles.erase(markerParticles().begin() + i);
         }
@@ -128,6 +130,7 @@ void FlipSolver::advect()
 void FlipSolver::step()
 {
     Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
+    m_grid.updateLinearToFluidMapping();
     countParticles(particleCounts);
     reseedParticles(particleCounts);
     updateMaterialsFromParticles(particleCounts);

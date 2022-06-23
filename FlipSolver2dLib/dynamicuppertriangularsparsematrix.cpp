@@ -4,7 +4,7 @@
 #include "simsettings.h"
 
 DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size, int avgRowLength) :
-    LinearIndexable2d(-1,-1),
+    LinearIndexable2d(size,size),
     m_rows(size),
     m_size(size),
     m_elementCount(0)
@@ -15,62 +15,61 @@ DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size,
     }
 }
 
-DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(MACFluidGrid &grid) :
-    LinearIndexable2d(grid.fluidCellCount(),grid.fluidCellCount()),
-    m_rows(grid.fluidCellCount()),
-    m_size(grid.fluidCellCount()),
-    m_elementCount(0)
+DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forPressureProjection(MACFluidGrid &grid)
 {
-    for(int i = 0; i < m_size; i++)
+    DynamicUpperTriangularSparseMatrix output(grid.fluidCellCount(),7);
+    output.m_elementCount = 0;
+    for(int i = 0; i < output.m_size; i++)
     {
-        m_rows[i].reserve(7);
+        output.m_rows[i].reserve(7);
     }
     double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
 
-    for(int i = 0; i < m_sizeI; i++)
+    for(int i = 0; i < grid.sizeI(); i++)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        for(int j = 0; j < grid.sizeI(); j++)
         {
             if(grid.isFluid(i,j))
             {
                 //X Neighbors
                 if(grid.isFluid(i-1,j))
                 {
-                    modifyAdiag(i,j,scale, grid);
+                    output.modifyAdiag(i,j,scale, grid);
                 }else if(grid.isEmpty(i-1,j))
                 {
-                    modifyAdiag(i,j,scale, grid);
+                    output.modifyAdiag(i,j,scale, grid);
                 }
 
                 if(grid.isFluid(i+1,j))
                 {
-                    modifyAdiag(i,j,scale, grid);
-                    modifyAx(i,j,-scale, grid);
+                    output.modifyAdiag(i,j,scale, grid);
+                    output.modifyAx(i,j,-scale, grid);
                 } else if(grid.isEmpty(i+1,j))
                 {
-                    modifyAdiag(i,j,scale, grid);
+                    output.modifyAdiag(i,j,scale, grid);
                 }
 
                 //Y Neighbors
                 if(grid.isFluid(i,j-1))
                 {
-                    modifyAdiag(i,j,scale, grid);
+                    output.modifyAdiag(i,j,scale, grid);
                 }else if(grid.isEmpty(i,j-1))
                 {
-                    modifyAdiag(i,j,scale, grid);
+                    output.modifyAdiag(i,j,scale, grid);
                 }
 
                 if(grid.isFluid(i,j+1))
                 {
-                    modifyAdiag(i,j,scale, grid);
-                    modifyAy(i,j,-scale, grid);
+                    output.modifyAdiag(i,j,scale, grid);
+                    output.modifyAy(i,j,-scale, grid);
                 } else if(grid.isEmpty(i,j+1))
                 {
-                    modifyAdiag(i,j,scale, grid);
+                    output.modifyAdiag(i,j,scale, grid);
                 }
             }
         }
     }
+    return output;
 }
 
 void DynamicUpperTriangularSparseMatrix::resize(int newSize)

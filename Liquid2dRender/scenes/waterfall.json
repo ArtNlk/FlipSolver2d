@@ -1,0 +1,116 @@
+{
+  "settings": {
+    "simType": "fluid",
+    "domainSizeI": 75,
+    "domainSizeJ": 50,
+    "resolution": 100,
+    "fps": 30,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "cflNumber": 5,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "solid",
+        "verts": [
+          [72,0],
+          [72,50],
+          [75,50],
+          [75,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [3,0],
+          [3,3],
+          [72,3],
+          [72,0]
+        ]
+      },
+          {
+        "type": "solid",
+        "verts": [
+          [0,0],
+          [0,50],
+          [3,50],
+          [3,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [3,47],
+          [3,50],
+          [72,50],
+          [72,47]
+        ]
+      },
+          {
+        "type": "solid",
+        "verts": [
+          [15,3],
+          [15,40],
+          [18,40],
+          [18,3]
+        ]
+      },
+          {
+        "type": "solid",
+        "verts": [
+          [25,10],
+          [25,47],
+          [28,47],
+          [28,10]
+        ]
+      },
+          {
+        "type": "solid",
+        "verts": [
+          [35,3],
+          [35,25],
+          [38,25],
+          [38,3]
+        ]
+      },
+          {
+        "type": "solid",
+        "verts": [
+          [40,47],
+          [48,20],
+          [48,47]
+        ]
+      },
+          {
+        "type": "solid",
+        "verts": [
+          [56,3],
+          [64,30],
+          [64,3]
+        ]
+      },
+      {
+        "type": "source",
+        "verts": [
+          [3,3],
+          [3,10],
+          [10,10],
+          [10,3]
+        ]
+      },
+          {
+        "type": "sink",
+        "verts": [
+          [65,3],
+          [65,10],
+          [72,10],
+          [72,3]
+        ]
+      }
+    ]
+  }
+}
