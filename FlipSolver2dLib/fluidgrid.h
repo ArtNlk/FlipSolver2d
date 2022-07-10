@@ -131,6 +131,8 @@ public:
 
     Grid2d<bool> &knownFlagsGridV();
 
+    Grid2d<float> &viscosityGrid();
+
     Grid2d<float> &sdfGrid();
 
     float sdf(int i, int j);
@@ -142,6 +144,16 @@ public:
     void setSdf(int i, int j, float value);
 
     void setSdf(Index2d index, float value);
+
+    float viscosity(int i, int j);
+
+    float viscosityAt(float i, float j);
+
+    float viscosity(Index2d index);
+
+    void setViscosity(int i, int j, float value);
+
+    void setViscosity(Index2d index, float value);
 
     Vertex closestSurfacePoint(Vertex pos);
 
@@ -156,6 +168,7 @@ protected:
     Grid2d<float> m_sdf;
     Grid2d<bool> m_knownFlagsU;
     Grid2d<bool> m_knownFlagsV;
+    Grid2d<float> m_viscosity;
     std::unordered_map<int,int> m_linearToFluidCellIndexMap;
     int m_fluidCellCount;
 };

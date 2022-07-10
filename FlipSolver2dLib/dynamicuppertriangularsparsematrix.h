@@ -19,6 +19,7 @@ public:
     DynamicUpperTriangularSparseMatrix(int size, int avgRowLength = 7);
 
     static DynamicUpperTriangularSparseMatrix forPressureProjection(MACFluidGrid &grid);
+    static DynamicUpperTriangularSparseMatrix forViscosity(MACFluidGrid &grid);
 
     void resize(int newSize);
     int size() const;

@@ -18,11 +18,7 @@ DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size,
 DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forPressureProjection(MACFluidGrid &grid)
 {
     DynamicUpperTriangularSparseMatrix output(grid.fluidCellCount(),7);
-    output.m_elementCount = 0;
-    for(int i = 0; i < output.m_size; i++)
-    {
-        output.m_rows[i].reserve(7);
-    }
+
     double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
 
     for(int i = 0; i < grid.sizeI(); i++)
@@ -69,6 +65,78 @@ DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forPressu
             }
         }
     }
+    return output;
+}
+
+DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forViscosity(MACFluidGrid &grid)
+{
+    DynamicUpperTriangularSparseMatrix output(grid.fluidCellCount()*2,7);
+
+    float scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
+
+    for(int i = 0; i < grid.sizeI(); i++)
+    {
+        for(int j = 0; j < grid.sizeI(); j++)
+        {
+            if(grid.isFluid(i,j))
+            {
+                int currLinearIdx = grid.linearFluidIndex(i,j);
+
+                //U component
+                if(grid.inBounds(i+2,j) && grid.isFluid(i+2,j))
+                {
+                    output.setValue(currLinearIdx,grid.linearFluidIndex(i+2,j),-2*scale*grid.viscosity(i+1,j));
+                }
+
+                if(grid.inBounds(i+1,j) && grid.isFluid(i+1,j))
+                {
+                    float value = 2*grid.viscosity(i+1,j)
+                            + 2*grid.viscosity(i,j)
+                            + grid.viscosityAt(static_cast<float>(i)+0.5f,static_cast<float>(j)+0.5f)
+                            + grid.viscosityAt(static_cast<float>(i)+0.5f,static_cast<float>(j)-0.5f);
+                    value *= scale;
+                    value += 1;
+                    output.setValue(currLinearIdx,grid.linearFluidIndex(i+1,j),value);
+                }
+
+                if(grid.inBounds(i-1,j) && grid.isFluid(i-1,j))
+                {
+                    output.setValue(currLinearIdx,grid.linearFluidIndex(i-1,j),-2*scale*grid.viscosity(i,j));
+                }
+
+                if(grid.inBounds(i+1,j+1) && grid.isFluid(i+1,j+1))
+                {
+                    output.setValue(currLinearIdx,grid.linearFluidIndex(i+1,j+1),-scale*grid.viscosityAt(static_cast<float>(i)+0.5f,static_cast<float>(j)+0.5f));
+                    output.setValue(currLinearIdx,grid.fluidCellCount() - 1 + grid.linearFluidIndex(i+1,j),-scale*grid.viscosityAt(static_cast<float>(i)+0.5f,static_cast<float>(j)+0.5f));
+                }
+
+                if(grid.inBounds(i+1,j-1) && grid.isFluid(i+1,j-1))
+                {
+                    output.setValue(currLinearIdx,grid.linearFluidIndex(i+1,j-1),-scale*grid.viscosityAt(static_cast<float>(i)+0.5f,static_cast<float>(j)-0.5f));
+                }
+
+                if(grid.inBounds(i,j+1) && grid.isFluid(i,j+1))
+                {
+                    output.setValue(currLinearIdx,grid.fluidCellCount() - 1 + grid.linearFluidIndex(i,j+1),scale*grid.viscosityAt(static_cast<float>(i)+0.5f,static_cast<float>(j)+0.5f));
+                }
+
+                if(grid.inBounds(i+1,j-1) && grid.isFluid(i+1,j-1))
+                {
+                    output.setValue(currLinearIdx,grid.fluidCellCount() - 1 + grid.linearFluidIndex(i+1,j-1),scale*grid.viscosityAt(static_cast<float>(i)+0.5f,static_cast<float>(j)-0.5f));
+                }
+
+                if(grid.inBounds(i,j-1) && grid.isFluid(i,j-1))
+                {
+                    output.setValue(currLinearIdx,grid.fluidCellCount() - 1 + grid.linearFluidIndex(i,j-1),scale*grid.viscosityAt(static_cast<float>(i)+0.5f,static_cast<float>(j)-0.5f));
+                }
+
+
+
+                //V Component
+            }
+        }
+    }
+
     return output;
 }
 

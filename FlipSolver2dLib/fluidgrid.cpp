@@ -12,6 +12,7 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_sdf(sizeI,sizeJ,0.f),
     m_knownFlagsU(sizeI + 1, sizeJ, false),
     m_knownFlagsV(sizeI, sizeJ + 1, false),
+    m_viscosity(sizeI,sizeJ,0.f),
     m_fluidCellCount(0)
 {
 }
@@ -291,6 +292,11 @@ Grid2d<bool> &MACFluidGrid::knownFlagsGridV()
     return m_knownFlagsV;
 }
 
+Grid2d<float> &MACFluidGrid::viscosityGrid()
+{
+
+}
+
 Grid2d<float> &MACFluidGrid::sdfGrid()
 {
     return m_sdf;
@@ -319,6 +325,31 @@ void MACFluidGrid::setSdf(int i, int j, float value)
 void MACFluidGrid::setSdf(Index2d index, float value)
 {
     m_sdf.at(index) = value;
+}
+
+float MACFluidGrid::viscosity(int i, int j)
+{
+    return m_viscosity.at(i,j);
+}
+
+float MACFluidGrid::viscosityAt(float i, float j)
+{
+    return math::lerpCenteredGrid(i,j,m_viscosity);
+}
+
+float MACFluidGrid::viscosity(Index2d index)
+{
+    return m_viscosity.at(index);
+}
+
+void MACFluidGrid::setViscosity(int i, int j, float value)
+{
+    m_viscosity.at(i,j) = value;
+}
+
+void MACFluidGrid::setViscosity(Index2d index, float value)
+{
+    m_viscosity.at(index) = value;
 }
 
 Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)

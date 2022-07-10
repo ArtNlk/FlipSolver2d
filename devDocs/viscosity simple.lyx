@@ -93,30 +93,16 @@ k =
 \end_inset
 
 = 
-\begin_inset Formula $u_{i+\frac{1}{2},j}^{old}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-—————
-\end_layout
-
-\begin_layout Standard
-
 \size small
+
 \begin_inset Formula 
 \begin{align*}
 -2\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1,j}\right)*u_{i+\frac{3}{2},j}^{new}\\
-+2\left(\frac{∆t}{\rho*∆x^{2}}\mu_{i+1,j}\right)*u_{i-\frac{3}{2},j}^{new}\\
-+\left(2\left(\frac{\Delta t}{\rho*\Delta x^{2}}\text{\mu}_{i,j}\right)+1\right)*u_{i+\frac{1}{2},j}^{new}\\
++\left(\frac{∆t}{\rho*∆x^{2}}\left(2\left(\mu_{i+1,j}\right)+2\left(\text{\mu}_{i,j}\right)+µ_{i+1/2,j+1/2}+\text{µ}_{i+1/2,j-1/2}\right)+1\right)*u_{i+\frac{1}{2},j}^{new}\\
 -2\left(\frac{\Delta t}{\rho*\Delta x^{2}}\mu_{i,j}\right)*u_{i-\frac{1}{2},j}^{new}\\
 -\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1/2,j+1/2}\right)*u_{i+\frac{1}{2},j+1}^{new}\\
-+\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1/2,j+1/2}\right)*u_{i+\frac{1}{2},j}^{new}\\
 -\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1/2,j+1/2}\right)*v_{i+1,j+\frac{1}{2}}^{new}\\
 +\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1/2,j+1/2}\right)*v_{i,j+\frac{1}{2}}^{new}\\
-+\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1/2,j-1/2}\right)*u_{i+\frac{1}{2},j}^{new}\\
 -\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1/2,j-1/2}\right)*u_{i+\frac{1}{2},j-1}^{new}\\
 +\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1/2,j-1/2}\right)*v_{i+1,j-\frac{1}{2}}^{new}\\
 -\left(\frac{∆t}{\rho*∆x^{2}}µ_{i+1/2,j-1/2}\right)*v_{i,j-\frac{1}{2}}^{new}\\
@@ -137,14 +123,11 @@ k =
 -\left(\frac{∆t}{\rho*\Delta x^{2}}µ_{i+1/2,j+1/2}\right)u_{i+\frac{1}{2},j+1}^{new}\\
 +\left(\frac{∆t}{\rho*\Delta x^{2}}µ_{i+1/2,j+1/2}\right)u_{i+\frac{1}{2},j}^{new}\\
 -\left(\frac{∆t}{\rho*\Delta x^{2}}{}_{i+1/2,j+1/2}\right)v_{i+1,j+\frac{1}{2}}^{new}\\
-+\left(\frac{∆t}{\rho*\Delta x^{2}}µ_{i+1/2,j+1/2}\right)v_{i,j+\frac{1}{2}}^{new}\\
-+\frac{∆t}{\rho*\Delta x^{2}}µ_{i-1/2,j+1/2}u_{i-\frac{1}{2},j+1}^{new}\\
++\left(\frac{∆t}{\rho*\Delta x^{2}}µ_{i-1/2,j+1/2}\right)u_{i-\frac{1}{2},j+1}^{new}\\
 -\left(\frac{∆t}{\rho*\Delta x^{2}}µ_{i-1/2,j+1/2}\right)u_{i-\frac{1}{2},j}^{new}\\
-+\left(\frac{∆t}{\rho*\Delta x^{2}}µ_{i-1/2,j+1/2}\right)v_{i,j+\frac{1}{2}}^{new}\\
 -\left(\frac{∆t}{\rho*\Delta x^{2}}µ_{i-1/2,j+1/2}\right)v_{i-1,j+\frac{1}{2}}^{new}\\
 -\left(\frac{∆t}{\rho*\Delta x^{2}}2µ_{i,j+1}\right)v_{i,j+\frac{3}{2}}^{new}\\
-+\left(\left(\frac{∆t}{\rho*\Delta x^{2}}2µ_{i,j+1}\right)+1\right)v^{new}{}_{i,j+\frac{1}{2}}\\
-+\left(\frac{∆t}{\rho*\Delta x^{2}}2µ_{i,j}\right)v_{i,j+\frac{1}{2}}^{new}\\
++\left(\left(\frac{∆t}{\rho*\Delta x^{2}}2µ_{i,j+1}\right)+\frac{∆t}{\rho*\Delta x^{2}}\text{µ}_{i+1/2,j+1/2}+\frac{∆t}{\rho*\Delta x^{2}}\text{µ}_{i-1/2,j+1/2}+\frac{∆t}{\rho*\Delta x^{2}}2\text{µ}_{i,j}+1\right)v^{new}{}_{i,j+\frac{1}{2}}\\
 -\left(\frac{∆t}{\rho*\Delta x^{2}}2µ_{i,j}\right)v_{i,j-\frac{1}{2}}^{new}\\
 =v_{i,j+1/2}^{old}
 \end{array}$
@@ -185,7 +168,7 @@ k =
 \end_inset
 
 * 
-\begin_inset Formula $\frac{u_{i+\frac{3}{2},j}^{new}−u^{new}{}_{i-\frac{3}{2},j}}{∆x}$
+\begin_inset Formula $\frac{u_{i+\frac{3}{2},j}^{new}−u^{new}{}_{i\frac{1}{2},j}}{∆x}$
 \end_inset
 
 
