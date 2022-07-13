@@ -51,6 +51,8 @@ public:
 
     void project();
 
+    void applyViscosity();
+
     void advect();
 
     void step();

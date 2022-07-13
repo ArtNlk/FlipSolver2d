@@ -25,7 +25,7 @@ void FlipSolver::init()
 
 void FlipSolver::project()
 {
-    m_grid.updateLinearToFluidMapping();
+    m_grid.updateLinearFluidCellMapping();
     std::vector<double> rhs(m_grid.fluidCellCount(),0.0);
     calcRhs(rhs);
     debug() << "Calculated rhs: " << rhs;
@@ -85,6 +85,21 @@ void FlipSolver::project()
     }
 }
 
+void FlipSolver::applyViscosity()
+{
+    std::vector<double> currentVelocities(m_grid.fluidCellCount() * 2);
+    std::vector<double> newVelocities(m_grid.fluidCellCount() * 2,0);
+    m_grid.getFlattenedFluidVelocities(currentVelocities);
+    DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix::forViscosity(m_grid);
+    UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
+    if(!m_pcgSolver.solve(mat,m_grid,newVelocities,currentVelocities,200))
+    {
+        std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
+    }
+
+    m_grid.unflattenFluidVelocities(newVelocities);
+}
+
 void FlipSolver::advect()
 {
     int maxSubsteps = -1;
@@ -130,7 +145,7 @@ void FlipSolver::advect()
 void FlipSolver::step()
 {
     Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
-    m_grid.updateLinearToFluidMapping();
+    m_grid.updateLinearFluidCellMapping();
     countParticles(particleCounts);
     reseedParticles(particleCounts);
     updateMaterialsFromParticles(particleCounts);
@@ -140,6 +155,7 @@ void FlipSolver::step()
     Grid2d<float> prevV = m_grid.velocityGridV();
     applyGlobalAcceleration();
     project();
+    applyViscosity();
     extrapolateVelocityField(1);
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {

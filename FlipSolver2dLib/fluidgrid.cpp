@@ -267,6 +267,26 @@ Vertex MACFluidGrid::velocityAt(Vertex position)
     return velocityAt(position.x(),position.y());
 }
 
+void MACFluidGrid::getFlattenedFluidVelocities(std::vector<double> &velocities)
+{
+    ASSERT(velocities.size() == (m_fluidCellCount * 2));
+    for(std::pair<std::pair<int,int>,int> p : m_fluidCellIndexMap)
+    {
+        velocities[p.second] = m_velocityGridU.at(p.first.first,p.first.second);
+        velocities[m_fluidCellCount + p.second] = m_velocityGridV.at(p.first.first,p.first.second);
+    }
+}
+
+void MACFluidGrid::unflattenFluidVelocities(std::vector<double> &velocities)
+{
+    ASSERT(velocities.size() == (m_fluidCellCount * 2));
+    for(std::pair<std::pair<int,int>,int> p : m_fluidCellIndexMap)
+    {
+        m_velocityGridU.at(p.first.first,p.first.second) = velocities[p.second];
+        m_velocityGridV.at(p.first.first,p.first.second) = velocities[m_fluidCellCount + p.second];
+    }
+}
+
 Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
 {
     return m_materialGrid;
@@ -385,9 +405,9 @@ Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
     return closestPoint;
 }
 
-void MACFluidGrid::updateLinearToFluidMapping()
+void MACFluidGrid::updateLinearFluidCellMapping()
 {
-    m_linearToFluidCellIndexMap.clear();
+    m_fluidCellIndexMap.clear();
     m_fluidCellCount = 0;
     for(int i = 0; i < m_sizeI; i++)
     {
@@ -395,7 +415,7 @@ void MACFluidGrid::updateLinearToFluidMapping()
         {
             if(fluidTest(getMaterial(i,j)))
             {
-                m_linearToFluidCellIndexMap[linearIndex(i,j)] = m_fluidCellCount;
+                m_fluidCellIndexMap[std::pair<int,int>(i,j)] = m_fluidCellCount;
                 m_fluidCellCount++;
             }
         }
@@ -404,8 +424,8 @@ void MACFluidGrid::updateLinearToFluidMapping()
 
 int MACFluidGrid::linearFluidIndex(int i, int j)
 {
-    std::unordered_map<int,int>::iterator iter = m_linearToFluidCellIndexMap.find(linearIndex(i,j));
-    if(iter != m_linearToFluidCellIndexMap.end())
+    std::unordered_map<std::pair<int,int>,int>::iterator iter = m_fluidCellIndexMap.find(std::pair<int,int>(i,j));
+    if(iter != m_fluidCellIndexMap.end())
     {
         return iter->second;
     }

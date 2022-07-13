@@ -10,6 +10,17 @@
 #include "logger.h"
 #include "geometry2d.h"
 
+struct PairHash {
+public:
+  template <typename T, typename U>
+  std::size_t operator()(const std::pair<T, U> &x) const
+  {
+    std::size_t lhs = std::hash<T>()(x.first);
+    std::size_t rhs = std::hash<U>()(x.second);
+    return rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+  }
+};
+
 class MACFluidGrid : public LinearIndexable2d
 {
 public:
@@ -121,6 +132,10 @@ public:
 //                         m_knownFlagsV.at(index));
 //    }
 
+    void getFlattenedFluidVelocities(std::vector<double> &velocities);
+
+    void unflattenFluidVelocities(std::vector<double> &velocities);
+
     Grid2d<FluidCellMaterial> &materialGrid();
 
     Grid2d<float> &velocityGridU();
@@ -157,7 +172,7 @@ public:
 
     Vertex closestSurfacePoint(Vertex pos);
 
-    void updateLinearToFluidMapping();
+    void updateLinearFluidCellMapping();
 
     int linearFluidIndex(int i, int j);
 
@@ -169,7 +184,7 @@ protected:
     Grid2d<bool> m_knownFlagsU;
     Grid2d<bool> m_knownFlagsV;
     Grid2d<float> m_viscosity;
-    std::unordered_map<int,int> m_linearToFluidCellIndexMap;
+    std::unordered_map<std::pair<int,int>,int,PairHash> m_fluidCellIndexMap;
     int m_fluidCellCount;
 };
 
