@@ -28,6 +28,8 @@ public:
         return m_logFileStream;
     }
 
+    void close();
+
     Logger(Logger const&) = delete;
     void operator=(Logger const&) = delete;
 protected:

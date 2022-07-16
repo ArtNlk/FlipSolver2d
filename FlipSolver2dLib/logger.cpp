@@ -18,8 +18,31 @@ Logger::~Logger()
     m_logFileStream.close();
 }
 
+void Logger::close()
+{
+    std::cout << "closed";
+    m_logFileStream.flush();
+    m_logFileStream.close();
+}
+
 Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m)
 {
+#ifdef NUMPY_LOGGING
+    std::ofstream &s = l.stream();
+    s << '[';
+    for(int i = 0; i < m.sizeI(); i++)
+    {
+        s << '[';
+        for(int j = 0; j < m.sizeJ(); j++)
+        {
+            s << m.getValue(i,j);
+            if(j != m.sizeJ() - 1) s << ',';
+        }
+        s << ']';
+        if(i != m.sizeI() - 1) s << ',';
+    }
+    s << ']';
+#else
     std::ofstream &s = l.stream();
     s << '[';
     for(int i = 0; i < m.sizeI(); i++)
@@ -31,6 +54,7 @@ Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m)
         s << ";";
     }
     s << ']';
+#endif
 
     return l;
 }
@@ -38,6 +62,21 @@ Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m)
 Logger &operator<<(Logger &l, const UpperTriangularMatrix &m)
 {
     std::ofstream &s = l.stream();
+#ifdef NUMPY_LOGGING
+    s << '[';
+    for(int i = 0; i < m.sizeI(); i++)
+    {
+        s << '[';
+        for(int j = 0; j < m.sizeJ(); j++)
+        {
+            s << m.getValue(i,j);
+            if(j != m.sizeJ() - 1) s << ',';
+        }
+        s << ']';
+        if(i != m.sizeI() - 1) s << ',';
+    }
+    s << ']';
+#else
     s << '[';
     for(int i = 0; i < m.sizeI(); i++)
     {
@@ -48,6 +87,8 @@ Logger &operator<<(Logger &l, const UpperTriangularMatrix &m)
         s << ";";
     }
     s << ']';
+#endif
+
 
     return l;
 }
@@ -55,25 +96,44 @@ Logger &operator<<(Logger &l, const UpperTriangularMatrix &m)
 Logger &operator<<(Logger &l, const std::vector<double> &v)
 {
     std::ofstream &s = l.stream();
+#ifdef NUMPY_LOGGING
+    s << '[';
+    for(int i = 0; i < v.size(); i++)
+    {
+        s << v[i];
+        if(i != v.size() - 1) s << ',';
+    }
+    s << ']';
+#else
     s << '[';
     for(int i = 0; i < v.size(); i++)
     {
         s << v[i] << ' ';
     }
     s << ']';
-
+#endif
     return l;
 }
 
 Logger &operator<<(Logger &l, const std::vector<float> &v)
 {
     std::ofstream &s = l.stream();
+#ifdef NUMPY_LOGGING
+    s << '[';
+    for(int i = 0; i < v.size(); i++)
+    {
+        s << v[i];
+        if(i != v.size() - 1) s << ',';
+    }
+    s << ']';
+#else
     s << '[';
     for(int i = 0; i < v.size(); i++)
     {
         s << v[i] << ' ';
     }
     s << ']';
+#endif
 
     return l;
 }
@@ -81,12 +141,22 @@ Logger &operator<<(Logger &l, const std::vector<float> &v)
 Logger &operator<<(Logger &l, const std::vector<int> &v)
 {
     std::ofstream &s = l.stream();
+#ifdef NUMPY_LOGGING
+    s << '[';
+    for(int i = 0; i < v.size(); i++)
+    {
+        s << v[i];
+        if(i != v.size() - 1) s << ',';
+    }
+    s << ']';
+#else
     s << '[';
     for(int i = 0; i < v.size(); i++)
     {
         s << v[i] << ' ';
     }
     s << ']';
+#endif
 
     return l;
 }
