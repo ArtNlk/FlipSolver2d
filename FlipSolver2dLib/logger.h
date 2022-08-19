@@ -11,6 +11,10 @@ class DynamicUpperTriangularSparseMatrix;
 
 class UpperTriangularMatrix;
 
+class DynamicSparseMatrix;
+
+class SparseMatrix;
+
 class Logger
 {
 public:
@@ -37,9 +41,15 @@ protected:
     std::ofstream m_logFileStream;
 };
 
+void binDump(UpperTriangularMatrix & m, std::string path);
+
 Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m);
 
 Logger &operator<<(Logger &l, const UpperTriangularMatrix &m);
+
+Logger &operator<<(Logger &l, const DynamicSparseMatrix &m);
+
+Logger &operator<<(Logger &l, const SparseMatrix &m);
 
 Logger &operator<<(Logger &l, const std::vector<double> &v);
 

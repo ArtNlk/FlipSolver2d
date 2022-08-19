@@ -18,7 +18,9 @@ public:
 
     DynamicSparseMatrix(int size, int avgRowLength = 7);
 
-    DynamicSparseMatrix(MACFluidGrid &grid);
+    static DynamicSparseMatrix forPressureProjection(MACFluidGrid &grid);
+
+    static DynamicSparseMatrix forViscosity(MACFluidGrid &grid);
 
     void resize(int newSize);
     int size() const;
@@ -41,32 +43,67 @@ public:
         out_gridSizeJ = m_sizeJ;
     }
 
-    inline void setAdiag(int i, int j, double value)
+    inline void setAdiag(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int index = linearIndex(i,j);
+        int index = grid.linearIndex(i,j);
         setValue(index, index, value);
     }
 
-    inline void setAx(int i, int j, double value)
+    inline void setAx(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = linearIndex(i,j);
-        int colIndex = linearIndex(i+1,j);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i+1,j);
 
         return setValue(rowIndex,colIndex, value);
     }
 
-    inline void setAy(int i, int j, double value)
+    inline void setAy(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = linearIndex(i,j);
-        int colIndex = linearIndex(i,j+1);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i,j+1);
 
         return setValue(rowIndex,colIndex, value);
+    }
+
+    inline void addTo(int i, int j, double value)
+    {
+        ASSERT_BETWEEN(i,-2,m_sizeI);
+        ASSERT_BETWEEN(j,-2,m_sizeJ);
+        setValue(i,j, getValue(i,j) + value);
+    }
+
+    inline void addToAdiag(int i, int j, double value, MACFluidGrid &grid)
+    {
+        ASSERT_BETWEEN(i,-2,m_sizeI);
+        ASSERT_BETWEEN(j,-2,m_sizeJ);
+        int index = grid.linearIndex(i,j);
+        setValue(index, index, getValue(index,index) + value);
+    }
+
+    inline void addToAx(int i, int j, double value, MACFluidGrid &grid)
+    {
+        ASSERT_BETWEEN(i,-2,m_sizeI);
+        ASSERT_BETWEEN(j,-2,m_sizeJ);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i+1,j);
+
+        return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
+    }
+
+    inline void addToAy(int i, int j, double value, MACFluidGrid &grid)
+    {
+        ASSERT_BETWEEN(i,-2,m_sizeI);
+        ASSERT_BETWEEN(j,-2,m_sizeJ);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i,j+1);
+
+        return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
     }
 
     inline void modifyAdiag(int i, int j, double value)

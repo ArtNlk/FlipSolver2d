@@ -38,7 +38,7 @@ public:
         {
             return 0.0;
         }
-        int index = grid.linearFluidIndex(i,j);
+        int index = grid.linearIndex(i,j);
         return getValue(index,index);
     }
 
@@ -50,8 +50,8 @@ public:
         {
             return 0.0;
         }
-        int rowIndex = grid.linearFluidIndex(i,j);
-        int colIndex = grid.linearFluidIndex(i+1,j);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i+1,j);
 
         return getValue(rowIndex,colIndex);
     }
@@ -64,8 +64,8 @@ public:
         {
             return 0.0;
         }
-        int rowIndex = grid.linearFluidIndex(i,j);
-        int colIndex = grid.linearFluidIndex(i,j+1);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i,j+1);
 
         return getValue(rowIndex,colIndex);
     }

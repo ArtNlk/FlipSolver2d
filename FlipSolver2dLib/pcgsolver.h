@@ -18,7 +18,7 @@ protected:
     void applyICPrecond(const UpperTriangularMatrix &matrix, std::vector<double> &in, std::vector<double> &out, MACFluidGrid &grid);
     void calcPrecond(const UpperTriangularMatrix &matrix, MACFluidGrid &grid);
     double precond(const UpperTriangularMatrix &matrix, int i, int j, MACFluidGrid &grid);
-
+    void reset();
     std::vector<double> m_residual;
     std::vector<double> m_aux;
     std::vector<double> m_search;

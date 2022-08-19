@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "simType": "fluid",
+    "domainSizeI": 100,
+    "domainSizeJ": 100,
+    "resolution": 100,
+    "fps": 30,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "cflNumber": 5,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "solid",
+        "verts": [
+          [50,50],
+          [60,40],
+          [60,60]
+        ]
+      },
+      {
+        "type": "fluid",
+        "verts": [
+          [35,45],
+          [35,55],
+          [45,55],
+          [45,45]
+        ]
+      }
+    ]
+  }
+}

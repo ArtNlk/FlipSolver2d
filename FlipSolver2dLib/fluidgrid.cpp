@@ -177,6 +177,16 @@ bool MACFluidGrid::isSink(int i, int j)
     return sinkTest(m_materialGrid.at(i,j));
 }
 
+bool MACFluidGrid::uVelocityInside(int i, int j)
+{
+    return (!isEmpty(i,j) && !isEmpty(i - 1,j));
+}
+
+bool MACFluidGrid::vVelocityInside(int i, int j)
+{
+    return (!isEmpty(i, j) && ! isEmpty(i, j - 1));
+}
+
 void MACFluidGrid::setU(Index2d index, float value, bool knownStatus)
 {
     m_velocityGridU.at(index) = value;
@@ -267,26 +277,6 @@ Vertex MACFluidGrid::velocityAt(Vertex position)
     return velocityAt(position.x(),position.y());
 }
 
-void MACFluidGrid::getFlattenedFluidVelocities(std::vector<double> &velocities)
-{
-    ASSERT(velocities.size() == (m_fluidCellCount * 2));
-    for(std::pair<std::pair<int,int>,int> p : m_fluidCellIndexMap)
-    {
-        velocities[p.second] = m_velocityGridU.at(p.first.first,p.first.second);
-        velocities[m_fluidCellCount + p.second] = m_velocityGridV.at(p.first.first,p.first.second);
-    }
-}
-
-void MACFluidGrid::unflattenFluidVelocities(std::vector<double> &velocities)
-{
-    ASSERT(velocities.size() == (m_fluidCellCount * 2));
-    for(std::pair<std::pair<int,int>,int> p : m_fluidCellIndexMap)
-    {
-        m_velocityGridU.at(p.first.first,p.first.second) = velocities[p.second];
-        m_velocityGridV.at(p.first.first,p.first.second) = velocities[m_fluidCellCount + p.second];
-    }
-}
-
 Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
 {
     return m_materialGrid;
@@ -314,7 +304,7 @@ Grid2d<bool> &MACFluidGrid::knownFlagsGridV()
 
 Grid2d<float> &MACFluidGrid::viscosityGrid()
 {
-
+    return m_viscosity;
 }
 
 Grid2d<float> &MACFluidGrid::sdfGrid()

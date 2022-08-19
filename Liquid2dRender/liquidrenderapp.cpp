@@ -32,9 +32,11 @@ void LiquidRenderApp::init()
     GlobalCallbackHandler::instance().init(this,
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
-    loadJson("./scenes/waterfall.json");
+    //loadJson("./scenes/waterfall.json");
     //loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
+    loadJson("./scenes/viscosity_test.json");
+    int foo = 11;
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
     {
@@ -217,20 +219,30 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
 
                 case GLFW_KEY_SPACE:
                 {
-                    bool run = true;
-                    for(int i = 0; i < SimSettings::fps(); i++)
+                    if(mods & GLFW_MOD_SHIFT)
                     {
-                        m_solver->stepFrame();
+                        m_solver->step();
                         m_fluidRenderer.update();
                         render();
-                        glfwPollEvents();
-                        if(glfwWindowShouldClose(m_window))
-                        {
-                            glfwTerminate();
-                            run = false;
-                        }
-                        if(!run) break;
                     }
+                    else
+                    {
+                        bool run = true;
+                        for(int i = 0; i < SimSettings::fps(); i++)
+                        {
+                            m_solver->stepFrame();
+                            m_fluidRenderer.update();
+                            render();
+                            glfwPollEvents();
+                            if(glfwWindowShouldClose(m_window))
+                            {
+                                glfwTerminate();
+                                run = false;
+                            }
+                            if(!run) break;
+                        }
+                    }
+
                 }
                 break;
             }
@@ -260,7 +272,7 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::frameDt() = 1.f / SimSettings::fps();
     SimSettings::maxSubsteps() = settingsJson["maxSubsteps"].get<int>();
     SimSettings::stepDt() = SimSettings::frameDt() / SimSettings::maxSubsteps();
-    SimSettings::density() = 100;
+    SimSettings::density() = 1;
     SimSettings::randomSeed() = settingsJson["seed"].get<int>();
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
     SimSettings::cflNumber() = settingsJson["cflNumber"].get<float>();

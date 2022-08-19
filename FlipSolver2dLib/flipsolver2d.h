@@ -103,7 +103,9 @@ protected:
 
     friend class ::LiquidRenderApp;
 
-    void calcRhs(std::vector<double> &rhs);
+    void calcPressureRhs(std::vector<double> &rhs);
+
+    void calcViscosityRhs(std::vector<double> &rhs);
 
     Vertex jitteredPosInCell(int i, int j);
 

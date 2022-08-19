@@ -46,7 +46,7 @@ public:
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int index = grid.linearFluidIndex(i,j);
+        int index = grid.linearIndex(i,j);
         setValue(index, index, value);
     }
 
@@ -54,8 +54,8 @@ public:
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = grid.linearFluidIndex(i,j);
-        int colIndex = grid.linearFluidIndex(i+1,j);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i+1,j);
 
         return setValue(rowIndex,colIndex, value);
     }
@@ -64,36 +64,43 @@ public:
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = grid.linearFluidIndex(i,j);
-        int colIndex = grid.linearFluidIndex(i,j+1);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i,j+1);
 
         return setValue(rowIndex,colIndex, value);
     }
 
-    inline void modifyAdiag(int i, int j, double value, MACFluidGrid &grid)
+    inline void addTo(int i, int j, double value)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int index = grid.linearFluidIndex(i,j);
+        setValue(i,j, getValue(i,j) + value);
+    }
+
+    inline void addToAdiag(int i, int j, double value, MACFluidGrid &grid)
+    {
+        ASSERT_BETWEEN(i,-2,m_sizeI);
+        ASSERT_BETWEEN(j,-2,m_sizeJ);
+        int index = grid.linearIndex(i,j);
         setValue(index, index, getValue(index,index) + value);
     }
 
-    inline void modifyAx(int i, int j, double value, MACFluidGrid &grid)
+    inline void addToAx(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = grid.linearFluidIndex(i,j);
-        int colIndex = grid.linearFluidIndex(i+1,j);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i+1,j);
 
         return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
     }
 
-    inline void modifyAy(int i, int j, double value, MACFluidGrid &grid)
+    inline void addToAy(int i, int j, double value, MACFluidGrid &grid)
     {
         ASSERT_BETWEEN(i,-2,m_sizeI);
         ASSERT_BETWEEN(j,-2,m_sizeJ);
-        int rowIndex = grid.linearFluidIndex(i,j);
-        int colIndex = grid.linearFluidIndex(i,j+1);
+        int rowIndex = grid.linearIndex(i,j);
+        int colIndex = grid.linearIndex(i,j+1);
 
         return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
     }

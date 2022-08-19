@@ -4,7 +4,7 @@
 #include "simsettings.h"
 
 DynamicSparseMatrix::DynamicSparseMatrix(int size, int avgRowLength) :
-    LinearIndexable2d(-1,-1),
+    LinearIndexable2d(size,size),
     m_rows(size),
     m_size(size),
     m_elementCount(0)
@@ -15,55 +15,57 @@ DynamicSparseMatrix::DynamicSparseMatrix(int size, int avgRowLength) :
     }
 }
 
-DynamicSparseMatrix::DynamicSparseMatrix(MACFluidGrid &grid) :
-    LinearIndexable2d(grid.sizeI(),grid.sizeJ()),
-    m_rows(grid.sizeI() * grid.sizeJ()),
-    m_size(grid.sizeI() * grid.sizeJ()),
-    m_elementCount(0)
+DynamicSparseMatrix DynamicSparseMatrix::forPressureProjection(MACFluidGrid &grid)
 {
-    for(int i = 0; i < m_size; i++)
-    {
-        m_rows[i].reserve(7);
-    }
+    DynamicSparseMatrix output(grid.cellCount(),7);
+
     double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
 
-    for(int i = 0; i < m_sizeI; i++)
+    for(int i = 0; i < grid.sizeI(); i++)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        for(int j = 0; j < grid.sizeI(); j++)
         {
             if(grid.isFluid(i,j))
             {
                 //X Neighbors
                 if(grid.isFluid(i-1,j))
                 {
-                    modifyAdiag(i,j,scale);
+                    output.addToAdiag(i,j,scale, grid);
+                }else if(grid.isEmpty(i-1,j))
+                {
+                    output.addToAdiag(i,j,scale, grid);
                 }
+
                 if(grid.isFluid(i+1,j))
                 {
-                    modifyAdiag(i,j,scale);
-                    modifyAx(i,j,-scale);
+                    output.addToAdiag(i,j,scale, grid);
+                    output.addToAx(i,j,-scale, grid);
                 } else if(grid.isEmpty(i+1,j))
                 {
-                    modifyAdiag(i,j,scale);
+                    output.addToAdiag(i,j,scale, grid);
                 }
 
                 //Y Neighbors
                 if(grid.isFluid(i,j-1))
                 {
-                    modifyAdiag(i,j,scale);
-                }
-                if(grid.isFluid(i,j+1))
+                    output.addToAdiag(i,j,scale, grid);
+                }else if(grid.isEmpty(i,j-1))
                 {
-                    modifyAdiag(i,j,scale);
-                    modifyAy(i,j,-scale);
-                } else if(grid.isEmpty(i,j+1))
-                {
-                    modifyAdiag(i,j,scale);
+                    output.addToAdiag(i,j,scale, grid);
                 }
 
+                if(grid.isFluid(i,j+1))
+                {
+                    output.addToAdiag(i,j,scale, grid);
+                    output.addToAy(i,j,-scale, grid);
+                } else if(grid.isEmpty(i,j+1))
+                {
+                    output.addToAdiag(i,j,scale, grid);
+                }
             }
         }
     }
+    return output;
 }
 
 void DynamicSparseMatrix::resize(int newSize)

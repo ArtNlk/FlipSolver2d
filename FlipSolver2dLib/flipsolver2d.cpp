@@ -21,23 +21,29 @@ FlipSolver::FlipSolver(int extrapRadius, bool vonNeumannNeighbors) :
 void FlipSolver::init()
 {
     m_grid = MACFluidGrid(SimSettings::gridSizeI(), SimSettings::gridSizeJ());
+    m_grid.viscosityGrid().fill(1);
 }
 
 void FlipSolver::project()
 {
     m_grid.updateLinearFluidCellMapping();
-    std::vector<double> rhs(m_grid.fluidCellCount(),0.0);
-    calcRhs(rhs);
-    debug() << "Calculated rhs: " << rhs;
+    std::vector<double> rhs(m_grid.cellCount(),0.0);
+    calcPressureRhs(rhs);
+    //debug() << "Calculated rhs: " << rhs;
     DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix::forPressureProjection(m_grid);
     UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
-    std::vector<double> pressures(m_grid.fluidCellCount(),0.0);
+    std::vector<double> pressures(m_grid.cellCount(),0.0);
     if(!m_pcgSolver.solve(mat,m_grid,pressures,rhs,200))
     {
-        std::cout << "PCG Solver: Iteration limit exhaustion!\n";
+        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
 
-    debug() << "pressures = " << pressures;
+    if(anyNanInf(pressures))
+    {
+        std::cout << "NaN or inf in pressures vector!\n" << std::flush;
+    }
+
+    //debug() << "pressures = " << pressures;
 
     double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx());
 
@@ -45,9 +51,9 @@ void FlipSolver::project()
     {
         for (int j = m_grid.sizeJ() - 1; j >= 0; j--)
         {
-            int fluidIndex = m_grid.linearFluidIndex(i,j);
-            int fluidIndexIM1 = m_grid.linearFluidIndex(i-1,j);
-            int fluidIndexJM1 = m_grid.linearFluidIndex(i,j-1);
+            int fluidIndex = m_grid.linearIndex(i,j);
+            int fluidIndexIM1 = m_grid.linearIndex(i-1,j);
+            int fluidIndexJM1 = m_grid.linearIndex(i,j-1);
             //U part
             if(m_grid.isFluid(i-1,j) || m_grid.isFluid(i,j))
             {
@@ -83,21 +89,59 @@ void FlipSolver::project()
             }
         }
     }
+
+    if(anyNanInf(m_grid.velocityGridU().data()))
+    {
+        std::cout << "NaN or inf in U vector!\n" << std::flush;
+    }
+
+    if(anyNanInf(m_grid.velocityGridV().data()))
+    {
+        std::cout << "NaN or inf in V vector!\n" << std::flush;
+    }
 }
 
 void FlipSolver::applyViscosity()
 {
-    std::vector<double> currentVelocities(m_grid.fluidCellCount() * 2);
-    std::vector<double> newVelocities(m_grid.fluidCellCount() * 2,0);
-    m_grid.getFlattenedFluidVelocities(currentVelocities);
+    std::vector<double> rhs(m_grid.cellCount() * 2, 0);
+    std::vector<double> result(m_grid.cellCount() * 2, 0);
+    calcViscosityRhs(rhs);
     DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix::forViscosity(m_grid);
     UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
-    if(!m_pcgSolver.solve(mat,m_grid,newVelocities,currentVelocities,200))
+    //debug() << "mat=" << dmat;
+    //binDump(mat,"test.bin");
+    if(!m_pcgSolver.solve(mat,m_grid,result,rhs,200))
     {
         std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
     }
 
-    m_grid.unflattenFluidVelocities(newVelocities);
+    if(anyNanInf(result))
+    {
+        std::cout << "NaN or inf in viscosity vector!\n" << std::flush;
+    }
+
+    int vBaseIndex = m_grid.cellCount();
+    for (int i = m_grid.sizeI() - 1; i >= 0; i--)
+    {
+        for (int j = m_grid.sizeJ() - 1; j >= 0; j--)
+        {
+            if(m_grid.isFluid(i,j))
+            {
+                m_grid.setU(i,j,result[m_grid.linearIndex(i,j)]);
+                m_grid.setV(i,j,result[vBaseIndex + m_grid.linearIndex(i,j)]);
+            }
+        }
+    }
+
+    if(anyNanInf(m_grid.velocityGridU().data()))
+    {
+        std::cout << "NaN or inf in U velocity after viscosity!\n" << std::flush;
+    }
+
+    if(anyNanInf(m_grid.velocityGridV().data()))
+    {
+        std::cout << "NaN or inf in V velocity after viscosity!\n" << std::flush;
+    }
 }
 
 void FlipSolver::advect()
@@ -593,7 +637,7 @@ void FlipSolver::extrapolateVelocityField(int steps)
     }
 }
 
-void FlipSolver::calcRhs(std::vector<double> &rhs)
+void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
 {
     double scale = 1/SimSettings::dx();
 
@@ -603,26 +647,47 @@ void FlipSolver::calcRhs(std::vector<double> &rhs)
         {
             if (m_grid.isFluid(i,j))
             {
-                rhs[m_grid.linearFluidIndex(i,j)] = -scale * static_cast<double>(m_grid.getU(i+1,j) - m_grid.getU(i,j)
+                rhs[m_grid.linearIndex(i,j)] = -scale * static_cast<double>(m_grid.getU(i+1,j) - m_grid.getU(i,j)
                                                               +m_grid.getV(i,j+1) - m_grid.getV(i,j));
 
                 if(m_grid.isSolid(i-1,j))
                 {
-                    rhs[m_grid.linearFluidIndex(i,j)] -= scale * static_cast<double>(m_grid.getU(i,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getU(i,j) - 0);
                 }
                 if(m_grid.isSolid(i+1,j))
                 {
-                    rhs[m_grid.linearFluidIndex(i,j)] += scale * static_cast<double>(m_grid.getU(i+1,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getU(i+1,j) - 0);
                 }
 
                 if(m_grid.isSolid(i,j-1))
                 {
-                    rhs[m_grid.linearFluidIndex(i,j)] -= scale * static_cast<double>(m_grid.getV(i,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getV(i,j) - 0);
                 }
                 if(m_grid.isSolid(i,j+1))
                 {
-                    rhs[m_grid.linearFluidIndex(i,j)] += scale * static_cast<double>(m_grid.getV(i,j+1) - 0);
+                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getV(i,j+1) - 0);
                 }
+            }
+        }
+    }
+}
+
+void FlipSolver::calcViscosityRhs(std::vector<double> &rhs)
+{
+    int vBaseIndex = m_grid.cellCount();
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if (m_grid.uVelocityInside(i,j))
+            {
+                float u = m_grid.getU(i,j);
+                rhs[m_grid.linearIndex(i,j)] = SimSettings::density() * u;
+            }
+            if (m_grid.vVelocityInside(i,j))
+            {
+                float v = m_grid.getV(i,j);
+                rhs[vBaseIndex + m_grid.linearIndex(i,j)] = SimSettings::density() * v;
             }
         }
     }

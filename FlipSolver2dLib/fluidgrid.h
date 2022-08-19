@@ -80,6 +80,10 @@ public:
 
     bool isSink(int i, int j);
 
+    bool uVelocityInside(int i, int j);
+
+    bool vVelocityInside(int i, int j);
+
     void setU(Index2d index, float value, bool knownStatus);
 
     void setU(Index2d index, float value);
@@ -131,10 +135,6 @@ public:
 //                         m_knownFlagsU.at(index),
 //                         m_knownFlagsV.at(index));
 //    }
-
-    void getFlattenedFluidVelocities(std::vector<double> &velocities);
-
-    void unflattenFluidVelocities(std::vector<double> &velocities);
 
     Grid2d<FluidCellMaterial> &materialGrid();
 
