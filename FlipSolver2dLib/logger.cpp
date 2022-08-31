@@ -32,16 +32,14 @@ Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m)
 #ifdef NUMPY_LOGGING
     std::ofstream &s = l.stream();
     s << '[';
-    for(int i = 0; i < m.sizeI(); i++)
+    for(auto &sparseRow : m.data())
     {
         s << '[';
-        for(int j = 0; j < m.sizeJ(); j++)
+        for(auto &rowUnit : sparseRow)
         {
-            s << m.getValue(i,j);
-            if(j != m.sizeJ() - 1) s << ',';
+            s << '[' << rowUnit.first << ',' << rowUnit.second << "],";
         }
-        s << ']';
-        if(i != m.sizeI() - 1) s << ',';
+        s << "],";
     }
     s << ']';
 #else
@@ -58,6 +56,7 @@ Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m)
     s << ']';
 #endif
 
+    s.flush();
     return l;
 }
 
@@ -91,7 +90,7 @@ Logger &operator<<(Logger &l, const UpperTriangularMatrix &m)
     s << ']';
 #endif
 
-
+    s.flush();
     return l;
 }
 
@@ -125,7 +124,7 @@ Logger &operator<<(Logger &l, const DynamicSparseMatrix &m)
     s << ']';
 #endif
 
-
+    s.flush();
     return l;
 }
 
@@ -159,7 +158,7 @@ Logger &operator<<(Logger &l, const SparseMatrix &m)
     s << ']';
 #endif
 
-
+    s.flush();
     return l;
 }
 
@@ -182,6 +181,7 @@ Logger &operator<<(Logger &l, const std::vector<double> &v)
     }
     s << ']';
 #endif
+    s.flush();
     return l;
 }
 
@@ -205,6 +205,7 @@ Logger &operator<<(Logger &l, const std::vector<float> &v)
     s << ']';
 #endif
 
+    s.flush();
     return l;
 }
 
@@ -228,6 +229,7 @@ Logger &operator<<(Logger &l, const std::vector<int> &v)
     s << ']';
 #endif
 
+    s.flush();
     return l;
 }
 

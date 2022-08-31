@@ -187,6 +187,44 @@ bool MACFluidGrid::vVelocityInside(int i, int j)
     return (!isEmpty(i, j) && ! isEmpty(i, j - 1));
 }
 
+void MACFluidGrid::updateValidULinearMapping()
+{
+    m_uVelocitySamplesMap.clear();
+    int linearIdx = 0;
+    for(int i = 0; i < m_sizeI; i++)
+    {
+        for(int j = 0; j < m_sizeJ; j++)
+        {
+            if(uVelocityInside(i,j))
+            {
+                m_uVelocitySamplesMap.insert(linearIndex(i,j),linearIdx);
+                linearIdx++;
+            }
+        }
+    }
+
+    m_validUVelocitySampleCount = linearIdx;
+}
+
+void MACFluidGrid::updateValidVLinearMapping()
+{
+    m_vVelocitySamplesMap.clear();
+    int linearIdx = 0;
+    for(int i = 0; i < m_sizeI; i++)
+    {
+        for(int j = 0; j < m_sizeJ; j++)
+        {
+            if(vVelocityInside(i,j))
+            {
+                m_vVelocitySamplesMap.insert(linearIndex(i,j),linearIdx);
+                linearIdx++;
+            }
+        }
+    }
+
+    m_validVVelocitySampleCount = linearIdx;
+}
+
 void MACFluidGrid::setU(Index2d index, float value, bool knownStatus)
 {
     m_velocityGridU.at(index) = value;
@@ -395,27 +433,16 @@ Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
     return closestPoint;
 }
 
-void MACFluidGrid::updateLinearFluidCellMapping()
+void MACFluidGrid::updateLinearFluidViscosityMapping()
 {
-    m_fluidCellIndexMap.clear();
-    m_fluidCellCount = 0;
-    for(int i = 0; i < m_sizeI; i++)
-    {
-        for(int j = 0; j < m_sizeJ; j++)
-        {
-            if(fluidTest(getMaterial(i,j)))
-            {
-                m_fluidCellIndexMap[std::pair<int,int>(i,j)] = m_fluidCellCount;
-                m_fluidCellCount++;
-            }
-        }
-    }
+    updateValidULinearMapping();
+    updateValidVLinearMapping();
 }
 
-int MACFluidGrid::linearFluidIndex(int i, int j)
+int MACFluidGrid::linearViscosityVelocitySampleIndexU(int i, int j)
 {
-    std::unordered_map<std::pair<int,int>,int>::iterator iter = m_fluidCellIndexMap.find(std::pair<int,int>(i,j));
-    if(iter != m_fluidCellIndexMap.end())
+    std::unordered_map<std::pair<int,int>,int>::iterator iter = m_uVelocitySamplesMap.find(std::pair<int,int>(i,j));
+    if(iter != m_uVelocitySamplesMap.end())
     {
         return iter->second;
     }
@@ -423,4 +450,27 @@ int MACFluidGrid::linearFluidIndex(int i, int j)
     {
         return -1;
     }
+}
+
+int MACFluidGrid::linearViscosityVelocitySampleIndexV(int i, int j)
+{
+    std::unordered_map<std::pair<int,int>,int>::iterator iter = m_vVelocitySamplesMap.find(std::pair<int,int>(i,j));
+    if(iter != m_vVelocitySamplesMap.end())
+    {
+        return iter->second;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+int MACFluidGrid::validVelocitySampleCountU()
+{
+    return m_validUVelocitySampleCount;
+}
+
+int MACFluidGrid::validVelocitySampleCountV()
+{
+    return m_validVVelocitySampleCount;
 }

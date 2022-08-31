@@ -41,12 +41,12 @@ SparseMatrix::SparseMatrix(const DynamicUpperTriangularSparseMatrix &dynamicMatr
     }
 
     int totalIndex = 0;
-    const std::vector<DynamicSparseMatrix::SparseRow> *rows = dynamicMatrix.data();
+    const std::vector<DynamicSparseMatrix::SparseRow> rows = dynamicMatrix.data();
     for(int i = 0; i < m_size; i++)
     {
-        for(int j = 0; j < (*rows)[i].size(); j++)
+        for(int j = 0; j < rows[i].size(); j++)
         {
-            m_values[totalIndex] = (*rows)[i][j];
+            m_values[totalIndex] = rows[i][j];
             totalIndex++;
         }
     }

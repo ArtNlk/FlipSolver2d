@@ -172,11 +172,21 @@ public:
 
     Vertex closestSurfacePoint(Vertex pos);
 
-    void updateLinearFluidCellMapping();
+    void updateLinearFluidViscosityMapping();
 
-    int linearFluidIndex(int i, int j);
+    int linearViscosityVelocitySampleIndexU(int i, int j);
 
-protected:
+    int linearViscosityVelocitySampleIndexV(int i, int j);
+
+    int validVelocitySampleCountU();
+
+    int validVelocitySampleCountV();
+
+protected:  
+    void updateValidULinearMapping();
+
+    void updateValidVLinearMapping();
+
     Grid2d<FluidCellMaterial> m_materialGrid;
     Grid2d<float> m_velocityGridU;
     Grid2d<float> m_velocityGridV;
@@ -184,7 +194,10 @@ protected:
     Grid2d<bool> m_knownFlagsU;
     Grid2d<bool> m_knownFlagsV;
     Grid2d<float> m_viscosity;
-    std::unordered_map<std::pair<int,int>,int,PairHash> m_fluidCellIndexMap;
+    std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
+    std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
+    int m_validUVelocitySampleCount;
+    int m_validVVelocitySampleCount;
     int m_fluidCellCount;
 };
 

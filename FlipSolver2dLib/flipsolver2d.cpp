@@ -26,7 +26,7 @@ void FlipSolver::init()
 
 void FlipSolver::project()
 {
-    m_grid.updateLinearFluidCellMapping();
+    m_grid.updateLinearFluidViscosityMapping();
     std::vector<double> rhs(m_grid.cellCount(),0.0);
     calcPressureRhs(rhs);
     //debug() << "Calculated rhs: " << rhs;
@@ -108,7 +108,8 @@ void FlipSolver::applyViscosity()
     calcViscosityRhs(rhs);
     DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix::forViscosity(m_grid);
     UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
-    //debug() << "mat=" << dmat;
+    debug() << "mat=" << dmat;
+    debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
     if(!m_pcgSolver.solve(mat,m_grid,result,rhs,200))
     {
@@ -125,11 +126,8 @@ void FlipSolver::applyViscosity()
     {
         for (int j = m_grid.sizeJ() - 1; j >= 0; j--)
         {
-            if(m_grid.isFluid(i,j))
-            {
-                m_grid.setU(i,j,result[m_grid.linearIndex(i,j)]);
-                m_grid.setV(i,j,result[vBaseIndex + m_grid.linearIndex(i,j)]);
-            }
+            m_grid.setU(i,j,result[m_grid.linearIndex(i,j)]);
+            m_grid.setV(i,j,result[vBaseIndex + m_grid.linearIndex(i,j)]);
         }
     }
 
@@ -189,7 +187,7 @@ void FlipSolver::advect()
 void FlipSolver::step()
 {
     Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
-    m_grid.updateLinearFluidCellMapping();
+    m_grid.updateLinearFluidViscosityMapping();
     countParticles(particleCounts);
     reseedParticles(particleCounts);
     updateMaterialsFromParticles(particleCounts);
@@ -679,16 +677,10 @@ void FlipSolver::calcViscosityRhs(std::vector<double> &rhs)
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if (m_grid.uVelocityInside(i,j))
-            {
-                float u = m_grid.getU(i,j);
-                rhs[m_grid.linearIndex(i,j)] = SimSettings::density() * u;
-            }
-            if (m_grid.vVelocityInside(i,j))
-            {
-                float v = m_grid.getV(i,j);
-                rhs[vBaseIndex + m_grid.linearIndex(i,j)] = SimSettings::density() * v;
-            }
+            float u = m_grid.getU(i,j);
+            rhs[m_grid.linearIndex(i,j)] = SimSettings::density() * u;
+            float v = m_grid.getV(i,j);
+            rhs[vBaseIndex + m_grid.linearIndex(i,j)] = SimSettings::density() * v;
         }
     }
 }

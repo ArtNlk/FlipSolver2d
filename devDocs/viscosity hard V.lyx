@@ -76,77 +76,77 @@
 \begin_body
 
 \begin_layout Standard
-\begin_inset Formula $ρ_{i,j+1/2,k}$
+\begin_inset Formula $ρ_{i,j-1/2,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i,j+1/2,k}−v_{i,j+1/2,k}^{old}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $+2∆tµ_{i,j,k}$
-\end_inset
-
-
-\begin_inset Formula $\left({\color{orange}\frac{v_{i,j+1/2,k}−v_{i,j−1/2,k}}{∆x^{2}}}\right)$
+\begin_inset Formula $\left(v_{i,j-1/2,k}−v_{i,j-1/2,k}^{old}\right)$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $-2∆tµ_{i,j+1,k}$
+\begin_inset Formula $+2∆tµ_{i,j-1,k}$
 \end_inset
 
 
-\begin_inset Formula $\left({\color{teal}\frac{v_{i,j+3/2,k}−v_{i,j+1/2,k}}{∆x^{2}}}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2}$
-\end_inset
-
-
-\begin_inset Formula $\left({\color{red}\frac{u_{i−1/2,j+1,k}−u_{i−1/2,j,k}+v_{i,j+1/2,k}−v_{i−1,j+1/2,k}}{∆x^{2}}}\right)$
+\begin_inset Formula $\left({\color{orange}\frac{v_{i,j-1/2,k}−v_{i,j−3/2,k}}{∆x^{2}}}\right)$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2}$
+\begin_inset Formula $-2∆tµ_{i,j,k}$
 \end_inset
 
 
-\begin_inset Formula $\left({\color{green}\frac{u_{i+1/2,j+1,k}−u_{i+1/2,j,k}+v_{i+1,j+1/2,k}−v_{i,j+1/2,k}}{∆x^{2}}}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $+\frac{∆tµ_{i,j+1/2,k-1/2}}{2}$
-\end_inset
-
-
-\begin_inset Formula $\left({\color{purple}\frac{v_{i,j+1/2,k}−v_{i,j+1/2,k−1}+w_{i,j+1,k−1/2}−w_{i,j,k−1/2}}{∆x^{2}}}\right)$
+\begin_inset Formula $\left({\color{teal}\frac{v_{i,j+1/2,k}−v_{i,j-1/2,k}}{∆x^{2}}}\right)$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $-\frac{∆tµ_{i,j+1/2,k+1/2}}{2}$
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2}$
 \end_inset
 
 
-\begin_inset Formula $\left({\color{brown}\frac{v_{i,j+1/2,k+1}−v_{i,j+1/2,k}+w_{i,j+1,k+1/2}−w_{i,j,k+1/2}}{∆x^{2}}}\right)$
+\begin_inset Formula $\left({\color{red}\frac{u_{i−1/2,j,k}−u_{i−1/2,j-1,k}+v_{i,j-1/2,k}−v_{i−1,j-1/2,k}}{∆x^{2}}}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2}$
+\end_inset
+
+
+\begin_inset Formula $\left({\color{green}\frac{u_{i+1/2,j,k}−u_{i+1/2,j-1,k}+v_{i+1,j-1/2,k}−v_{i,j-1/2,k}}{∆x^{2}}}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $+\frac{∆tµ_{i,j-1/2,k-1/2}}{2}$
+\end_inset
+
+
+\begin_inset Formula $\left({\color{purple}\frac{v_{i,j-1/2,k}−v_{i,j-1/2,k−1}+w_{i,j,k−1/2}−w_{i,j-1,k−1/2}}{∆x^{2}}}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $-\frac{∆tµ_{i,j-1/2,k+1/2}}{2}$
+\end_inset
+
+
+\begin_inset Formula $\left({\color{brown}\frac{v_{i,j-1/2,k+1}−v_{i,j-1/2,k}+w_{i,j,k+1/2}−w_{i,j-1,k+1/2}}{∆x^{2}}}\right)$
 \end_inset
 
 
@@ -161,55 +161,55 @@
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $ρ_{i,j+1/2,k}$
+\begin_inset Formula $ρ_{i,j-1/2,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i,j+1/2,k}−v_{i,j+1/2,k}^{old}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $+2∆tµ_{i,j,k}$
-\end_inset
-
-
-\begin_inset Formula $\left({\color{orange}\frac{v_{i,j+1/2,k}−v_{i,j−1/2,k}}{∆x^{2}}}\right)$
+\begin_inset Formula $\left(v_{i,j-1/2,k}−v_{i,j-1/2,k}^{old}\right)$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $-2∆tµ_{i,j+1,k}$
+\begin_inset Formula $+2∆tµ_{i,j-1,k}$
 \end_inset
 
 
-\begin_inset Formula $\left({\color{teal}\frac{v_{i,j+3/2,k}−v_{i,j+1/2,k}}{∆x^{2}}}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2}$
-\end_inset
-
-
-\begin_inset Formula $\left({\color{red}\frac{u_{i−1/2,j+1,k}−u_{i−1/2,j,k}+v_{i,j+1/2,k}−v_{i−1,j+1/2,k}}{∆x^{2}}}\right)$
+\begin_inset Formula $\left({\color{orange}\frac{v_{i,j-1/2,k}−v_{i,j−3/2,k}}{∆x^{2}}}\right)$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2}$
+\begin_inset Formula $-2∆tµ_{i,j,k}$
 \end_inset
 
 
-\begin_inset Formula $\left({\color{green}\frac{u_{i+1/2,j+1,k}−u_{i+1/2,j,k}+v_{i+1,j+1/2,k}−v_{i,j+1/2,k}}{∆x^{2}}}\right)$
+\begin_inset Formula $\left({\color{teal}\frac{v_{i,j+1/2,k}−v_{i,j-1/2,k}}{∆x^{2}}}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2}$
+\end_inset
+
+
+\begin_inset Formula $\left({\color{red}\frac{u_{i−1/2,j,k}−u_{i−1/2,j-1,k}+v_{i,j-1/2,k}−v_{i−1,j-1/2,k}}{∆x^{2}}}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2}$
+\end_inset
+
+
+\begin_inset Formula $\left({\color{green}\frac{u_{i+1/2,j,k}−u_{i+1/2,j-1,k}+v_{i+1,j-1/2,k}−v_{i,j-1/2,k}}{∆x^{2}}}\right)$
 \end_inset
 
 
@@ -233,29 +233,11 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $ρ_{i,j+1/2,k}$
+\begin_inset Formula $ρ_{i,j-1/2,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(+v_{i,j+1/2,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $ρ_{i,j+1/2,k}$
-\end_inset
-
-
-\begin_inset Formula $\left(−v_{i,j+1/2,k}^{old}\right)$
+\begin_inset Formula $\left(+v_{i,j-1/2,k}\right)$
 \end_inset
 
 
@@ -269,13 +251,11 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
-
-\color orange
-\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
+\begin_inset Formula $ρ_{i,j-1/2,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(+v_{i,j+1/2,k}\right)$
+\begin_inset Formula $\left(−v_{i,j-1/2,k}^{old}\right)$
 \end_inset
 
 
@@ -291,11 +271,31 @@
 \begin_layout Plain Layout
 
 \color orange
-\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
+\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j-1,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(−v_{i,j−1/2,k}\right)$
+\begin_inset Formula $\left(+v_{i,j-1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color orange
+\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j-1,k}$
+\end_inset
+
+
+\begin_inset Formula $\left(−v_{i,j−3/2,k}\right)$
 \end_inset
 
 
@@ -311,87 +311,7 @@
 \begin_layout Plain Layout
 
 \color teal
-\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j+1,k}$
-\end_inset
-
-
-\begin_inset Formula $\left(+v_{i,j+3/2,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color teal
-\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j+1,k}$
-\end_inset
-
-
-\begin_inset Formula $\left(−v_{i,j+1/2,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color red
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\begin_inset Formula $\left(+u_{i−1/2,j+1,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color red
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\begin_inset Formula $\left(−u_{i−1/2,j,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color red
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
 \end_inset
 
 
@@ -410,12 +330,92 @@
 
 \begin_layout Plain Layout
 
+\color teal
+\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
+\end_inset
+
+
+\begin_inset Formula $\left(−v_{i,j-1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
 \color red
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
-\begin_inset Formula $\left(−v_{i−1,j+1/2,k}\right)$
+\begin_inset Formula $\left(+u_{i−1/2,j,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\begin_inset Formula $\left(−u_{i−1/2,j-1,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\begin_inset Formula $\left(+v_{i,j-1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\begin_inset Formula $\left(−v_{i−1,j-1/2,k}\right)$
 \end_inset
 
 
@@ -431,31 +431,11 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
-\begin_inset Formula $\left(+u_{i+1/2,j+1,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\begin_inset Formula $\left(−u_{i+1/2,j,k}\right)$
+\begin_inset Formula $\left(+u_{i+1/2,j,k}\right)$
 \end_inset
 
 
@@ -471,11 +451,11 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
-\begin_inset Formula $\left(+v_{i+1,j+1/2,k}\right)$
+\begin_inset Formula $\left(−u_{i+1/2,j-1,k}\right)$
 \end_inset
 
 
@@ -491,11 +471,31 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
-\begin_inset Formula $\left(−v_{i,j+1/2,k}\right)$
+\begin_inset Formula $\left(+v_{i+1,j-1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\begin_inset Formula $\left(−v_{i,j-1/2,k}\right)$
 \end_inset
 
 
@@ -528,7 +528,7 @@
 
 \begin_layout Standard
 \begin_inset Tabular
-<lyxtabular version="3" rows="14" columns="1">
+<lyxtabular version="3" rows="15" columns="1">
 <features tabularvalignment="middle">
 <column alignment="center" valignment="top">
 <row>
@@ -536,11 +536,56 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $ρ_{i,j+1/2,k}$
+\begin_inset Formula $+ρ_{i,j-1/2,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(+v_{i,j+1/2,k}\right)$
+\begin_inset Formula $\left(v_{i,j-1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+−
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+
+\begin_inset Formula $ρ_{i,j-1/2,k}$
+\end_inset
+
+
+\begin_inset Formula $\left(v_{i,j-1/2,k}^{old}\right)$
 \end_inset
 
 
@@ -556,71 +601,71 @@
 \begin_layout Plain Layout
 
 \color orange
+\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j-1,k}$
+\end_inset
+
+
+\begin_inset Formula $\left(v_{i,j-1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color orange
+\begin_inset Formula $−\frac{2∆t}{∆x^{2}}µ_{i,j-1,k}$
+\end_inset
+
+
+\begin_inset Formula $\left(v_{i,j−3/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color teal
+\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
+\end_inset
+
+
+\begin_inset Formula $\left(v_{i,j+1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color teal
 \begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i,j+1/2,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color orange
-\begin_inset Formula $−\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
-\end_inset
-
-
-\begin_inset Formula $\left(v_{i,j−1/2,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color teal
-\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j+1,k}$
-\end_inset
-
-
-\begin_inset Formula $\left(v_{i,j+3/2,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color teal
-\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j+1,k}$
-\end_inset
-
-
-\begin_inset Formula $\left(v_{i,j+1/2,k}\right)$
+\begin_inset Formula $\left(v_{i,j-1/2,k}\right)$
 \end_inset
 
 
@@ -636,27 +681,7 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\begin_inset Formula $\left(u_{i−1/2,j+1,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color red
-\begin_inset Formula $−\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -676,11 +701,11 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $−\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i,j+1/2,k}\right)$
+\begin_inset Formula $\left(u_{i−1/2,j-1,k}\right)$
 \end_inset
 
 
@@ -696,11 +721,31 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $−\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i−1,j+1/2,k}\right)$
+\begin_inset Formula $\left(v_{i,j-1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $-\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\begin_inset Formula $\left(v_{i−1,j-1/2,k}\right)$
 \end_inset
 
 
@@ -716,27 +761,7 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\begin_inset Formula $\left(u_{i+1/2,j+1,k}\right)$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color green
-\begin_inset Formula $+\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -756,11 +781,11 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $+\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i+1,j+1/2,k}\right)$
+\begin_inset Formula $\left(u_{i+1/2,j-1,k}\right)$
 \end_inset
 
 
@@ -776,11 +801,31 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $+\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i,j+1/2,k}\right)$
+\begin_inset Formula $\left(v_{i+1,j-1/2,k}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $+\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\begin_inset Formula $\left(v_{i,j-1/2,k}\right)$
 \end_inset
 
 
@@ -794,14 +839,7 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $ρ_{i,j+1/2,k}$
-\end_inset
-
-
-\begin_inset Formula $\left(v_{i,j+1/2,k}^{old}\right)$
-\end_inset
-
-
+=0
 \end_layout
 
 \end_inset
@@ -829,6 +867,88 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $v_{i,j-1/2,k}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $ρ_{i,j-1/2,k}$
+\end_inset
+
+
+\color orange
+
+\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j-1,k}$
+\end_inset
+
+
+\color teal
+
+\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
+\end_inset
+
+
+\color red
+
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\color green
+
+\begin_inset Formula $+\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color orange
+\begin_inset Formula $v_{i,j−3/2,k}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color orange
+\begin_inset Formula $−\frac{2∆t}{∆x^{2}}µ_{i,j-1,k}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color teal
 \begin_inset Formula $v_{i,j+1/2,k}$
 \end_inset
 
@@ -841,121 +961,9 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $ρ_{i,j+1/2,k}$
-\end_inset
-
-
-\color orange
-
-\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
-\end_inset
-
 
 \color teal
-
-\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j+1,k}$
-\end_inset
-
-
-\color red
-
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\color green
-
-\begin_inset Formula $+\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color orange
-\begin_inset Formula $v_{i,j−1/2,k}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color orange
-\begin_inset Formula $−\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color teal
-\begin_inset Formula $v_{i,j+3/2,k}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color teal
-\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j+1,k}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color red
-\begin_inset Formula $u_{i−1/2,j+1,k}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color red
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
 \end_inset
 
 
@@ -985,7 +993,7 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $−\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1001,7 +1009,7 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $v_{i−1,j+1/2,k}$
+\begin_inset Formula $u_{i−1/2,j-1,k}$
 \end_inset
 
 
@@ -1015,7 +1023,7 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $−\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $−\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1030,8 +1038,8 @@
 
 \begin_layout Plain Layout
 
-\color green
-\begin_inset Formula $u_{i+1/2,j+1,k}$
+\color red
+\begin_inset Formula $v_{i−1,j-1/2,k}$
 \end_inset
 
 
@@ -1044,8 +1052,8 @@
 
 \begin_layout Plain Layout
 
-\color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\color red
+\begin_inset Formula $−\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1075,7 +1083,7 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $+\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1091,7 +1099,7 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $v_{i+1,j+1/2,k}$
+\begin_inset Formula $u_{i+1/2,j-1,k}$
 \end_inset
 
 
@@ -1105,7 +1113,37 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $+\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $v_{i+1,j-1/2,k}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1119,11 +1157,11 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $=ρ_{i,j+1/2,k}$
+\begin_inset Formula $=ρ_{i,j-1/2,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i,j+1/2,k}^{old}\right)$
+\begin_inset Formula $\left(v_{i,j-1/2,k}^{old}\right)$
 \end_inset
 
 
@@ -1163,58 +1201,6 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $v_{i,j+1,k}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $ρ_{i,j+1/2,k}$
-\end_inset
-
-
-\color orange
-
-\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
-\end_inset
-
-
-\color teal
-
-\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j+1,k}$
-\end_inset
-
-
-\color red
-
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\color green
-
-\begin_inset Formula $+\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color orange
 \begin_inset Formula $v_{i,j,k}$
 \end_inset
 
@@ -1227,9 +1213,61 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
+\begin_inset Formula $ρ_{i,j-1/2,k}$
+\end_inset
+
 
 \color orange
-\begin_inset Formula $−\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
+
+\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j-1,k}$
+\end_inset
+
+
+\color teal
+
+\begin_inset Formula $+\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
+\end_inset
+
+
+\color red
+
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\color green
+
+\begin_inset Formula $+\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color orange
+\begin_inset Formula $v_{i,j−1,k}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color orange
+\begin_inset Formula $−\frac{2∆t}{∆x^{2}}µ_{i,j-1,k}$
 \end_inset
 
 
@@ -1245,7 +1283,7 @@
 \begin_layout Plain Layout
 
 \color teal
-\begin_inset Formula $v_{i,j+2,k}$
+\begin_inset Formula $v_{i,j+1,k}$
 \end_inset
 
 
@@ -1259,37 +1297,7 @@
 \begin_layout Plain Layout
 
 \color teal
-\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j+1,k}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color red
-\begin_inset Formula $u_{i,j+1,k}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\color red
-\begin_inset Formula $+\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{2∆t}{∆x^{2}}µ_{i,j,k}$
 \end_inset
 
 
@@ -1319,7 +1327,7 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $−\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $+\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1335,7 +1343,7 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $v_{i−1,j+1,k}$
+\begin_inset Formula $u_{i,j-1,k}$
 \end_inset
 
 
@@ -1349,7 +1357,7 @@
 \begin_layout Plain Layout
 
 \color red
-\begin_inset Formula $−\frac{∆tµ_{i−1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $−\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1364,8 +1372,8 @@
 
 \begin_layout Plain Layout
 
-\color green
-\begin_inset Formula $u_{i+1,j+1,k}$
+\color red
+\begin_inset Formula $v_{i−1,j,k}$
 \end_inset
 
 
@@ -1378,8 +1386,8 @@
 
 \begin_layout Plain Layout
 
-\color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\color red
+\begin_inset Formula $−\frac{∆tµ_{i−1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1409,7 +1417,7 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $+\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1425,7 +1433,7 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $v_{i+1,j+1,k}$
+\begin_inset Formula $u_{i+1,j-1,k}$
 \end_inset
 
 
@@ -1439,7 +1447,37 @@
 \begin_layout Plain Layout
 
 \color green
-\begin_inset Formula $-\frac{∆tµ_{i+1/2,j+1/2,k}}{2∆x^{2}}$
+\begin_inset Formula $+\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $v_{i+1,j,k}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $-\frac{∆tµ_{i+1/2,j-1/2,k}}{2∆x^{2}}$
 \end_inset
 
 
@@ -1453,11 +1491,11 @@
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $=ρ_{i,j+1/2,k}$
+\begin_inset Formula $=ρ_{i,j,k}$
 \end_inset
 
 
-\begin_inset Formula $\left(v_{i,j+1,k}^{old}\right)$
+\begin_inset Formula $\left(v_{i,j,k}^{old}\right)$
 \end_inset
 
 

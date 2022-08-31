@@ -9,12 +9,14 @@
 #include "linearindexable2d.h"
 
 class UpperTriangularMatrix;
+class Logger;
 
 class DynamicUpperTriangularSparseMatrix : public LinearIndexable2d
 {
 public:
     typedef std::pair<int,double> SparseRowUnit;
     typedef std::vector<SparseRowUnit> SparseRow;
+    friend Logger;
 
     DynamicUpperTriangularSparseMatrix(int size, int avgRowLength = 7);
 
@@ -109,7 +111,7 @@ public:
 
     inline int elementCount() const { return m_elementCount;}
 
-    inline const std::vector<SparseRow> *data() const { return &m_rows;}
+    inline const std::vector<SparseRow> data() const { return m_rows;}
 
     void setValue(int rowIndex, int columnIndex, double value);
     double getValue(int rowIndex, int columnIndex) const;

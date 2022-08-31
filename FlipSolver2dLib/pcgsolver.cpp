@@ -27,7 +27,7 @@ bool PCGSolver::solve(const UpperTriangularMatrix &matrix, MACFluidGrid &grid, s
     calcPrecond(matrix,grid);
     m_residual = vec;
     m_aux = vec;
-    //applyICPrecond(matrix,m_residual,m_aux,grid);
+    applyICPrecond(matrix,m_residual,m_aux,grid);
     m_search = m_aux;
     double sigma = vmath::dot(m_aux,m_residual);
     double err = 0.0;
@@ -50,7 +50,7 @@ bool PCGSolver::solve(const UpperTriangularMatrix &matrix, MACFluidGrid &grid, s
             return true;
         }
         m_aux = m_residual;
-        //applyICPrecond(matrix,m_residual,m_aux,grid);
+        applyICPrecond(matrix,m_residual,m_aux,grid);
         double newSigma = vmath::dot(m_aux,m_residual);
         double beta = newSigma/(sigma);
         vmath::addMul(m_search,m_aux,m_search,beta);
@@ -140,7 +140,6 @@ double PCGSolver::precond(const UpperTriangularMatrix &m, int i, int j, MACFluid
     {
         temp = m.Adiag(i,j,grid);
     }
-    ///Check for negative adiag source
 
     if(std::abs(temp) > 10e-10)
     {
