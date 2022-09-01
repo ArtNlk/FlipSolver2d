@@ -82,29 +82,30 @@ DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forViscos
     {
         for(int j = 0; j < grid.sizeJ(); j++)
         {
-            int currLinearIdx = grid.linearViscosityVelocitySampleIndexU(i,j);
+            int currLinearIdxU = grid.linearViscosityVelocitySampleIndexU(i,j);
+            int currLinearIdxV = grid.linearViscosityVelocitySampleIndexV(i,j);
             float diag = 0;
             float offdiag = 0;
-            if(currLinearIdx != 0)
+            if(currLinearIdxU != -1)
             {
                 float fi = static_cast<float>(i);
                 float fj = static_cast<float>(j);
-                int vBaseIndex = validVSamples;
+                int vBaseIndex = validUSamples;
                 ///swap uip/vjp indexes with current index
                 //U component
-                output.addTo(currLinearIdx,currLinearIdx,SimSettings::density());
+                output.addTo(currLinearIdxU,currLinearIdxU,SimSettings::density());
                 diag += std::abs(SimSettings::density());
 
                 int uImOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i-1,j);
 
                 if(uImOneLinearIdx != -1)
                 {
-                    output.addTo(currLinearIdx,
+                    output.addTo(currLinearIdxU,
                                  uImOneLinearIdx,
                                  -scaleTwoDt * grid.viscosity(i-1,j));
 
-                    output.addTo(currLinearIdx,
-                                 currLinearIdx,
+                    output.addTo(currLinearIdxU,
+                                 currLinearIdxU,
                                  scaleTwoDt * grid.viscosity(i-1,j));
 
                     diag += scaleTwoDt * grid.viscosity(i-1,j);
@@ -113,60 +114,69 @@ DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forViscos
 
                 int uIpOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i+1,j);
 
-                if(uIpOneLinearIdx != 1)
+                if(uIpOneLinearIdx != -1)
                 {
-                    output.addTo(currLinearIdx,
-                                 grid.linearViscosityVelocitySampleIndexU(i+1,j),
+                    output.addTo(currLinearIdxU,
+                                 uIpOneLinearIdx,
                                  -scaleTwoDt * grid.viscosity(i,j));
 
-                    output.addTo(currLinearIdx,
-                                 currLinearIdx,
+                    output.addTo(currLinearIdxU,
+                                 currLinearIdxU,
                                  scaleTwoDt * grid.viscosity(i,j));
                     diag += scaleTwoDt * grid.viscosity(i,j);
                     offdiag += std::abs(-scaleTwoDt * grid.viscosity(i,j));
                 }
 
-                if(grid.uVelocityInside(i,j-1)
-                        && grid.vVelocityInside(i,j)
-                        && grid.vVelocityInside(i-1,j))
+                int uJmOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i,j-1);
+                int vImOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i-1,j);
+
+                if(uJmOneLinearIdx != -1
+                        && currLinearIdxV != -1
+                        && vImOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,grid.viscosityGrid());
-                    output.addTo(currLinearIdx,
-                                 grid.linearViscosityVelocitySampleIndexU(i,j-1),
+                    lerpedViscosity = 100;
+                    output.addTo(currLinearIdxU,
+                                 uJmOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(currLinearIdx,
-                                 vBaseIndex + grid.linearViscosityVelocitySampleIndexV(i,j),
+                    output.addTo(currLinearIdxU,
+                                 vBaseIndex + currLinearIdxV,
                                  scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(currLinearIdx,
-                                 vBaseIndex + grid.linearViscosityVelocitySampleIndexV(i - 1,j),
+                    output.addTo(currLinearIdxU,
+                                 vBaseIndex + vImOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(currLinearIdx,currLinearIdx,scaleTwoDx * lerpedViscosity);
+                    output.addTo(currLinearIdxU,currLinearIdxU,scaleTwoDx * lerpedViscosity);
 
                     diag += scaleTwoDx * lerpedViscosity;
                     offdiag += std::abs(-scaleTwoDx * lerpedViscosity) * 3;
                 }
 
-                if(grid.uVelocityInside(i,j+1)
-                        && grid.vVelocityInside(i,j+1)
-                        && grid.vVelocityInside(i-1,j+1))
+                int uJpOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i,j+1);
+                int vJpOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i,j+1);
+                int vImOneJpOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i-1,j+1);
+
+                if(uJpOneLinearIdx != -1
+                        && vJpOneLinearIdx != -1
+                        && vImOneJpOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj+0.5f,grid.viscosityGrid());
-                    output.addTo(currLinearIdx,
-                                 grid.linearViscosityVelocitySampleIndexU(i,j+1),
+                    lerpedViscosity = 100;
+                    output.addTo(currLinearIdxU,
+                                 uJpOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(currLinearIdx,
-                                 vBaseIndex + grid.linearViscosityVelocitySampleIndexV(i,j+1),
+                    output.addTo(currLinearIdxU,
+                                 vBaseIndex + vJpOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(currLinearIdx,
-                                 vBaseIndex + grid.linearViscosityVelocitySampleIndexV(i-1,j+1),
+                    output.addTo(currLinearIdxU,
+                                 vBaseIndex + vImOneJpOneLinearIdx,
                                  scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(currLinearIdx,currLinearIdx,scaleTwoDx * lerpedViscosity);
+                    output.addTo(currLinearIdxU,currLinearIdxU,scaleTwoDx * lerpedViscosity);
 
                     diag += scaleTwoDx * lerpedViscosity;
                     offdiag += std::abs(scaleTwoDx * lerpedViscosity) * 3;
@@ -182,91 +192,101 @@ DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forViscos
             diag = 0;
             offdiag = 0;
 
-            currLinearIdx = grid.linearViscosityVelocitySampleIndexV(i,j);
             //V component
-            if(currLinearIdx != 0)
+            if(currLinearIdxV != -1)
             {
                 float fi = static_cast<float>(i);
                 float fj = static_cast<float>(j);
-                int vBaseIndex = validVSamples;
-                bool currentUIsValid = grid.inBounds(i,j) && grid.uVelocityInside(i,j);
-                bool currentVIsValid = grid.inBounds(i,j) && grid.vVelocityInside(i,j);
-                output.addTo(vBaseIndex + currLinearIdx,vBaseIndex + currLinearIdx,SimSettings::density());
+                int vBaseIndex = validUSamples;
+                output.addTo(vBaseIndex + currLinearIdxV,vBaseIndex + currLinearIdxV,SimSettings::density());
                 diag += SimSettings::density();
 
-                if(grid.vVelocityInside(i,j-1))
+                int vJmOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i,j-1);
+
+                if(vJmOneLinearIdx != -1)
                 {
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 vBaseIndex + grid.linearViscosityVelocitySampleIndexV(i,j-1),
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + vJmOneLinearIdx,
                                  -scaleTwoDt * grid.viscosity(i,j-1));
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 vBaseIndex + currLinearIdx,
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + currLinearIdxV,
                                  scaleTwoDt * grid.viscosity(i,j-1));
                     diag += scaleTwoDt * grid.viscosity(i,j-1);
                     offdiag += std::abs(scaleTwoDt * grid.viscosity(i,j-1));
                 }
 
+                int vJpOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i,j+1);
+
                 if(grid.vVelocityInside(i,j+1))
                 {
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 vBaseIndex + grid.linearViscosityVelocitySampleIndexV(i,j+1),
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + vJpOneLinearIdx,
                                  -scaleTwoDt * grid.viscosity(i,j));
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 vBaseIndex + currLinearIdx,
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + currLinearIdxV,
                                  scaleTwoDt * grid.viscosity(i,j));
 
                     diag += scaleTwoDt * grid.viscosity(i,j);
                     offdiag += std::abs(scaleTwoDt * grid.viscosity(i,j));
                 }
 
-                if(grid.uVelocityInside(i,j)
-                        && grid.uVelocityInside(i,j-1)
-                        && grid.vVelocityInside(i-1,j))
+                int uJmOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i,j-1);
+                int vImOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i-1,j);
+
+                if(currLinearIdxU != -1
+                        && uJmOneLinearIdx != -1
+                        && vImOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,grid.viscosityGrid());
+                    lerpedViscosity = 100;
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 grid.linearViscosityVelocitySampleIndexU(i,j),
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 currLinearIdxU,
                                  scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 grid.linearViscosityVelocitySampleIndexU(i,j-1),
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 uJmOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 vBaseIndex + grid.linearViscosityVelocitySampleIndexV(i-1,j),
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + vImOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 vBaseIndex + currLinearIdx,
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + currLinearIdxV,
                                  scaleTwoDx * lerpedViscosity);
 
                     diag += scaleTwoDx * lerpedViscosity;
                     offdiag += std::abs(scaleTwoDx * lerpedViscosity)*3;
                 }
 
-                if(grid.uVelocityInside(i+1,j)
-                        && grid.uVelocityInside(i+1,j-1)
-                        && grid.vVelocityInside(i+1,j))
+                int uIpOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i+1,j);
+                int uIpOneJmOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i+1,j-1);
+                int vIpOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i+1,j);
+
+                if(uIpOneLinearIdx != -1
+                        && uIpOneJmOneLinearIdx != -1
+                        && vIpOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi+0.5f,fj-0.5f,grid.viscosityGrid());
+                    lerpedViscosity = 100;
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 grid.linearViscosityVelocitySampleIndexU(i+1,j),
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 uIpOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 grid.linearViscosityVelocitySampleIndexU(i+1,j-1),
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 uIpOneJmOneLinearIdx,
                                  scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 vBaseIndex + grid.linearViscosityVelocitySampleIndexV(i+1,j),
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + vIpOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
 
-                    output.addTo(vBaseIndex + currLinearIdx,
-                                 vBaseIndex + currLinearIdx,
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + currLinearIdxV,
                                  scaleTwoDx * lerpedViscosity);
 
                     diag += scaleTwoDx * lerpedViscosity;

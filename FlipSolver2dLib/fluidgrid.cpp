@@ -12,7 +12,7 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_sdf(sizeI,sizeJ,0.f),
     m_knownFlagsU(sizeI + 1, sizeJ, false),
     m_knownFlagsV(sizeI, sizeJ + 1, false),
-    m_viscosity(sizeI,sizeJ,0.f),
+    m_viscosity(sizeI,sizeJ,100000.f),
     m_fluidCellCount(0)
 {
 }
@@ -197,7 +197,7 @@ void MACFluidGrid::updateValidULinearMapping()
         {
             if(uVelocityInside(i,j))
             {
-                m_uVelocitySamplesMap.insert(linearIndex(i,j),linearIdx);
+                m_uVelocitySamplesMap.insert(std::make_pair(std::pair(i,j),linearIdx));
                 linearIdx++;
             }
         }
@@ -216,7 +216,7 @@ void MACFluidGrid::updateValidVLinearMapping()
         {
             if(vVelocityInside(i,j))
             {
-                m_vVelocitySamplesMap.insert(linearIndex(i,j),linearIdx);
+                m_vVelocitySamplesMap.insert(std::make_pair(std::pair(i,j),linearIdx));
                 linearIdx++;
             }
         }

@@ -103,8 +103,11 @@ void FlipSolver::project()
 
 void FlipSolver::applyViscosity()
 {
-    std::vector<double> rhs(m_grid.cellCount() * 2, 0);
-    std::vector<double> result(m_grid.cellCount() * 2, 0);
+    m_grid.updateLinearFluidViscosityMapping();
+    int uValidSamples = m_grid.validVelocitySampleCountU();
+    int vValidSamples = m_grid.validVelocitySampleCountV();
+    std::vector<double> rhs(uValidSamples + vValidSamples, 0);
+    std::vector<double> result(uValidSamples + vValidSamples, 0);
     calcViscosityRhs(rhs);
     DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix::forViscosity(m_grid);
     UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
@@ -121,13 +124,22 @@ void FlipSolver::applyViscosity()
         std::cout << "NaN or inf in viscosity vector!\n" << std::flush;
     }
 
-    int vBaseIndex = m_grid.cellCount();
-    for (int i = m_grid.sizeI() - 1; i >= 0; i--)
+    int vBaseIndex = m_grid.validVelocitySampleCountU();
+    for (int i = 0; i < m_grid.sizeI(); i++)
     {
-        for (int j = m_grid.sizeJ() - 1; j >= 0; j--)
+        for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            m_grid.setU(i,j,result[m_grid.linearIndex(i,j)]);
-            m_grid.setV(i,j,result[vBaseIndex + m_grid.linearIndex(i,j)]);
+            int linearIdxU = m_grid.linearViscosityVelocitySampleIndexU(i,j);
+            int linearIdxV = m_grid.linearViscosityVelocitySampleIndexV(i,j);
+            if(linearIdxU != -1)
+            {
+                m_grid.setU(i,j,result[linearIdxU]);
+            }
+
+            if(linearIdxV != -1)
+            {
+                m_grid.setV(i,j,result[vBaseIndex + linearIdxV]);
+            }
         }
     }
 
@@ -672,15 +684,24 @@ void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
 
 void FlipSolver::calcViscosityRhs(std::vector<double> &rhs)
 {
-    int vBaseIndex = m_grid.cellCount();
+    int vBaseIndex = m_grid.validVelocitySampleCountU();
     for (int i = 0; i < m_grid.sizeI(); i++)
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            float u = m_grid.getU(i,j);
-            rhs[m_grid.linearIndex(i,j)] = SimSettings::density() * u;
-            float v = m_grid.getV(i,j);
-            rhs[vBaseIndex + m_grid.linearIndex(i,j)] = SimSettings::density() * v;
+            int linearIdxU = m_grid.linearViscosityVelocitySampleIndexU(i,j);
+            int linearIdxV = m_grid.linearViscosityVelocitySampleIndexV(i,j);
+            if(linearIdxU != -1)
+            {
+                float u = m_grid.getU(i,j);
+                rhs[linearIdxU] = SimSettings::density() * u;
+            }
+
+            if(linearIdxV != -1)
+            {
+                float v = m_grid.getV(i,j);
+                rhs[vBaseIndex + linearIdxV] = SimSettings::density() * v;
+            }
         }
     }
 }

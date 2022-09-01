@@ -8,7 +8,7 @@ UpperTriangularMatrix::UpperTriangularMatrix(const DynamicUpperTriangularSparseM
 double UpperTriangularMatrix::getValue(int row, int col) const
 {
     if(row == -1 || col == -1) {return 0.0;}
-    if(row > col) {std::swap(row,col);}
+    //if(row > col) {std::swap(row,col);}
     int rowStartIndex = m_rowStart[row];
     int rowEndIndex = m_rowStart[row+1];
     for(int i = rowStartIndex; i < rowEndIndex; i++)
