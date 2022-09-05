@@ -2,8 +2,6 @@
 
 #include "dynamicuppertriangularsparsematrix.h"
 #include "uppertriangularmatrix.h"
-#include "sparsematrix.h"
-#include "dynamicsparsematrix.h"
 
 Logger::Logger()
 {
@@ -27,7 +25,7 @@ void Logger::close()
     m_logFileStream.close();
 }
 
-Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m)
+Logger &operator<<(Logger &l,const DynamicUpperTriangularSparseMatrix &m)
 {
 #ifdef NUMPY_LOGGING
     std::ofstream &s = l.stream();
@@ -61,74 +59,6 @@ Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m)
 }
 
 Logger &operator<<(Logger &l, const UpperTriangularMatrix &m)
-{
-    std::ofstream &s = l.stream();
-#ifdef NUMPY_LOGGING
-    s << '[';
-    for(int i = 0; i < m.sizeI(); i++)
-    {
-        s << '[';
-        for(int j = 0; j < m.sizeJ(); j++)
-        {
-            s << m.getValue(i,j);
-            if(j != m.sizeJ() - 1) s << ',';
-        }
-        s << ']';
-        if(i != m.sizeI() - 1) s << ',';
-    }
-    s << ']';
-#else
-    s << '[';
-    for(int i = 0; i < m.sizeI(); i++)
-    {
-        for(int j = 0; j < m.sizeJ(); j++)
-        {
-            s << m.getValue(i,j) << ' ';
-        }
-        s << ";";
-    }
-    s << ']';
-#endif
-
-    s.flush();
-    return l;
-}
-
-Logger &operator<<(Logger &l, const DynamicSparseMatrix &m)
-{
-    std::ofstream &s = l.stream();
-#ifdef NUMPY_LOGGING
-    s << '[';
-    for(int i = 0; i < m.sizeI(); i++)
-    {
-        s << '[';
-        for(int j = 0; j < m.sizeJ(); j++)
-        {
-            s << m.getValue(i,j);
-            if(j != m.sizeJ() - 1) s << ',';
-        }
-        s << ']';
-        if(i != m.sizeI() - 1) s << ',';
-    }
-    s << ']';
-#else
-    s << '[';
-    for(int i = 0; i < m.sizeI(); i++)
-    {
-        for(int j = 0; j < m.sizeJ(); j++)
-        {
-            s << m.getValue(i,j) << ' ';
-        }
-        s << ";";
-    }
-    s << ']';
-#endif
-
-    s.flush();
-    return l;
-}
-
-Logger &operator<<(Logger &l, const SparseMatrix &m)
 {
     std::ofstream &s = l.stream();
 #ifdef NUMPY_LOGGING

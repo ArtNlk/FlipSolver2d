@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <random>
+#include <memory>
 
 #include "pcgsolver.h"
 #include "fluidgrid.h"
@@ -48,6 +49,10 @@ public:
     void init();
 
     void extrapolateVelocityField(int steps = std::numeric_limits<int>().max());
+
+    UpperTriangularMatrix getPressureProjectionMatrix();
+
+    UpperTriangularMatrix getViscosityMatrix();
 
     void project();
 

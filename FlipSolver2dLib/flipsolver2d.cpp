@@ -30,8 +30,7 @@ void FlipSolver::project()
     std::vector<double> rhs(m_grid.cellCount(),0.0);
     calcPressureRhs(rhs);
     //debug() << "Calculated rhs: " << rhs;
-    DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix::forPressureProjection(m_grid);
-    UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
+    UpperTriangularMatrix mat = getPressureProjectionMatrix();
     std::vector<double> pressures(m_grid.cellCount(),0.0);
     if(!m_pcgSolver.solve(mat,m_grid,pressures,rhs,200))
     {
@@ -109,10 +108,9 @@ void FlipSolver::applyViscosity()
     std::vector<double> rhs(uValidSamples + vValidSamples, 0);
     std::vector<double> result(uValidSamples + vValidSamples, 0);
     calcViscosityRhs(rhs);
-    DynamicUpperTriangularSparseMatrix dmat = DynamicUpperTriangularSparseMatrix::forViscosity(m_grid);
-    UpperTriangularMatrix mat = UpperTriangularMatrix(dmat);
-    debug() << "mat=" << dmat;
-    debug() << "vec=" << rhs;
+    UpperTriangularMatrix mat = getViscosityMatrix();
+    //debug() << "mat=" << mat;
+    //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
     if(!m_pcgSolver.solve(mat,m_grid,result,rhs,200))
     {
@@ -209,7 +207,7 @@ void FlipSolver::step()
     Grid2d<float> prevV = m_grid.velocityGridV();
     applyGlobalAcceleration();
     project();
-    applyViscosity();
+    //applyViscosity();
     extrapolateVelocityField(1);
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
@@ -645,6 +643,297 @@ void FlipSolver::extrapolateVelocityField(int steps)
 
         wavefront.pop();
     }
+}
+
+UpperTriangularMatrix FlipSolver::getPressureProjectionMatrix()
+{
+    DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(m_grid.cellCount(),7);
+
+    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
+
+    for(int i = 0; i <  m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j <  m_grid.sizeJ(); j++)
+        {
+            if( m_grid.isFluid(i,j))
+            {
+                //X Neighbors
+                if( m_grid.isFluid(i-1,j))
+                {
+                    output.addToAdiag(i,j,scale,  m_grid);
+                }else if( m_grid.isEmpty(i-1,j))
+                {
+                    output.addToAdiag(i,j,scale,  m_grid);
+                }
+
+                if( m_grid.isFluid(i+1,j))
+                {
+                    output.addToAdiag(i,j,scale,  m_grid);
+                    output.addToAx(i,j,-scale,  m_grid);
+                } else if( m_grid.isEmpty(i+1,j))
+                {
+                    output.addToAdiag(i,j,scale,  m_grid);
+                }
+
+                //Y Neighbors
+                if( m_grid.isFluid(i,j-1))
+                {
+                    output.addToAdiag(i,j,scale,  m_grid);
+                }else if( m_grid.isEmpty(i,j-1))
+                {
+                    output.addToAdiag(i,j,scale,  m_grid);
+                }
+
+                if( m_grid.isFluid(i,j+1))
+                {
+                    output.addToAdiag(i,j,scale,  m_grid);
+                    output.addToAy(i,j,-scale,  m_grid);
+                } else if( m_grid.isEmpty(i,j+1))
+                {
+                    output.addToAdiag(i,j,scale,  m_grid);
+                }
+            }
+        }
+    }
+
+    return UpperTriangularMatrix(output);
+}
+
+UpperTriangularMatrix FlipSolver::getViscosityMatrix()
+{
+    DynamicUpperTriangularSparseMatrix output(m_grid.cellCount(),7);
+
+    int validUSamples =  m_grid.validVelocitySampleCountU();
+    int validVSamples =  m_grid.validVelocitySampleCountV();
+
+    float scaleTwoDt = 2*SimSettings::stepDt() / (SimSettings::dx() * SimSettings::dx());
+    float scaleTwoDx = SimSettings::stepDt() / (2 * SimSettings::dx() * SimSettings::dx());
+
+    for(int i = 0; i <  m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j <  m_grid.sizeJ(); j++)
+        {
+            int currLinearIdxU =  m_grid.linearViscosityVelocitySampleIndexU(i,j);
+            int currLinearIdxV =  m_grid.linearViscosityVelocitySampleIndexV(i,j);
+            float diag = 0;
+            float offdiag = 0;
+            if(currLinearIdxU != -1)
+            {
+                float fi = static_cast<float>(i);
+                float fj = static_cast<float>(j);
+                int vBaseIndex = validUSamples;
+                ///swap uip/vjp indexes with current index
+                //U component
+                output.addTo(currLinearIdxU,currLinearIdxU,SimSettings::density());
+                diag += std::abs(SimSettings::density());
+
+                int uImOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexU(i-1,j);
+
+                if(uImOneLinearIdx != -1)
+                {
+                    output.addTo(currLinearIdxU,
+                                 uImOneLinearIdx,
+                                 -scaleTwoDt *  m_grid.viscosity(i-1,j));
+
+                    output.addTo(currLinearIdxU,
+                                 currLinearIdxU,
+                                 scaleTwoDt *  m_grid.viscosity(i-1,j));
+
+                    diag += scaleTwoDt *  m_grid.viscosity(i-1,j);
+                    offdiag += std::abs(-scaleTwoDt *  m_grid.viscosity(i-1,j));
+                }
+
+                int uIpOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexU(i+1,j);
+
+                if(uIpOneLinearIdx != -1)
+                {
+                    output.addTo(currLinearIdxU,
+                                 uIpOneLinearIdx,
+                                 -scaleTwoDt *  m_grid.viscosity(i,j));
+
+                    output.addTo(currLinearIdxU,
+                                 currLinearIdxU,
+                                 scaleTwoDt *  m_grid.viscosity(i,j));
+                    diag += scaleTwoDt *  m_grid.viscosity(i,j);
+                    offdiag += std::abs(-scaleTwoDt *  m_grid.viscosity(i,j));
+                }
+
+                int uJmOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexU(i,j-1);
+                int vImOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexV(i-1,j);
+
+                if(uJmOneLinearIdx != -1
+                        && currLinearIdxV != -1
+                        && vImOneLinearIdx != -1)
+                {
+                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f, m_grid.viscosityGrid());
+                    lerpedViscosity = 100;
+                    output.addTo(currLinearIdxU,
+                                 uJmOneLinearIdx,
+                                 -scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(currLinearIdxU,
+                                 vBaseIndex + currLinearIdxV,
+                                 scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(currLinearIdxU,
+                                 vBaseIndex + vImOneLinearIdx,
+                                 -scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(currLinearIdxU,currLinearIdxU,scaleTwoDx * lerpedViscosity);
+
+                    diag += scaleTwoDx * lerpedViscosity;
+                    offdiag += std::abs(-scaleTwoDx * lerpedViscosity) * 3;
+                }
+
+                int uJpOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexU(i,j+1);
+                int vJpOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexV(i,j+1);
+                int vImOneJpOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexV(i-1,j+1);
+
+                if(uJpOneLinearIdx != -1
+                        && vJpOneLinearIdx != -1
+                        && vImOneJpOneLinearIdx != -1)
+                {
+                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj+0.5f, m_grid.viscosityGrid());
+                    lerpedViscosity = 100;
+                    output.addTo(currLinearIdxU,
+                                 uJpOneLinearIdx,
+                                 -scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(currLinearIdxU,
+                                 vBaseIndex + vJpOneLinearIdx,
+                                 -scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(currLinearIdxU,
+                                 vBaseIndex + vImOneJpOneLinearIdx,
+                                 scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(currLinearIdxU,currLinearIdxU,scaleTwoDx * lerpedViscosity);
+
+                    diag += scaleTwoDx * lerpedViscosity;
+                    offdiag += std::abs(scaleTwoDx * lerpedViscosity) * 3;
+                }
+
+                if (std::abs(diag) <= offdiag)
+                {
+                    std::cout << "Non dominant row for U: " << i << ',' << j
+                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
+                }
+            }
+
+            diag = 0;
+            offdiag = 0;
+
+            //V component
+            if(currLinearIdxV != -1)
+            {
+                float fi = static_cast<float>(i);
+                float fj = static_cast<float>(j);
+                int vBaseIndex = validUSamples;
+                output.addTo(vBaseIndex + currLinearIdxV,vBaseIndex + currLinearIdxV,SimSettings::density());
+                diag += SimSettings::density();
+
+                int vJmOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexV(i,j-1);
+
+                if(vJmOneLinearIdx != -1)
+                {
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + vJmOneLinearIdx,
+                                 -scaleTwoDt *  m_grid.viscosity(i,j-1));
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + currLinearIdxV,
+                                 scaleTwoDt *  m_grid.viscosity(i,j-1));
+                    diag += scaleTwoDt *  m_grid.viscosity(i,j-1);
+                    offdiag += std::abs(scaleTwoDt *  m_grid.viscosity(i,j-1));
+                }
+
+                int vJpOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexV(i,j+1);
+
+                if( m_grid.vVelocityInside(i,j+1))
+                {
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + vJpOneLinearIdx,
+                                 -scaleTwoDt *  m_grid.viscosity(i,j));
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + currLinearIdxV,
+                                 scaleTwoDt *  m_grid.viscosity(i,j));
+
+                    diag += scaleTwoDt *  m_grid.viscosity(i,j);
+                    offdiag += std::abs(scaleTwoDt *  m_grid.viscosity(i,j));
+                }
+
+                int uJmOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexU(i,j-1);
+                int vImOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexV(i-1,j);
+
+                if(currLinearIdxU != -1
+                        && uJmOneLinearIdx != -1
+                        && vImOneLinearIdx != -1)
+                {
+                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f, m_grid.viscosityGrid());
+                    lerpedViscosity = 100;
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 currLinearIdxU,
+                                 scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 uJmOneLinearIdx,
+                                 -scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + vImOneLinearIdx,
+                                 -scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + currLinearIdxV,
+                                 scaleTwoDx * lerpedViscosity);
+
+                    diag += scaleTwoDx * lerpedViscosity;
+                    offdiag += std::abs(scaleTwoDx * lerpedViscosity)*3;
+                }
+
+                int uIpOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexU(i+1,j);
+                int uIpOneJmOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexU(i+1,j-1);
+                int vIpOneLinearIdx =  m_grid.linearViscosityVelocitySampleIndexV(i+1,j);
+
+                if(uIpOneLinearIdx != -1
+                        && uIpOneJmOneLinearIdx != -1
+                        && vIpOneLinearIdx != -1)
+                {
+                    float lerpedViscosity = math::lerpCenteredGrid(fi+0.5f,fj-0.5f, m_grid.viscosityGrid());
+                    lerpedViscosity = 100;
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 uIpOneLinearIdx,
+                                 -scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 uIpOneJmOneLinearIdx,
+                                 scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + vIpOneLinearIdx,
+                                 -scaleTwoDx * lerpedViscosity);
+
+                    output.addTo(vBaseIndex + currLinearIdxV,
+                                 vBaseIndex + currLinearIdxV,
+                                 scaleTwoDx * lerpedViscosity);
+
+                    diag += scaleTwoDx * lerpedViscosity;
+                    offdiag += std::abs(scaleTwoDx * lerpedViscosity)*3;
+                }
+
+                if (std::abs(diag) <= offdiag)
+                {
+                    std::cout << "Non dominant row for V: " << i << ',' << j
+                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
+                }
+            }
+        }
+    }
+
+    return UpperTriangularMatrix(output);
 }
 
 void FlipSolver::calcPressureRhs(std::vector<double> &rhs)

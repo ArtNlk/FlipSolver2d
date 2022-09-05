@@ -7,15 +7,14 @@ set(HEADERS
     customassert.h
     fluidgrid.h
     simsettings.h
-    dynamicsparsematrix.h
-    sparsematrix.h
     pcgsolver.h
     vmath.h
     uppertriangularmatrix.h
     dynamicuppertriangularsparsematrix.h
     logger.h
     geometry2d.h
-    mathfuncs.h)
+    mathfuncs.h
+    squarematrix.h)
 
 set(SOURCES
     flipsolver2d.cpp
@@ -25,8 +24,6 @@ set(SOURCES
     fluidcell.cpp
     fluidgrid.cpp
     simsettings.cpp
-    dynamicsparsematrix.cpp
-    sparsematrix.cpp
     pcgsolver.cpp
     vmath.cpp
     uppertriangularmatrix.cpp

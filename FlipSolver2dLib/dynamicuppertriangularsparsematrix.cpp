@@ -1,11 +1,10 @@
 #include "dynamicuppertriangularsparsematrix.h"
 
 #include "mathfuncs.h"
-#include "uppertriangularmatrix.h"
 #include "simsettings.h"
 
 DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size, int avgRowLength) :
-    LinearIndexable2d(size,size),
+    SquareMatrix(size),
     m_rows(size),
     m_size(size),
     m_elementCount(0)
@@ -16,310 +15,75 @@ DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size,
     }
 }
 
-DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forPressureProjection(MACFluidGrid &grid)
+
+void DynamicUpperTriangularSparseMatrix::setAdiag(int i, int j, double value, MACFluidGrid &grid)
 {
-    DynamicUpperTriangularSparseMatrix output(grid.cellCount(),7);
-
-    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
-
-    for(int i = 0; i < grid.sizeI(); i++)
-    {
-        for(int j = 0; j < grid.sizeJ(); j++)
-        {
-            if(grid.isFluid(i,j))
-            {
-                //X Neighbors
-                if(grid.isFluid(i-1,j))
-                {
-                    output.addToAdiag(i,j,scale, grid);
-                }else if(grid.isEmpty(i-1,j))
-                {
-                    output.addToAdiag(i,j,scale, grid);
-                }
-
-                if(grid.isFluid(i+1,j))
-                {
-                    output.addToAdiag(i,j,scale, grid);
-                    output.addToAx(i,j,-scale, grid);
-                } else if(grid.isEmpty(i+1,j))
-                {
-                    output.addToAdiag(i,j,scale, grid);
-                }
-
-                //Y Neighbors
-                if(grid.isFluid(i,j-1))
-                {
-                    output.addToAdiag(i,j,scale, grid);
-                }else if(grid.isEmpty(i,j-1))
-                {
-                    output.addToAdiag(i,j,scale, grid);
-                }
-
-                if(grid.isFluid(i,j+1))
-                {
-                    output.addToAdiag(i,j,scale, grid);
-                    output.addToAy(i,j,-scale, grid);
-                } else if(grid.isEmpty(i,j+1))
-                {
-                    output.addToAdiag(i,j,scale, grid);
-                }
-            }
-        }
-    }
-    return output;
+    ASSERT_BETWEEN(i,-2,m_sizeI);
+    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    int index = grid.linearIndex(i,j);
+    setValue(index, index, value);
 }
 
-DynamicUpperTriangularSparseMatrix DynamicUpperTriangularSparseMatrix::forViscosity(MACFluidGrid &grid)
+void DynamicUpperTriangularSparseMatrix::setAx(int i, int j, double value, MACFluidGrid &grid)
 {
-    int validUSamples = grid.validVelocitySampleCountU();
-    int validVSamples = grid.validVelocitySampleCountV();
-    DynamicUpperTriangularSparseMatrix output(validUSamples + validVSamples,7);
+    ASSERT_BETWEEN(i,-2,m_sizeI);
+    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    int rowIndex = grid.linearIndex(i,j);
+    int colIndex = grid.linearIndex(i+1,j);
 
-    float scaleTwoDt = 2*SimSettings::stepDt() / (SimSettings::dx() * SimSettings::dx());
-    float scaleTwoDx = SimSettings::stepDt() / (2 * SimSettings::dx() * SimSettings::dx());
-
-    for(int i = 0; i < grid.sizeI(); i++)
-    {
-        for(int j = 0; j < grid.sizeJ(); j++)
-        {
-            int currLinearIdxU = grid.linearViscosityVelocitySampleIndexU(i,j);
-            int currLinearIdxV = grid.linearViscosityVelocitySampleIndexV(i,j);
-            float diag = 0;
-            float offdiag = 0;
-            if(currLinearIdxU != -1)
-            {
-                float fi = static_cast<float>(i);
-                float fj = static_cast<float>(j);
-                int vBaseIndex = validUSamples;
-                ///swap uip/vjp indexes with current index
-                //U component
-                output.addTo(currLinearIdxU,currLinearIdxU,SimSettings::density());
-                diag += std::abs(SimSettings::density());
-
-                int uImOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i-1,j);
-
-                if(uImOneLinearIdx != -1)
-                {
-                    output.addTo(currLinearIdxU,
-                                 uImOneLinearIdx,
-                                 -scaleTwoDt * grid.viscosity(i-1,j));
-
-                    output.addTo(currLinearIdxU,
-                                 currLinearIdxU,
-                                 scaleTwoDt * grid.viscosity(i-1,j));
-
-                    diag += scaleTwoDt * grid.viscosity(i-1,j);
-                    offdiag += std::abs(-scaleTwoDt * grid.viscosity(i-1,j));
-                }
-
-                int uIpOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i+1,j);
-
-                if(uIpOneLinearIdx != -1)
-                {
-                    output.addTo(currLinearIdxU,
-                                 uIpOneLinearIdx,
-                                 -scaleTwoDt * grid.viscosity(i,j));
-
-                    output.addTo(currLinearIdxU,
-                                 currLinearIdxU,
-                                 scaleTwoDt * grid.viscosity(i,j));
-                    diag += scaleTwoDt * grid.viscosity(i,j);
-                    offdiag += std::abs(-scaleTwoDt * grid.viscosity(i,j));
-                }
-
-                int uJmOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i,j-1);
-                int vImOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i-1,j);
-
-                if(uJmOneLinearIdx != -1
-                        && currLinearIdxV != -1
-                        && vImOneLinearIdx != -1)
-                {
-                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,grid.viscosityGrid());
-                    lerpedViscosity = 100;
-                    output.addTo(currLinearIdxU,
-                                 uJmOneLinearIdx,
-                                 -scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(currLinearIdxU,
-                                 vBaseIndex + currLinearIdxV,
-                                 scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(currLinearIdxU,
-                                 vBaseIndex + vImOneLinearIdx,
-                                 -scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(currLinearIdxU,currLinearIdxU,scaleTwoDx * lerpedViscosity);
-
-                    diag += scaleTwoDx * lerpedViscosity;
-                    offdiag += std::abs(-scaleTwoDx * lerpedViscosity) * 3;
-                }
-
-                int uJpOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i,j+1);
-                int vJpOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i,j+1);
-                int vImOneJpOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i-1,j+1);
-
-                if(uJpOneLinearIdx != -1
-                        && vJpOneLinearIdx != -1
-                        && vImOneJpOneLinearIdx != -1)
-                {
-                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj+0.5f,grid.viscosityGrid());
-                    lerpedViscosity = 100;
-                    output.addTo(currLinearIdxU,
-                                 uJpOneLinearIdx,
-                                 -scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(currLinearIdxU,
-                                 vBaseIndex + vJpOneLinearIdx,
-                                 -scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(currLinearIdxU,
-                                 vBaseIndex + vImOneJpOneLinearIdx,
-                                 scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(currLinearIdxU,currLinearIdxU,scaleTwoDx * lerpedViscosity);
-
-                    diag += scaleTwoDx * lerpedViscosity;
-                    offdiag += std::abs(scaleTwoDx * lerpedViscosity) * 3;
-                }
-
-                if (std::abs(diag) <= offdiag)
-                {
-                    std::cout << "Non dominant row for U: " << i << ',' << j
-                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
-                }
-            }
-
-            diag = 0;
-            offdiag = 0;
-
-            //V component
-            if(currLinearIdxV != -1)
-            {
-                float fi = static_cast<float>(i);
-                float fj = static_cast<float>(j);
-                int vBaseIndex = validUSamples;
-                output.addTo(vBaseIndex + currLinearIdxV,vBaseIndex + currLinearIdxV,SimSettings::density());
-                diag += SimSettings::density();
-
-                int vJmOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i,j-1);
-
-                if(vJmOneLinearIdx != -1)
-                {
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 vBaseIndex + vJmOneLinearIdx,
-                                 -scaleTwoDt * grid.viscosity(i,j-1));
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 vBaseIndex + currLinearIdxV,
-                                 scaleTwoDt * grid.viscosity(i,j-1));
-                    diag += scaleTwoDt * grid.viscosity(i,j-1);
-                    offdiag += std::abs(scaleTwoDt * grid.viscosity(i,j-1));
-                }
-
-                int vJpOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i,j+1);
-
-                if(grid.vVelocityInside(i,j+1))
-                {
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 vBaseIndex + vJpOneLinearIdx,
-                                 -scaleTwoDt * grid.viscosity(i,j));
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 vBaseIndex + currLinearIdxV,
-                                 scaleTwoDt * grid.viscosity(i,j));
-
-                    diag += scaleTwoDt * grid.viscosity(i,j);
-                    offdiag += std::abs(scaleTwoDt * grid.viscosity(i,j));
-                }
-
-                int uJmOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i,j-1);
-                int vImOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i-1,j);
-
-                if(currLinearIdxU != -1
-                        && uJmOneLinearIdx != -1
-                        && vImOneLinearIdx != -1)
-                {
-                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,grid.viscosityGrid());
-                    lerpedViscosity = 100;
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 currLinearIdxU,
-                                 scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 uJmOneLinearIdx,
-                                 -scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 vBaseIndex + vImOneLinearIdx,
-                                 -scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 vBaseIndex + currLinearIdxV,
-                                 scaleTwoDx * lerpedViscosity);
-
-                    diag += scaleTwoDx * lerpedViscosity;
-                    offdiag += std::abs(scaleTwoDx * lerpedViscosity)*3;
-                }
-
-                int uIpOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i+1,j);
-                int uIpOneJmOneLinearIdx = grid.linearViscosityVelocitySampleIndexU(i+1,j-1);
-                int vIpOneLinearIdx = grid.linearViscosityVelocitySampleIndexV(i+1,j);
-
-                if(uIpOneLinearIdx != -1
-                        && uIpOneJmOneLinearIdx != -1
-                        && vIpOneLinearIdx != -1)
-                {
-                    float lerpedViscosity = math::lerpCenteredGrid(fi+0.5f,fj-0.5f,grid.viscosityGrid());
-                    lerpedViscosity = 100;
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 uIpOneLinearIdx,
-                                 -scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 uIpOneJmOneLinearIdx,
-                                 scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 vBaseIndex + vIpOneLinearIdx,
-                                 -scaleTwoDx * lerpedViscosity);
-
-                    output.addTo(vBaseIndex + currLinearIdxV,
-                                 vBaseIndex + currLinearIdxV,
-                                 scaleTwoDx * lerpedViscosity);
-
-                    diag += scaleTwoDx * lerpedViscosity;
-                    offdiag += std::abs(scaleTwoDx * lerpedViscosity)*3;
-                }
-
-                if (std::abs(diag) <= offdiag)
-                {
-                    std::cout << "Non dominant row for V: " << i << ',' << j
-                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
-                }
-            }
-        }
-    }
-
-    return output;
+    return setValue(rowIndex,colIndex, value);
 }
 
-void DynamicUpperTriangularSparseMatrix::resize(int newSize)
+void DynamicUpperTriangularSparseMatrix::setAy(int i, int j, double value, MACFluidGrid &grid)
 {
-    m_size = newSize;
-    m_rows.resize(newSize);
+    ASSERT_BETWEEN(i,-2,m_sizeI);
+    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    int rowIndex = grid.linearIndex(i,j);
+    int colIndex = grid.linearIndex(i,j+1);
+
+    return setValue(rowIndex,colIndex, value);
 }
 
-int DynamicUpperTriangularSparseMatrix::size() const
+void DynamicUpperTriangularSparseMatrix::addTo(int i, int j, double value)
 {
-    return m_size;
+    ASSERT_BETWEEN(i,-2,m_sizeI);
+    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    setValue(i,j, getValue(i,j) + value);
 }
 
-void DynamicUpperTriangularSparseMatrix::setGridSize(const UpperTriangularMatrix &matrix)
+void DynamicUpperTriangularSparseMatrix::addToAdiag(int i, int j, double value, MACFluidGrid &grid)
 {
-    matrix.getGridSize(m_sizeI, m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_sizeI);
+    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    int index = grid.linearIndex(i,j);
+    setValue(index, index, getValue(index,index) + value);
 }
+
+void DynamicUpperTriangularSparseMatrix::addToAx(int i, int j, double value, MACFluidGrid &grid)
+{
+    ASSERT_BETWEEN(i,-2,m_sizeI);
+    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    int rowIndex = grid.linearIndex(i,j);
+    int colIndex = grid.linearIndex(i+1,j);
+
+    return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
+}
+
+void DynamicUpperTriangularSparseMatrix::addToAy(int i, int j, double value, MACFluidGrid &grid)
+{
+    ASSERT_BETWEEN(i,-2,m_sizeI);
+    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    int rowIndex = grid.linearIndex(i,j);
+    int colIndex = grid.linearIndex(i,j+1);
+
+    return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
+}
+
+int DynamicUpperTriangularSparseMatrix::rowSize(int rowIndex) { return m_rows[rowIndex].size();}
+
+int DynamicUpperTriangularSparseMatrix::elementCount() { return m_elementCount;}
+
+const std::vector<DynamicUpperTriangularSparseMatrix::SparseRow> DynamicUpperTriangularSparseMatrix::data() const { return m_rows;}
 
 void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex, double value)
 {
@@ -341,20 +105,20 @@ double DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnInde
     return 0;
 }
 
-bool DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnIndex, double &out) const
+std::string DynamicUpperTriangularSparseMatrix::toString()
 {
-    const SparseRow &targetRow = m_rows[rowIndex];
-    for(int column = 0; column < targetRow.size(); column++)
+    std::ostringstream output;
+    for(int i = 0; i < m_sizeI*m_sizeJ; i++)
     {
-        if(targetRow[column].first == columnIndex)
+        output << "|";
+        for(int j = 0; j < m_sizeI*m_sizeJ; j++)
         {
-            out = targetRow[column].second;
-            return true;
+            output << "\t" << getValue(i,j) << ",";
         }
+        output << "|\n";
     }
 
-    out = 0;
-    return false;
+    return output.str();
 }
 
 void DynamicUpperTriangularSparseMatrix::internalSetValue(int rowIndex, int columnIndex, double value)
