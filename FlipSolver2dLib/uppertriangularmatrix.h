@@ -22,14 +22,13 @@ public:
 
     double Ay(int i, int j, MACFluidGrid &grid) const;
 
-    std::vector<double> operator*(  std::vector<double> &v) const;
+    std::vector<double> operator*(std::vector<double> &v) const;
 
     std::string toString();
 
 protected:
     std::vector<StaticRowUnit> m_values;
     std::vector<int> m_rowStart;
-    int m_size;
 };
 
 #endif // UPPERTRIANGULARMATRIX_H

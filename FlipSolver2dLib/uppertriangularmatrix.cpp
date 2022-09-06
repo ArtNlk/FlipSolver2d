@@ -4,21 +4,20 @@
 
 UpperTriangularMatrix::UpperTriangularMatrix(DynamicUpperTriangularSparseMatrix &dynamicMatrix):
     SquareMatrix(dynamicMatrix.size()),
-    m_rowStart(dynamicMatrix.size()+1),
-    m_size(dynamicMatrix.size())
+    m_rowStart(dynamicMatrix.size()+1)
 {
     m_values.resize(dynamicMatrix.elementCount());
 
     m_rowStart[0] = 0;
-    m_rowStart[m_size] = dynamicMatrix.elementCount();
-    for(int i = 1; i < m_size; i++)
+    m_rowStart[size()] = dynamicMatrix.elementCount();
+    for(int i = 1; i < size(); i++)
     {
         m_rowStart[i] = m_rowStart[i-1] + dynamicMatrix.rowSize(i-1);
     }
 
     int totalIndex = 0;
       std::vector<DynamicUpperTriangularSparseMatrix::SparseRow> rows = dynamicMatrix.data();
-    for(int i = 0; i < m_size; i++)
+    for(int i = 0; i < size(); i++)
     {
         for(int j = 0; j < rows[i].size(); j++)
         {
@@ -94,10 +93,10 @@ double UpperTriangularMatrix::Ay(int i, int j, MACFluidGrid &grid) const
     return getValue(rowIndex,colIndex);
 }
 
-std::vector<double> UpperTriangularMatrix::operator*(  std::vector<double> &v) const
+std::vector<double> UpperTriangularMatrix::operator*(std::vector<double> &v) const
 {
     std::vector<double> output(v.size());
-    for(int i = 0; i < m_size; i++)
+    for(int i = 0; i < size(); i++)
     {
         output[i] = 0;
         for(int j = m_rowStart[i]; j < m_rowStart[i+1]; j++)
