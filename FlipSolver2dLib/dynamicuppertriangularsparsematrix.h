@@ -45,9 +45,6 @@ public:
     std::string toString();
 
 protected:
-
-    void internalSetValue(int rowIndex, int columnIndex, double value);
-
     std::vector<SparseRow> m_rows;
     int m_size;
     int m_elementCount;

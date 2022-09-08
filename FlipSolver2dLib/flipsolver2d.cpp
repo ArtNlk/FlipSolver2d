@@ -669,7 +669,7 @@ UpperTriangularMatrix FlipSolver::getPressureProjectionMatrix()
                 if( m_grid.isFluid(i+1,j))
                 {
                     output.addToAdiag(i,j,scale,  m_grid);
-                    output.addToAx(i,j,-scale,  m_grid);
+                    output.setAx(i,j,-scale,  m_grid);
                 } else if( m_grid.isEmpty(i+1,j))
                 {
                     output.addToAdiag(i,j,scale,  m_grid);
@@ -687,7 +687,7 @@ UpperTriangularMatrix FlipSolver::getPressureProjectionMatrix()
                 if( m_grid.isFluid(i,j+1))
                 {
                     output.addToAdiag(i,j,scale,  m_grid);
-                    output.addToAy(i,j,-scale,  m_grid);
+                    output.setAy(i,j,-scale,  m_grid);
                 } else if( m_grid.isEmpty(i,j+1))
                 {
                     output.addToAdiag(i,j,scale,  m_grid);
@@ -707,6 +707,8 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
 
     float scaleTwoDt = 2*SimSettings::stepDt() / (SimSettings::dx() * SimSettings::dx());
     float scaleTwoDx = SimSettings::stepDt() / (2 * SimSettings::dx() * SimSettings::dx());
+
+    float tempVisc = 1000;
 
     for(int i = 0; i < m_grid.sizeI(); i++)
     {
@@ -765,7 +767,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                         && vImOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,m_grid.viscosityGrid());
-                    lerpedViscosity = 100;
+                    lerpedViscosity = tempVisc;
                     output.addTo(currLinearIdxU,
                                  uJmOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
@@ -793,7 +795,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                         && vImOneJpOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj+0.5f,m_grid.viscosityGrid());
-                    lerpedViscosity = 100;
+                    lerpedViscosity = tempVisc;
                     output.addTo(currLinearIdxU,
                                  uJpOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
@@ -812,11 +814,11 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                     offdiag += std::abs(scaleTwoDx * lerpedViscosity) * 3;
                 }
 
-                if (std::abs(diag) <= offdiag)
-                {
-                    std::cout << "Non dominant row for U: " << i << ',' << j
-                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
-                }
+//                if (std::abs(diag) <= offdiag)
+//                {
+//                    std::cout << "Non dominant row for U: " << i << ',' << j
+//                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
+//                }
             }
 
             diag = 0;
@@ -870,7 +872,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                         && vImOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,m_grid.viscosityGrid());
-                    lerpedViscosity = 100;
+                    lerpedViscosity = tempVisc;
 
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  currLinearIdxU,
@@ -901,7 +903,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                         && vIpOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi+0.5f,fj-0.5f,m_grid.viscosityGrid());
-                    lerpedViscosity = 100;
+                    lerpedViscosity = tempVisc;
 
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  uIpOneLinearIdx,
@@ -923,11 +925,11 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                     offdiag += std::abs(scaleTwoDx * lerpedViscosity)*3;
                 }
 
-                if (std::abs(diag) <= offdiag)
-                {
-                    std::cout << "Non dominant row for V: " << i << ',' << j
-                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
-                }
+//                if (std::abs(diag) <= offdiag)
+//                {
+//                    std::cout << "Non dominant row for V: " << i << ',' << j
+//                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
+//                }
             }
         }
     }

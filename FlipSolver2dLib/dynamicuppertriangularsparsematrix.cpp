@@ -31,7 +31,8 @@ void DynamicUpperTriangularSparseMatrix::setAx(int i, int j, double value, MACFl
     int rowIndex = grid.linearIndex(i,j);
     int colIndex = grid.linearIndex(i+1,j);
 
-    return setValue(rowIndex,colIndex, value);
+    setValue(rowIndex,colIndex, value);
+    setValue(colIndex,rowIndex, value);
 }
 
 void DynamicUpperTriangularSparseMatrix::setAy(int i, int j, double value, MACFluidGrid &grid)
@@ -41,7 +42,8 @@ void DynamicUpperTriangularSparseMatrix::setAy(int i, int j, double value, MACFl
     int rowIndex = grid.linearIndex(i,j);
     int colIndex = grid.linearIndex(i,j+1);
 
-    return setValue(rowIndex,colIndex, value);
+    setValue(rowIndex,colIndex, value);
+    setValue(colIndex,rowIndex, value);
 }
 
 void DynamicUpperTriangularSparseMatrix::addTo(int i, int j, double value)
@@ -87,8 +89,23 @@ const std::vector<DynamicUpperTriangularSparseMatrix::SparseRow> DynamicUpperTri
 
 void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex, double value)
 {
-    internalSetValue(rowIndex, columnIndex, value);
-    internalSetValue(columnIndex, rowIndex, value);
+    SparseRow &targetRow = m_rows[rowIndex];
+    for(int i = 0; i < targetRow.size(); i++)
+    {
+        if(targetRow[i].first == columnIndex)
+        {
+            targetRow[i].second = value;
+            return;
+        }
+        else if(targetRow[i].first > columnIndex)
+        {
+            targetRow.insert(targetRow.begin()+i,SparseRowUnit(columnIndex,value));
+            m_elementCount++;
+            return;
+        }
+    }
+    targetRow.push_back(SparseRowUnit(columnIndex,value));
+    m_elementCount++;
 }
 
 double DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnIndex) const
@@ -119,25 +136,4 @@ std::string DynamicUpperTriangularSparseMatrix::toString()
     }
 
     return output.str();
-}
-
-void DynamicUpperTriangularSparseMatrix::internalSetValue(int rowIndex, int columnIndex, double value)
-{
-    SparseRow &targetRow = m_rows[rowIndex];
-    for(int i = 0; i < targetRow.size(); i++)
-    {
-        if(targetRow[i].first == columnIndex)
-        {
-            targetRow[i].second = value;
-            return;
-        }
-        else if(targetRow[i].first > columnIndex)
-        {
-            targetRow.insert(targetRow.begin()+i,SparseRowUnit(columnIndex,value));
-            m_elementCount++;
-            return;
-        }
-    }
-    targetRow.push_back(SparseRowUnit(columnIndex,value));
-    m_elementCount++;
 }
