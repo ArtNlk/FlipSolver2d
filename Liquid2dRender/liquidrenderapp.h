@@ -13,6 +13,7 @@
 #include "fluidrenderer.h"
 #include "geometry2d.h"
 #include "textmenurenderer.h"
+#include "emitter.h"
 
 using json = nlohmann::json;
 
@@ -32,6 +33,7 @@ protected:
     void loadJson(std::string fileName);
     void settingsFromJson(json settingsJson);
     void solverFromJson(json solverJson);
+    Emitter emitterFromJson(json emitterJson);
     void addGeometryFromJson(json geometryJson);
     void setupFluidrender();
     void setupFluidrenderQuad();

@@ -21,7 +21,6 @@ FlipSolver::FlipSolver(int extrapRadius, bool vonNeumannNeighbors) :
 void FlipSolver::init()
 {
     m_grid = MACFluidGrid(SimSettings::gridSizeI(), SimSettings::gridSizeJ());
-    m_grid.viscosityGrid().fill(1);
 }
 
 void FlipSolver::project()
@@ -194,6 +193,27 @@ void FlipSolver::advect()
     std::cout << "Advection done in max " << maxSubsteps << " substeps" << std::endl;
 }
 
+void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
+{
+    for(int i = m_markerParticles.size() - 1; i >= 0; i--)
+    {
+        MarkerParticle &p = m_markerParticles[i];
+        Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
+        Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
+        float newViscosity = m_grid.viscosityAt(p.position);
+//        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
+//        {
+//            p.velocity = newVelocity;
+//        }
+//        else
+//        {
+            p.velocity = SimSettings::picRatio() * newVelocity +
+                    (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
+//        }
+        //p.viscosity = newViscosity;
+    }
+}
+
 void FlipSolver::step()
 {
     Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
@@ -201,28 +221,16 @@ void FlipSolver::step()
     countParticles(particleCounts);
     reseedParticles(particleCounts);
     updateMaterialsFromParticles(particleCounts);
-    particleVelocityToGrid(m_grid.velocityGridU(),m_grid.velocityGridV());
+    particleToGrid();
     extrapolateVelocityField(1);
     Grid2d<float> prevU = m_grid.velocityGridU();
     Grid2d<float> prevV = m_grid.velocityGridV();
     applyGlobalAcceleration();
     project();
     applyViscosity();
+    project();
     extrapolateVelocityField(1);
-    for(int i = m_markerParticles.size() - 1; i >= 0; i--)
-    {
-        MarkerParticle &p = m_markerParticles[i];
-        Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
-        Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
-//        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
-//        {
-//            p.velocity = newVelocity;
-//        }
-//        else
-//        {
-            p.velocity = SimSettings::picRatio() * newVelocity + (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
-//        }
-    }
+    particleUpdate(prevU, prevV);
     advect();
 }
 
@@ -248,7 +256,7 @@ void FlipSolver::stagedStep()
         updateMaterialsFromParticles(particleCounts);
         break;
     case STAGE_TRANSFER_PARTICLE_VELOCITY:
-        particleVelocityToGrid(m_grid.velocityGridU(),m_grid.velocityGridV());
+        particleToGrid();
         break;
     case STAGE_EXTRAPOLATE_VELOCITY:
         extrapolateVelocityField(1);
@@ -360,11 +368,13 @@ void FlipSolver::updateSources()
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            for(Geometry2d& geo : m_sources)
+            for(int emitterIdx = 0; emitterIdx < m_sources.size(); emitterIdx++)
             {
-                if(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                Emitter& e = m_sources[emitterIdx];
+                if(e.geometry().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
                 {
                     m_grid.setMaterial(i,j,FluidCellMaterial::SOURCE);
+                    m_grid.setEmitterId(i,j,emitterIdx);
                 }
             }
         }
@@ -422,9 +432,9 @@ void FlipSolver::addGeometry(Geometry2d& geometry)
     m_geometry.push_back(geometry);
 }
 
-void FlipSolver::addSource(Geometry2d &geometry)
+void FlipSolver::addSource(Emitter &emitter)
 {
-    m_sources.push_back(geometry);
+    m_sources.push_back(emitter);
 }
 
 void FlipSolver::addSink(Geometry2d &geometry)
@@ -475,7 +485,9 @@ void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
                     Vertex velocity = m_grid.velocityAt(pos);
-                    addMarkerParticle(MarkerParticle{pos,velocity});
+                    int emitterId = m_grid.emitterId(i,j);
+                    float viscosity = m_sources[emitterId].viscosity();
+                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
                 }
             }
         }
@@ -494,7 +506,7 @@ void FlipSolver::seedInitialFluid()
                 {
                     Vertex pos = jitteredPosInCell(i,j);
                     Vertex velocity = m_grid.velocityAt(pos);
-                    addMarkerParticle(MarkerParticle{pos,velocity});
+                    addMarkerParticle(MarkerParticle{pos,velocity,0});
                 }
             }
         }
@@ -506,7 +518,7 @@ std::vector<Geometry2d> &FlipSolver::geometryObjects()
     return m_geometry;
 }
 
-std::vector<Geometry2d> &FlipSolver::sourceObjects()
+std::vector<Emitter> &FlipSolver::sourceObjects()
 {
     return m_sources;
 }
@@ -643,6 +655,64 @@ void FlipSolver::extrapolateVelocityField(int steps)
 
         wavefront.pop();
     }
+
+    markers.fill(std::numeric_limits<int>().max());
+
+    //Extrapolate centered parameters (color, viscosity, etc.)
+    for(int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(m_grid.knownFlagsCenteredParams().at(i,j))
+            {
+                markers.at(i,j) = 0;
+            }
+        }
+    }
+
+    for(int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            if(markers.at(i,j) != 0)
+            {
+                for(Index2d& neighborIndex : m_grid.getNeighborhood(i,j,m_extrapolationRadius,m_useVonNeumannNeighborhood))
+                {
+                    if(markers.at(neighborIndex) == 0)
+                    {
+                        markers.at(i,j) = 1;
+                        wavefront.push(Index2d(i,j));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    while(!wavefront.empty())
+    {
+        Index2d index = wavefront.front();
+        std::vector<Index2d> neighbors = m_grid.getNeighborhood(index,m_extrapolationRadius,m_useVonNeumannNeighborhood);
+        double avg = 0;
+        int count = 0;
+        for(Index2d& neighborIndex : neighbors)
+        {
+            if(markers.at(neighborIndex) < markers.at(index))
+            {
+                avg += m_grid.viscosityGrid().at(neighborIndex);
+                count++;
+            }
+            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= steps)
+            {
+                markers.at(neighborIndex) = markers.at(index) + 1;
+                wavefront.push(neighborIndex);
+            }
+        }
+        m_grid.viscosityGrid().at(index) = avg / count;
+        m_grid.knownFlagsCenteredParams().at(index) = true;
+
+        wavefront.pop();
+    }
 }
 
 UpperTriangularMatrix FlipSolver::getPressureProjectionMatrix()
@@ -708,16 +778,12 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
     float scaleTwoDt = 2*SimSettings::stepDt() / (SimSettings::dx() * SimSettings::dx());
     float scaleTwoDx = SimSettings::stepDt() / (2 * SimSettings::dx() * SimSettings::dx());
 
-    float tempVisc = 1000;
-
     for(int i = 0; i < m_grid.sizeI(); i++)
     {
         for(int j = 0; j < m_grid.sizeJ(); j++)
         {
             int currLinearIdxU = m_grid.linearViscosityVelocitySampleIndexU(i,j);
             int currLinearIdxV = m_grid.linearViscosityVelocitySampleIndexV(i,j);
-            float diag = 0;
-            float offdiag = 0;
             if(currLinearIdxU != -1)
             {
                 float fi = static_cast<float>(i);
@@ -726,7 +792,6 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                 ///swap uip/vjp indexes with current index
                 //U component
                 output.addTo(currLinearIdxU,currLinearIdxU,SimSettings::density());
-                diag += std::abs(SimSettings::density());
 
                 int uImOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexU(i-1,j);
 
@@ -739,9 +804,6 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                     output.addTo(currLinearIdxU,
                                  currLinearIdxU,
                                  scaleTwoDt * m_grid.viscosity(i-1,j));
-
-                    diag += scaleTwoDt * m_grid.viscosity(i-1,j);
-                    offdiag += std::abs(-scaleTwoDt * m_grid.viscosity(i-1,j));
                 }
 
                 int uIpOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexU(i+1,j);
@@ -755,8 +817,6 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                     output.addTo(currLinearIdxU,
                                  currLinearIdxU,
                                  scaleTwoDt * m_grid.viscosity(i,j));
-                    diag += scaleTwoDt * m_grid.viscosity(i,j);
-                    offdiag += std::abs(-scaleTwoDt * m_grid.viscosity(i,j));
                 }
 
                 int uJmOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexU(i,j-1);
@@ -767,7 +827,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                         && vImOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,m_grid.viscosityGrid());
-                    lerpedViscosity = tempVisc;
+                    //lerpedViscosity = tempVisc;
                     output.addTo(currLinearIdxU,
                                  uJmOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
@@ -781,9 +841,6 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                                  -scaleTwoDx * lerpedViscosity);
 
                     output.addTo(currLinearIdxU,currLinearIdxU,scaleTwoDx * lerpedViscosity);
-
-                    diag += scaleTwoDx * lerpedViscosity;
-                    offdiag += std::abs(-scaleTwoDx * lerpedViscosity) * 3;
                 }
 
                 int uJpOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexU(i,j+1);
@@ -795,7 +852,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                         && vImOneJpOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj+0.5f,m_grid.viscosityGrid());
-                    lerpedViscosity = tempVisc;
+                    //lerpedViscosity = tempVisc;
                     output.addTo(currLinearIdxU,
                                  uJpOneLinearIdx,
                                  -scaleTwoDx * lerpedViscosity);
@@ -809,20 +866,8 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                                  scaleTwoDx * lerpedViscosity);
 
                     output.addTo(currLinearIdxU,currLinearIdxU,scaleTwoDx * lerpedViscosity);
-
-                    diag += scaleTwoDx * lerpedViscosity;
-                    offdiag += std::abs(scaleTwoDx * lerpedViscosity) * 3;
                 }
-
-//                if (std::abs(diag) <= offdiag)
-//                {
-//                    std::cout << "Non dominant row for U: " << i << ',' << j
-//                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
-//                }
             }
-
-            diag = 0;
-            offdiag = 0;
 
             //V component
             if(currLinearIdxV != -1)
@@ -831,7 +876,6 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                 float fj = static_cast<float>(j);
                 int vBaseIndex = validUSamples;
                 output.addTo(vBaseIndex + currLinearIdxV,vBaseIndex + currLinearIdxV,SimSettings::density());
-                diag += SimSettings::density();
 
                 int vJmOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexV(i,j-1);
 
@@ -844,8 +888,6 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  vBaseIndex + currLinearIdxV,
                                  scaleTwoDt * m_grid.viscosity(i,j-1));
-                    diag += scaleTwoDt * m_grid.viscosity(i,j-1);
-                    offdiag += std::abs(scaleTwoDt * m_grid.viscosity(i,j-1));
                 }
 
                 int vJpOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexV(i,j+1);
@@ -859,9 +901,6 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  vBaseIndex + currLinearIdxV,
                                  scaleTwoDt * m_grid.viscosity(i,j));
-
-                    diag += scaleTwoDt * m_grid.viscosity(i,j);
-                    offdiag += std::abs(scaleTwoDt * m_grid.viscosity(i,j));
                 }
 
                 int uJmOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexU(i,j-1);
@@ -872,7 +911,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                         && vImOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,m_grid.viscosityGrid());
-                    lerpedViscosity = tempVisc;
+                    //lerpedViscosity = tempVisc;
 
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  currLinearIdxU,
@@ -889,9 +928,6 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  vBaseIndex + currLinearIdxV,
                                  scaleTwoDx * lerpedViscosity);
-
-                    diag += scaleTwoDx * lerpedViscosity;
-                    offdiag += std::abs(scaleTwoDx * lerpedViscosity)*3;
                 }
 
                 int uIpOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexU(i+1,j);
@@ -903,7 +939,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                         && vIpOneLinearIdx != -1)
                 {
                     float lerpedViscosity = math::lerpCenteredGrid(fi+0.5f,fj-0.5f,m_grid.viscosityGrid());
-                    lerpedViscosity = tempVisc;
+                    //lerpedViscosity = tempVisc;
 
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  uIpOneLinearIdx,
@@ -920,16 +956,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  vBaseIndex + currLinearIdxV,
                                  scaleTwoDx * lerpedViscosity);
-
-                    diag += scaleTwoDx * lerpedViscosity;
-                    offdiag += std::abs(scaleTwoDx * lerpedViscosity)*3;
                 }
-
-//                if (std::abs(diag) <= offdiag)
-//                {
-//                    std::cout << "Non dominant row for V: " << i << ',' << j
-//                              << "d/offd: " << std::abs(diag) << ',' << offdiag << '\n';
-//                }
             }
         }
     }
@@ -1057,16 +1084,18 @@ Vertex FlipSolver::rk3Integrate(Vertex currentPosition, float dt)
     return currentPosition + (2.f/9.f) * dt * k1 + (3.f/9.f) * dt * k2 + (4.f/9.f) * dt * k3;
 }
 
-void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gridV)
+void FlipSolver::particleToGrid()
 {
-    ASSERT(gridU.sizeI() == m_grid.velocityGridU().sizeI() && gridU.sizeJ() == m_grid.velocityGridU().sizeJ());
-    ASSERT(gridV.sizeI() == m_grid.velocityGridV().sizeI() && gridV.sizeJ() == m_grid.velocityGridV().sizeJ());
+    ASSERT(m_grid.velocityGridU().sizeI() == m_grid.velocityGridU().sizeI() && m_grid.velocityGridU().sizeJ() == m_grid.velocityGridU().sizeJ());
+    ASSERT(m_grid.velocityGridV().sizeI() == m_grid.velocityGridV().sizeI() && m_grid.velocityGridV().sizeJ() == m_grid.velocityGridV().sizeJ());
 
-    Grid2d<float> uWeights(gridU.sizeI(),gridU.sizeJ(),1e-10f);
-    Grid2d<float> vWeights(gridV.sizeI(),gridV.sizeJ(),1e-10f);
+    Grid2d<float> uWeights(m_grid.velocityGridU().sizeI(),m_grid.velocityGridU().sizeJ(),1e-10f);
+    Grid2d<float> vWeights(m_grid.velocityGridV().sizeI(),m_grid.velocityGridV().sizeJ(),1e-10f);
+    Grid2d<float> centeredWeights(m_grid.sizeI(),m_grid.sizeJ(),1e-10f);
 
-    gridU.fill(0.f);
-    gridV.fill(0.f);
+    m_grid.velocityGridU().fill(0.f);
+    m_grid.velocityGridV().fill(0.f);
+    m_grid.viscosityGrid().fill(0.f);
     m_grid.knownFlagsGridU().fill(false);
     m_grid.knownFlagsGridV().fill(false);
 
@@ -1086,12 +1115,14 @@ void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gri
 
                 float weightV = math::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
                                                      p.position.y() - (jIdx));
+                float weightCentered = math::quadraticBSpline(p.position.x() - (iIdx),
+                                                     p.position.y() - (jIdx));
                 if(uWeights.inBounds(iIdx,jIdx))
                 {
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         uWeights.at(iIdx,jIdx) += weightU;
-                        gridU.at(iIdx,jIdx) += weightU * (p.velocity.x() * SimSettings::dx());
+                        m_grid.velocityGridU().at(iIdx,jIdx) += weightU * (p.velocity.x() * SimSettings::dx());
                         m_grid.knownFlagsGridU().at(iIdx,jIdx) = true;
                     }
                 }
@@ -1101,8 +1132,18 @@ void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gri
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         vWeights.at(iIdx,jIdx) += weightV;
-                        gridV.at(iIdx,jIdx) += weightV * (p.velocity.y() * SimSettings::dx());
+                        m_grid.velocityGridV().at(iIdx,jIdx) += weightV * (p.velocity.y() * SimSettings::dx());
                         m_grid.knownFlagsGridV().at(iIdx,jIdx) = true;
+                    }
+                }
+
+                if(centeredWeights.inBounds(iIdx,jIdx))
+                {
+                    if(std::abs(weightCentered) > 1e-9f)
+                    {
+                        centeredWeights.at(iIdx,jIdx) += weightCentered;
+                        m_grid.viscosityGrid().at(iIdx,jIdx) += weightCentered * p.viscosity;
+                        m_grid.knownFlagsCenteredParams().at(iIdx,jIdx) = true;
                     }
                 }
             }
@@ -1113,8 +1154,9 @@ void FlipSolver::particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gri
     {
         for (int j = 0; j < m_grid.sizeJ() + 1; j++)
         {
-            if(gridU.inBounds(i,j)) gridU.at(i,j) /= uWeights.at(i,j);
-            if(gridV.inBounds(i,j)) gridV.at(i,j) /= vWeights.at(i,j);
+            if(m_grid.velocityGridU().inBounds(i,j)) m_grid.velocityGridU().at(i,j) /= uWeights.at(i,j);
+            if(m_grid.velocityGridV().inBounds(i,j)) m_grid.velocityGridV().at(i,j) /= vWeights.at(i,j);
+            if(m_grid.viscosityGrid().inBounds(i,j)) m_grid.viscosityGrid().at(i,j) /= centeredWeights.at(i,j);
         }
     }
 }

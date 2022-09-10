@@ -95,6 +95,7 @@
       },
       {
         "type": "source",
+        "viscosity": 0,
         "verts": [
           [3,3],
           [3,10],

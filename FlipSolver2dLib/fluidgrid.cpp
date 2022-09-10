@@ -12,7 +12,9 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_sdf(sizeI,sizeJ,0.f),
     m_knownFlagsU(sizeI + 1, sizeJ, false),
     m_knownFlagsV(sizeI, sizeJ + 1, false),
-    m_viscosity(sizeI,sizeJ,100000.f),
+    m_knownCenteredParams(sizeI,sizeJ, false),
+    m_viscosityGrid(sizeI,sizeJ,0.f),
+    m_emitterId(sizeI, sizeJ, -1),
     m_fluidCellCount(0)
 {
 }
@@ -315,6 +317,11 @@ Vertex MACFluidGrid::velocityAt(Vertex position)
     return velocityAt(position.x(),position.y());
 }
 
+float MACFluidGrid::viscosityAt(Vertex position)
+{
+    return math::lerpCenteredGrid(position.x(), position.y(), m_viscosityGrid);
+}
+
 Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
 {
     return m_materialGrid;
@@ -340,9 +347,14 @@ Grid2d<bool> &MACFluidGrid::knownFlagsGridV()
     return m_knownFlagsV;
 }
 
+Grid2d<bool> &MACFluidGrid::knownFlagsCenteredParams()
+{
+    return m_knownCenteredParams;
+}
+
 Grid2d<float> &MACFluidGrid::viscosityGrid()
 {
-    return m_viscosity;
+    return m_viscosityGrid;
 }
 
 Grid2d<float> &MACFluidGrid::sdfGrid()
@@ -377,27 +389,27 @@ void MACFluidGrid::setSdf(Index2d index, float value)
 
 float MACFluidGrid::viscosity(int i, int j)
 {
-    return m_viscosity.at(i,j);
+    return m_viscosityGrid.at(i,j);
 }
 
 float MACFluidGrid::viscosityAt(float i, float j)
 {
-    return math::lerpCenteredGrid(i,j,m_viscosity);
+    return math::lerpCenteredGrid(i,j,m_viscosityGrid);
 }
 
 float MACFluidGrid::viscosity(Index2d index)
 {
-    return m_viscosity.at(index);
+    return m_viscosityGrid.at(index);
 }
 
 void MACFluidGrid::setViscosity(int i, int j, float value)
 {
-    m_viscosity.at(i,j) = value;
+    m_viscosityGrid.at(i,j) = value;
 }
 
 void MACFluidGrid::setViscosity(Index2d index, float value)
 {
-    m_viscosity.at(index) = value;
+    m_viscosityGrid.at(index) = value;
 }
 
 Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
@@ -473,4 +485,14 @@ int MACFluidGrid::validVelocitySampleCountU()
 int MACFluidGrid::validVelocitySampleCountV()
 {
     return m_validVVelocitySampleCount;
+}
+
+void MACFluidGrid::setEmitterId(int i, int j, int id)
+{
+    m_emitterId.at(i,j) = id;
+}
+
+int MACFluidGrid::emitterId(int i, int j)
+{
+    return m_emitterId.at(i,j);
 }

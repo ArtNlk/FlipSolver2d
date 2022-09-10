@@ -34,6 +34,7 @@
       },
       {
         "type": "source",
+        "viscosity": 0,
         "verts": [
           [5,5],
           [15,5],

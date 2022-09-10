@@ -9,7 +9,14 @@
 #include "color.h"
 #include "geometry2d.h"
 
-enum FluidRenderMode : int {RENDER_MATERIAL,RENDER_VELOCITY,RENDER_U,RENDER_V,RENDER_SDF,RENDER_KNOWN_FLAG_U,RENDER_KNOWN_FLAG_V,GRID_RENDER_ITER_END};
+enum FluidRenderMode : int {RENDER_MATERIAL,
+                            RENDER_VELOCITY,
+                            RENDER_U,RENDER_V,
+                            RENDER_SDF,
+                            RENDER_KNOWN_FLAG_U,
+                            RENDER_KNOWN_FLAG_V,
+                            RENDER_VISCOSITY,
+                            GRID_RENDER_ITER_END};
 inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
     state = static_cast<FluidRenderMode>((i) % GRID_RENDER_ITER_END);
@@ -132,6 +139,7 @@ protected:
     void updateGridFromUKnownFlag();
     void updateGridFromVKnownFlag();
     void updateGridFromSdf();
+    void updateGridFromViscosity();
     void updateVectorsStaggered();
     void updateVectorsCentered();
     void updateVectorsSdfGrad();

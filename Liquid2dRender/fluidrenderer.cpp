@@ -451,6 +451,10 @@ void FluidRenderer::updateGrid()
         updateGridFromVKnownFlag();
         break;
 
+    case RENDER_VISCOSITY:
+        updateGridFromViscosity();
+        break;
+
     default:
         std::cout << "Bad render mode";
         break;
@@ -631,6 +635,20 @@ void FluidRenderer::updateGridFromSdf()
             {
                 setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(168 * brightness), static_cast<int>(87 * brightness)));
             }
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromViscosity()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = m_solver->grid().viscosityGrid().at(i,j) / 100;
+            setCellColor(i,j,Color(brightness,brightness,brightness));
         }
     }
 }

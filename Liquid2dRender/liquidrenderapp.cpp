@@ -32,11 +32,11 @@ void LiquidRenderApp::init()
     GlobalCallbackHandler::instance().init(this,
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
-    loadJson("./scenes/waterfall.json");
+    //loadJson("./scenes/waterfall.json");
     //loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
-    //loadJson("./scenes/viscosity_test.json");
-    int foo = 11;
+    loadJson("./scenes/viscosity_test.json");
+    int foo = 2;
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
     {
@@ -308,6 +308,20 @@ void LiquidRenderApp::solverFromJson(json solverJson)
     }
 }
 
+Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
+{
+    float viscosity = emitterJson["viscosity"].get<float>();
+    std::vector<std::pair<float,float>> verts = emitterJson["verts"]
+                                                .get<std::vector<std::pair<float,float>>>();
+    Geometry2d geo;
+    for(auto v : verts)
+    {
+        geo.addVertex(Vertex(v.first,v.second));
+    }
+
+    return Emitter(viscosity,geo);
+}
+
 void LiquidRenderApp::addGeometryFromJson(json geometryJson)
 {
     std::vector<std::pair<float,float>> verts = geometryJson["verts"]
@@ -325,7 +339,8 @@ void LiquidRenderApp::addGeometryFromJson(json geometryJson)
     }
     else if(geoType == "source")
     {
-        m_solver->addSource(geo);
+        Emitter e = emitterFromJson(geometryJson);
+        m_solver->addSource(e);
     }
     else if(geoType == "sink")
     {

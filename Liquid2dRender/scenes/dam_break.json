@@ -52,6 +52,7 @@
       },
       {
         "type": "fluid",
+        "viscosity": 0,
         "verts": [
           [25,3],
           [25,13],

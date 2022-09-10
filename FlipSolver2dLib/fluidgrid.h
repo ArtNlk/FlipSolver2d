@@ -118,23 +118,7 @@ public:
 
     Vertex velocityAt(Vertex position);
 
-//    inline FluidCell at(int i, int j)
-//    {
-//        return FluidCell(m_materialGrid.at(i,j),
-//                         m_velocityGridU.at(i,j),
-//                         m_velocityGridV.at(i,j),
-//                         m_knownFlagsU.at(i,j),
-//                         m_knownFlagsV.at(i,j));
-//    }
-
-//    inline FluidCell at(Index2d index)
-//    {
-//        return FluidCell(m_materialGrid.at(index),
-//                         m_velocityGridU.at(index),
-//                         m_velocityGridV.at(index),
-//                         m_knownFlagsU.at(index),
-//                         m_knownFlagsV.at(index));
-//    }
+    float viscosityAt(Vertex position);
 
     Grid2d<FluidCellMaterial> &materialGrid();
 
@@ -145,6 +129,8 @@ public:
     Grid2d<bool> &knownFlagsGridU();
 
     Grid2d<bool> &knownFlagsGridV();
+
+    Grid2d<bool> &knownFlagsCenteredParams();
 
     Grid2d<float> &viscosityGrid();
 
@@ -182,6 +168,10 @@ public:
 
     int validVelocitySampleCountV();
 
+    void setEmitterId(int i, int j, int id);
+
+    int emitterId(int i, int j);
+
 protected:  
     void updateValidULinearMapping();
 
@@ -193,7 +183,9 @@ protected:
     Grid2d<float> m_sdf;
     Grid2d<bool> m_knownFlagsU;
     Grid2d<bool> m_knownFlagsV;
-    Grid2d<float> m_viscosity;
+    Grid2d<bool> m_knownCenteredParams;
+    Grid2d<float> m_viscosityGrid;
+    Grid2d<int> m_emitterId;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;

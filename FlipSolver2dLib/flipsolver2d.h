@@ -9,6 +9,7 @@
 #include "fluidgrid.h"
 #include "uppertriangularmatrix.h"
 #include "geometry2d.h"
+#include "emitter.h"
 
 class LiquidRenderApp;
 
@@ -16,6 +17,7 @@ struct MarkerParticle
 {
     Vertex position;
     Vertex velocity;
+    float viscosity;
 };
 
 enum SimulationStepStage : int {STAGE_RESEED,
@@ -60,6 +62,8 @@ public:
 
     void advect();
 
+    void particleUpdate(Grid2d<float>& prevU, Grid2d<float>& prevV);
+
     void step();
 
     void stagedStep();
@@ -82,7 +86,7 @@ public:
 
     void addGeometry(Geometry2d& geometry);
 
-    void addSource(Geometry2d& geometry);
+    void addSource(Emitter& emitter);
 
     void addSink(Geometry2d& geometry);
 
@@ -96,7 +100,7 @@ public:
 
     std::vector<Geometry2d> &geometryObjects();
 
-    std::vector<Geometry2d> &sourceObjects();
+    std::vector<Emitter> &sourceObjects();
 
     std::vector<Geometry2d> &sinkObjects();
 
@@ -124,7 +128,7 @@ protected:
 
     Vertex rk3Integrate(Vertex currentPosition, float dt);
 
-    void particleVelocityToGrid(Grid2d<float> &gridU, Grid2d<float> &gridV);
+    void particleToGrid();
 
     void applyGlobalAcceleration();
 
@@ -138,7 +142,7 @@ protected:
     PCGSolver m_pcgSolver;
     std::mt19937 m_randEngine;
     std::vector<Geometry2d> m_geometry;
-    std::vector<Geometry2d> m_sources;
+    std::vector<Emitter> m_sources;
     std::vector<Geometry2d> m_sinks;
     std::vector<Geometry2d> m_initialFluid;
     SimulationStepStage m_stepStage;
