@@ -15,7 +15,8 @@ set(HEADERS
     geometry2d.h
     mathfuncs.h
     squarematrix.h
-    emitter.h)
+    emitter.h
+    obstacle.h)
 
 set(SOURCES
     flipsolver2d.cpp
@@ -32,7 +33,8 @@ set(SOURCES
     logger.cpp
     geometry2d.cpp
     mathfuncs.cpp
-    emitter.cpp)
+    emitter.cpp
+    obstacle.cpp)
 
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 

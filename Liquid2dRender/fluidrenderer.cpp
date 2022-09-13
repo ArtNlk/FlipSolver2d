@@ -352,9 +352,9 @@ void FluidRenderer::setupParticleVerts()
 
 void FluidRenderer::loadGeometry()
 {
-    for(Geometry2d &g : m_solver->geometryObjects())
+    for(Obstacle &g : m_solver->geometryObjects())
     {
-        addGeometry(g);
+        addGeometry(g.geometry());
     }
 }
 

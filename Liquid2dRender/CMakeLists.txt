@@ -48,9 +48,13 @@ file(GLOB SCENES
 )
 
 add_executable(LiquidRenderApp ${HEADERS} ${SOURCES} ${SCENES})
-add_custom_command(TARGET LiquidRenderApp PRE_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${CMAKE_CURRENT_SOURCE_DIR}/scenes/ $<TARGET_FILE_DIR:LiquidRenderApp>/scenes)
+
+foreach(file ${SCENES})
+    get_filename_component(filename ${file} NAME)
+    file(READ "${file}" ignored)
+    unset(ignored) # Drop the memory
+    configure_file(${file} ${CMAKE_BINARY_DIR}/Liquid2dRender/scenes/${filename} COPYONLY)
+endforeach()
 
 ## check for libpng
 pkg_check_modules(LIBPNG libpng16 REQUIRED)

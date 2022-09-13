@@ -5,6 +5,7 @@
 #include <random>
 #include <memory>
 
+#include "obstacle.h"
 #include "pcgsolver.h"
 #include "fluidgrid.h"
 #include "uppertriangularmatrix.h"
@@ -70,8 +71,6 @@ public:
 
     void stepFrame();
 
-    void updateSdf();
-
     void updateSolids();
 
     void updateSources();
@@ -84,13 +83,13 @@ public:
 
     int gridSizeJ();
 
-    void addGeometry(Geometry2d& geometry);
+    void addGeometry(Obstacle &geometry);
 
     void addSource(Emitter& emitter);
 
     void addSink(Geometry2d& geometry);
 
-    void addInitialFluid(Geometry2d& geometry);
+    void addInitialFluid(Emitter& emitter);
 
     void addMarkerParticle(Vertex particle);
 
@@ -98,7 +97,7 @@ public:
 
     int frameNumber();
 
-    std::vector<Geometry2d> &geometryObjects();
+    std::vector<Obstacle> &geometryObjects();
 
     std::vector<Emitter> &sourceObjects();
 
@@ -126,6 +125,8 @@ protected:
 
     void updateMaterialsFromParticles(Grid2d<int> &particleCount);
 
+    void updateVelocityFromSolids();
+
     Vertex rk3Integrate(Vertex currentPosition, float dt);
 
     void particleToGrid();
@@ -141,10 +142,10 @@ protected:
     std::vector<MarkerParticle> m_markerParticles;
     PCGSolver m_pcgSolver;
     std::mt19937 m_randEngine;
-    std::vector<Geometry2d> m_geometry;
+    std::vector<Obstacle> m_obstacles;
     std::vector<Emitter> m_sources;
     std::vector<Geometry2d> m_sinks;
-    std::vector<Geometry2d> m_initialFluid;
+    std::vector<Emitter> m_initialFluid;
     SimulationStepStage m_stepStage;
 };
 

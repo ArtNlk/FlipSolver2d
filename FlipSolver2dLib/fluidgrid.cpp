@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "fluidcell.h"
 #include "mathfuncs.h"
 
 MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
@@ -15,6 +16,7 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_knownCenteredParams(sizeI,sizeJ, false),
     m_viscosityGrid(sizeI,sizeJ,0.f),
     m_emitterId(sizeI, sizeJ, -1),
+    m_solidId(sizeI, sizeJ,-1),
     m_fluidCellCount(0)
 {
 }
@@ -179,14 +181,60 @@ bool MACFluidGrid::isSink(int i, int j)
     return sinkTest(m_materialGrid.at(i,j));
 }
 
-bool MACFluidGrid::uVelocityInside(int i, int j)
+bool MACFluidGrid::uVelocitySampleInside(int i, int j)
 {
-    return (!isEmpty(i,j) && !isEmpty(i - 1,j));
+    return (!isEmpty(i,j) && !isEmpty(i-1, j));
 }
 
-bool MACFluidGrid::vVelocityInside(int i, int j)
+bool MACFluidGrid::vVelocitySampleInside(int i, int j)
 {
-    return (!isEmpty(i, j) && ! isEmpty(i, j - 1));
+    return (!isEmpty(i,j) && !isEmpty(i, j-1));
+}
+
+bool MACFluidGrid::uSampleAffectedBySolid(int i, int j)
+{
+    return (isSolid(i,j+1) || isSolid(i-1, j+1) ||
+            isSolid(i,j) || isSolid(i-1, j) ||
+            isSolid(i,j-1) || isSolid(i-1, j-1));
+}
+
+bool MACFluidGrid::vSampleAffectedBySolid(int i, int j)
+{
+    return (isSolid(i+1,j) || isSolid(i+1, j-1) ||
+            isSolid(i,j) || isSolid(i, j-1) ||
+            isSolid(i-1,j) || isSolid(i-1, j-1));
+}
+
+VelocitySampleState MACFluidGrid::uVelocitySampleState(int i, int j)
+{
+    char currentMat = m_materialGrid.at(i,j) >> 4;
+    char neighborMat = m_materialGrid.at(i-1,j) >> 4;
+    char result = 0;
+
+    result |= currentMat;
+    result |= neighborMat;
+    if ((result & (result - 1)) != 0)
+    {
+        result &= ~(0b1000);
+    }
+
+    return static_cast<VelocitySampleState>(result);
+}
+
+VelocitySampleState MACFluidGrid::vVelocitySampleState(int i, int j)
+{
+    char currentMat = m_materialGrid.at(i,j) >> 4;
+    char neighborMat = m_materialGrid.at(i-1,j) >> 4;
+    char result = 0;
+
+    result |= currentMat;
+    result |= neighborMat;
+    if ((result & (result - 1)) == 0)
+    {
+        result &= 0b1000;
+    }
+
+    return static_cast<VelocitySampleState>(result);
 }
 
 void MACFluidGrid::updateValidULinearMapping()
@@ -197,7 +245,7 @@ void MACFluidGrid::updateValidULinearMapping()
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
-            if(uVelocityInside(i,j))
+            if(uVelocitySampleInside(i,j))
             {
                 m_uVelocitySamplesMap.insert(std::make_pair(std::pair(i,j),linearIdx));
                 linearIdx++;
@@ -216,7 +264,7 @@ void MACFluidGrid::updateValidVLinearMapping()
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
-            if(vVelocityInside(i,j))
+            if(vVelocitySampleInside(i,j))
             {
                 m_vVelocitySamplesMap.insert(std::make_pair(std::pair(i,j),linearIdx));
                 linearIdx++;
@@ -412,6 +460,34 @@ void MACFluidGrid::setViscosity(Index2d index, float value)
     m_viscosityGrid.at(index) = value;
 }
 
+int MACFluidGrid::closestSolidId(int i, int j)
+{
+    Vertex surfacePoint = closestSurfacePoint(Vertex(static_cast<float>(i) + 0.5f,
+                                              static_cast<float>(j) + 0.5f));
+    return m_solidId.at(static_cast<int>(surfacePoint.x()),static_cast<int>(surfacePoint.y()));
+}
+
+std::vector<int> MACFluidGrid::nearValidSolidIds(int i, int j)
+{
+    std::vector<int> output;
+    for (int iOffset = -1; iOffset < 2; iOffset++)
+    {
+        for (int jOffset = -1; jOffset < 2; jOffset++)
+        {
+            if(m_solidId.inBounds(i + iOffset, j + jOffset))
+            {
+                int id = m_solidId.at(i + iOffset, j + jOffset);
+                if(id != -1)
+                {
+                    output.push_back(m_solidId.at(i + iOffset, j + jOffset));
+                }
+            }
+        }
+    }
+
+    return output;
+}
+
 Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
 {
     Vertex closestPoint = pos;
@@ -495,4 +571,14 @@ void MACFluidGrid::setEmitterId(int i, int j, int id)
 int MACFluidGrid::emitterId(int i, int j)
 {
     return m_emitterId.at(i,j);
+}
+
+void MACFluidGrid::setSolidId(int i, int j, int solidId)
+{
+    m_solidId.at(i,j) = solidId;
+}
+
+int MACFluidGrid::solidId(int i, int j)
+{
+    return m_solidId.at(i,j);
 }

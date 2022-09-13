@@ -34,6 +34,7 @@ protected:
     void settingsFromJson(json settingsJson);
     void solverFromJson(json solverJson);
     Emitter emitterFromJson(json emitterJson);
+    Obstacle obstacleFromJson(json obstacleJson);
     void addGeometryFromJson(json geometryJson);
     void setupFluidrender();
     void setupFluidrenderQuad();

@@ -227,6 +227,7 @@ void FlipSolver::step()
     Grid2d<float> prevV = m_grid.velocityGridV();
     applyGlobalAcceleration();
     project();
+    updateVelocityFromSolids();
     applyViscosity();
     project();
     extrapolateVelocityField(1);
@@ -330,32 +331,31 @@ void FlipSolver::stepFrame()
     m_frameNumber++;
 }
 
-void FlipSolver::updateSdf()
-{
-    float dx = SimSettings::dx();
-    for (int i = 0; i < m_grid.sizeI(); i++)
-    {
-        for (int j = 0; j < m_grid.sizeJ(); j++)
-        {
-            float dist = std::numeric_limits<float>().max();
-            for(Geometry2d& geo : m_geometry)
-            {
-                dist = std::min(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) / dx,dist);
-            }
-            m_grid.setSdf(i,j,dist);
-        }
-    }
-}
-
 void FlipSolver::updateSolids()
 {
     for (int i = 0; i < m_grid.sizeI(); i++)
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if(m_grid.sdf(i,j) < 0)
+            float dx = SimSettings::dx();
+            float dist = std::numeric_limits<float>().max();
+            int minIdx = 0;
+            for(int solidIdx = 0; solidIdx < m_obstacles.size(); solidIdx++)
+            {
+                float sdf = m_obstacles[solidIdx].geometry().signedDistance(
+                            (static_cast<float>(i)+0.5)*dx,
+                            (static_cast<float>(j)+0.5)*dx) / dx;
+                if(sdf < dist)
+                {
+                    minIdx = solidIdx;
+                    dist = sdf;
+                }
+            }
+            m_grid.setSdf(i,j,dist);
+            if(dist < 0)
             {
                 m_grid.setMaterial(i,j,FluidCellMaterial::SOLID);
+                m_grid.setSolidId(i,j,minIdx);
             }
         }
     }
@@ -406,11 +406,12 @@ void FlipSolver::updateInitialFluid()
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            for(Geometry2d& geo : m_initialFluid)
+            for(Emitter& e : m_initialFluid)
             {
-                if(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                if(e.geometry().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
                 {
                     m_grid.setMaterial(i,j,FluidCellMaterial::FLUID);
+                    m_grid.setViscosity(i,j,e.viscosity());
                 }
             }
         }
@@ -427,9 +428,9 @@ int FlipSolver::gridSizeJ()
     return m_grid.sizeJ();
 }
 
-void FlipSolver::addGeometry(Geometry2d& geometry)
+void FlipSolver::addGeometry(Obstacle& geometry)
 {
-    m_geometry.push_back(geometry);
+    m_obstacles.push_back(geometry);
 }
 
 void FlipSolver::addSource(Emitter &emitter)
@@ -442,9 +443,9 @@ void FlipSolver::addSink(Geometry2d &geometry)
     m_sinks.push_back(geometry);
 }
 
-void FlipSolver::addInitialFluid(Geometry2d &geometry)
+void FlipSolver::addInitialFluid(Emitter &emitter)
 {
-    m_initialFluid.push_back(geometry);
+    m_initialFluid.push_back(emitter);
 }
 
 void FlipSolver::addMarkerParticle(Vertex particle)
@@ -506,16 +507,17 @@ void FlipSolver::seedInitialFluid()
                 {
                     Vertex pos = jitteredPosInCell(i,j);
                     Vertex velocity = m_grid.velocityAt(pos);
-                    addMarkerParticle(MarkerParticle{pos,velocity,0});
+                    float viscosity = m_grid.viscosityAt(pos);
+                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
                 }
             }
         }
     }
 }
 
-std::vector<Geometry2d> &FlipSolver::geometryObjects()
+std::vector<Obstacle> &FlipSolver::geometryObjects()
 {
-    return m_geometry;
+    return m_obstacles;
 }
 
 std::vector<Emitter> &FlipSolver::sourceObjects()
@@ -892,7 +894,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
 
                 int vJpOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexV(i,j+1);
 
-                if(m_grid.vVelocityInside(i,j+1))
+                if(vJpOneLinearIdx != -1)
                 {
                     output.addTo(vBaseIndex + currLinearIdxV,
                                  vBaseIndex + vJpOneLinearIdx,
@@ -1069,6 +1071,35 @@ void FlipSolver::updateMaterialsFromParticles(Grid2d<int> &particleCount)
                 if(m == FluidCellMaterial::FLUID)
                 {
                     m_grid.setMaterial(i,j,FluidCellMaterial::EMPTY);
+                }
+            }
+        }
+    }
+}
+
+void FlipSolver::updateVelocityFromSolids()
+{
+    for (int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for (int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            std::vector<int> ids = m_grid.nearValidSolidIds(i,j);
+            if(!ids.empty())
+            {
+                float avg = 0;
+                for(int& id : ids)
+                {
+                    Obstacle& obj = m_obstacles[id];
+                    avg += obj.friction();
+                }
+                avg /= ids.size();
+                if(m_grid.uSampleAffectedBySolid(i,j))
+                {
+                    m_grid.setU(i,j,m_grid.getU(i,j) * (1-avg));
+                }
+                if(m_grid.vSampleAffectedBySolid(i,j))
+                {
+                    m_grid.setV(i,j,m_grid.getV(i,j) * (1-avg));
                 }
             }
         }

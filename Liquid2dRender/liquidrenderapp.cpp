@@ -61,7 +61,6 @@ void LiquidRenderApp::init()
 
     setupFluidrender();
     resizeFluidrenderQuad();
-    m_solver->updateSdf();
     m_solver->updateSinks();
     m_solver->updateSources();
     m_solver->updateSolids();
@@ -322,6 +321,20 @@ Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
     return Emitter(viscosity,geo);
 }
 
+Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)
+{
+    float friction = obstacleJson.contains("friction") ? obstacleJson["friction"].get<float>() : 0;
+    std::vector<std::pair<float,float>> verts = obstacleJson["verts"]
+                                                .get<std::vector<std::pair<float,float>>>();
+    Geometry2d geo;
+    for(auto v : verts)
+    {
+        geo.addVertex(Vertex(v.first,v.second));
+    }
+
+    return Obstacle(friction,geo);
+}
+
 void LiquidRenderApp::addGeometryFromJson(json geometryJson)
 {
     std::vector<std::pair<float,float>> verts = geometryJson["verts"]
@@ -335,7 +348,8 @@ void LiquidRenderApp::addGeometryFromJson(json geometryJson)
 
     if(geoType == "solid")
     {
-        m_solver->addGeometry(geo);
+        Obstacle o = obstacleFromJson(geometryJson);
+        m_solver->addGeometry(o);
     }
     else if(geoType == "source")
     {
@@ -348,7 +362,8 @@ void LiquidRenderApp::addGeometryFromJson(json geometryJson)
     }
     else if(geoType == "fluid")
     {
-        m_solver->addInitialFluid(geo);
+        Emitter e = emitterFromJson(geometryJson);
+        m_solver->addInitialFluid(e);
     }
 }
 

@@ -21,6 +21,18 @@ public:
   }
 };
 
+//Bit mask:
+//1<<0 - partial submersion?
+//1<<1 - Fluid
+//1<<2 - Solid
+//1<<3 - Air
+enum VelocitySampleState : char {IN_FLUID = 0b0100,
+                                 IN_SOLID = 0b0010,
+                                 IN_AIR = 0b0001,
+                                 BORDER_FLUID_SOLID = 0b1110,
+                                 BORDER_FLUID_AIR = 0b1101,
+                                 BORDER_SOLID_AIR = 0b1011};
+
 class MACFluidGrid : public LinearIndexable2d
 {
 public:
@@ -80,9 +92,17 @@ public:
 
     bool isSink(int i, int j);
 
-    bool uVelocityInside(int i, int j);
+    bool uVelocitySampleInside(int i, int j);
 
-    bool vVelocityInside(int i, int j);
+    bool vVelocitySampleInside(int i, int j);
+
+    bool uSampleAffectedBySolid(int i, int j);
+
+    bool vSampleAffectedBySolid(int i, int j);
+
+    VelocitySampleState uVelocitySampleState(int i, int j);
+
+    VelocitySampleState vVelocitySampleState(int i, int j);
 
     void setU(Index2d index, float value, bool knownStatus);
 
@@ -156,6 +176,10 @@ public:
 
     void setViscosity(Index2d index, float value);
 
+    int closestSolidId(int i, int j);
+
+    std::vector<int> nearValidSolidIds(int i, int j);
+
     Vertex closestSurfacePoint(Vertex pos);
 
     void updateLinearFluidViscosityMapping();
@@ -172,6 +196,10 @@ public:
 
     int emitterId(int i, int j);
 
+    void setSolidId(int i, int j, int solidId);
+
+    int solidId(int i, int j);
+
 protected:  
     void updateValidULinearMapping();
 
@@ -186,6 +214,7 @@ protected:
     Grid2d<bool> m_knownCenteredParams;
     Grid2d<float> m_viscosityGrid;
     Grid2d<int> m_emitterId;
+    Grid2d<int> m_solidId;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;
