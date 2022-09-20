@@ -12,11 +12,11 @@ enum FluidCellMaterial : char
     EMPTY = 0b00010000
 };
 
-#define fluidTest(x) ((x & FluidCellMaterial::FLUID) != 0)
-#define emptyTest(x) ((x & FluidCellMaterial::EMPTY) != 0)
-#define solidTest(x) ((x & FluidCellMaterial::SOLID) != 0)
-#define sourceTest(x) (x == FluidCellMaterial::SOURCE)
-#define sinkTest(x) (x == FluidCellMaterial::SINK)
+constexpr bool fluidTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::FLUID) != 0);}
+constexpr bool emptyTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::EMPTY) != 0);}
+constexpr bool solidTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::SOLID) != 0);}
+constexpr bool sourceTest(FluidCellMaterial m) { return (m == FluidCellMaterial::SOURCE);}
+constexpr bool sinkTest(FluidCellMaterial m) { return (m == FluidCellMaterial::SINK);}
 
 class FluidCell
 {

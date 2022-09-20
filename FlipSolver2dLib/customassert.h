@@ -23,7 +23,7 @@
 
 #ifdef DEBUG
     #define ASSERT_BETWEEN(val,min,max)\
-        ASSERT(val > min && val < max)
+        ASSERT((val) > (min) && (val) < (max))
 #else
     #define ASSERT_BETWEEN(val,min,max) ((void)0)
 #endif
@@ -52,7 +52,10 @@
         static_assert(std::is_floating_point<T>::value);
         for(auto value : v)
         {
-            if(isNanInf(value)) return true;
+            if(isNanInf(value))
+            {
+                return true;
+            }
         }
         return false;
     }

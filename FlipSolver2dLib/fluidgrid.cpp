@@ -17,6 +17,8 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_viscosityGrid(sizeI,sizeJ,0.f),
     m_emitterId(sizeI, sizeJ, -1),
     m_solidId(sizeI, sizeJ,-1),
+    m_validUVelocitySampleCount(0),
+    m_validVVelocitySampleCount(0),
     m_fluidCellCount(0)
 {
 }
@@ -24,9 +26,13 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
 void MACFluidGrid::fill(FluidCellMaterial m, float velocityU, float velocityV, bool knownFlagU, bool knownFlagV)
 {
     if(fluidTest(m))
+    {
         m_fluidCellCount = m_materialGrid.sizeI() * m_materialGrid.sizeJ();
+    }
     else
+    {
         m_fluidCellCount = 0;
+    }
     fillMaterial(m);
     fillVelocityU(velocityU);
     fillVelocityV(velocityV);
@@ -51,9 +57,13 @@ void MACFluidGrid::fillMaterialRect(FluidCellMaterial value, int topLeftX, int t
         {
             FluidCellMaterial oldMat = m_materialGrid.at(i,j);
             if(fluidTest(oldMat) && oldMat != value)
+            {
                 m_fluidCellCount--;
+            }
             else if(!fluidTest(oldMat) && fluidTest(value))
+            {
                 m_fluidCellCount++;
+            }
             m_materialGrid.setAt(i,j,value);
         }
     }

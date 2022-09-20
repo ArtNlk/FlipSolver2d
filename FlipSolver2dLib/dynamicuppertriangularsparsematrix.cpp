@@ -83,9 +83,9 @@ void DynamicUpperTriangularSparseMatrix::addToAy(int i, int j, double value, MAC
 
 int DynamicUpperTriangularSparseMatrix::rowSize(int rowIndex) { return m_rows[rowIndex].size();}
 
-int DynamicUpperTriangularSparseMatrix::elementCount() { return m_elementCount;}
+int DynamicUpperTriangularSparseMatrix::elementCount() const { return m_elementCount;}
 
-const std::vector<DynamicUpperTriangularSparseMatrix::SparseRow> DynamicUpperTriangularSparseMatrix::data() const { return m_rows;}
+std::vector<DynamicUpperTriangularSparseMatrix::SparseRow> DynamicUpperTriangularSparseMatrix::data() const { return m_rows;}
 
 void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex, double value)
 {
@@ -97,7 +97,7 @@ void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex,
             targetRow[i].second = value;
             return;
         }
-        else if(targetRow[i].first > columnIndex)
+        if(targetRow[i].first > columnIndex)
         {
             targetRow.insert(targetRow.begin()+i,SparseRowUnit(columnIndex,value));
             m_elementCount++;
@@ -111,11 +111,11 @@ void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex,
 double DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnIndex) const
 {
     const SparseRow &targetRow = m_rows[rowIndex];
-    for(int column = 0; column < targetRow.size(); column++)
+    for(const auto & column : targetRow)
     {
-        if(targetRow[column].first == columnIndex)
+        if(column.first == columnIndex)
         {
-            return targetRow[column].second;
+            return column.second;
         }
     }
 

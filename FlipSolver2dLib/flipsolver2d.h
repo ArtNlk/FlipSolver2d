@@ -127,6 +127,8 @@ protected:
 
     void updateVelocityFromSolids();
 
+    void applyPressuresToVelocityField(std::vector<double> pressures);
+
     Vertex rk3Integrate(Vertex currentPosition, float dt);
 
     void particleToGrid();

@@ -6,11 +6,11 @@
 class Emitter
 {
 public:
-    Emitter(float viscosity, Geometry2d geo);
+    Emitter(float viscosity, Geometry2d& geo);
 
     void setViscosity(float viscosity);
 
-    float viscosity();
+    float viscosity() const;
 
     Geometry2d &geometry();
 

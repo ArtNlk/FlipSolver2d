@@ -13,8 +13,8 @@ class Logger;
 class DynamicUpperTriangularSparseMatrix : public SquareMatrix
 {
 public:
-    typedef std::pair<int,double> SparseRowUnit;
-    typedef std::vector<SparseRowUnit> SparseRow;
+    using SparseRowUnit = std::pair<int, double>;
+    using SparseRow = std::vector<SparseRowUnit>;
     friend Logger;
 
     DynamicUpperTriangularSparseMatrix(int size, int avgRowLength = 7);
@@ -33,14 +33,14 @@ public:
 
     void addToAy(int i, int j, double value, MACFluidGrid &grid);
 
-    virtual int rowSize(int rowIndex) override;
+    int rowSize(int rowIndex) override;
 
-    int elementCount() ;
+    int elementCount() const ;
 
-    const std::vector<SparseRow> data() const;
+    std::vector<SparseRow> data() const;
 
-    virtual void setValue(int rowIndex, int columnIndex, double value) override;
-    virtual double getValue(int rowIndex, int columnIndex) const override;
+    void setValue(int rowIndex, int columnIndex, double value) override;
+    double getValue(int rowIndex, int columnIndex) const override;
 
     std::string toString();
 

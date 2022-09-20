@@ -43,60 +43,7 @@ void FlipSolver::project()
 
     //debug() << "pressures = " << pressures;
 
-    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx());
-
-    for (int i = m_grid.sizeI() - 1; i >= 0; i--)
-    {
-        for (int j = m_grid.sizeJ() - 1; j >= 0; j--)
-        {
-            int fluidIndex = m_grid.linearIndex(i,j);
-            int fluidIndexIM1 = m_grid.linearIndex(i-1,j);
-            int fluidIndexJM1 = m_grid.linearIndex(i,j-1);
-            //U part
-            if(m_grid.isFluid(i-1,j) || m_grid.isFluid(i,j))
-            {
-                if(m_grid.isSolid(i-1,j) || m_grid.isSolid(i,j))
-                {
-                    m_grid.setU(i,j,0);//Solids are stationary
-                }
-                else
-                {
-                    m_grid.velocityGridU().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexIM1 == -1 ? 0.0 : pressures[fluidIndexIM1]));
-                }
-            }
-            else
-            {
-                m_grid.knownFlagsGridU().at(i,j) = false;
-            }
-
-            //V part
-            if(m_grid.isFluid(i,j-1) || m_grid.isFluid(i,j))
-            {
-                if(m_grid.isSolid(i,j-1) || m_grid.isSolid(i,j))
-                {
-                    m_grid.velocityGridV().at(i,j) = 0;//Solids are stationary
-                }
-                else
-                {
-                    m_grid.velocityGridV().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexJM1 == -1 ? 0.0 : pressures[fluidIndexJM1]));
-                }
-            }
-            else
-            {
-                m_grid.knownFlagsGridV().at(i,j) = false;
-            }
-        }
-    }
-
-    if(anyNanInf(m_grid.velocityGridU().data()))
-    {
-        std::cout << "NaN or inf in U vector!\n" << std::flush;
-    }
-
-    if(anyNanInf(m_grid.velocityGridV().data()))
-    {
-        std::cout << "NaN or inf in V vector!\n" << std::flush;
-    }
+    applyPressuresToVelocityField(pressures);
 }
 
 void FlipSolver::applyViscosity()
@@ -200,7 +147,6 @@ void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
         MarkerParticle &p = m_markerParticles[i];
         Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
         Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
-        float newViscosity = m_grid.viscosityAt(p.position);
 //        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
 //        {
 //            p.velocity = newVelocity;
@@ -210,7 +156,6 @@ void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
             p.velocity = SimSettings::picRatio() * newVelocity +
                     (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
 //        }
-        //p.viscosity = newViscosity;
     }
 }
 
@@ -338,7 +283,7 @@ void FlipSolver::updateSolids()
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
             float dx = SimSettings::dx();
-            float dist = std::numeric_limits<float>().max();
+            float dist = std::numeric_limits<float>::max();
             int minIdx = 0;
             for(int solidIdx = 0; solidIdx < m_obstacles.size(); solidIdx++)
             {
@@ -481,7 +426,10 @@ void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
                 }
                 //std::cout << particleCount << " at " << i << " , " << j << std::endl;
                 int additionalParticles = SimSettings::particlesPerCell() - particleCount;
-                if(additionalParticles <= 0) continue;
+                if(additionalParticles <= 0)
+                {
+                    continue;
+                }
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
@@ -1103,6 +1051,64 @@ void FlipSolver::updateVelocityFromSolids()
                 }
             }
         }
+    }
+}
+
+void FlipSolver::applyPressuresToVelocityField(std::vector<double> pressures)
+{
+    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx());
+
+    for (int i = m_grid.sizeI() - 1; i >= 0; i--)
+    {
+        for (int j = m_grid.sizeJ() - 1; j >= 0; j--)
+        {
+            int fluidIndex = m_grid.linearIndex(i,j);
+            int fluidIndexIM1 = m_grid.linearIndex(i-1,j);
+            int fluidIndexJM1 = m_grid.linearIndex(i,j-1);
+            //U part
+            if(m_grid.isFluid(i-1,j) || m_grid.isFluid(i,j))
+            {
+                if(m_grid.isSolid(i-1,j) || m_grid.isSolid(i,j))
+                {
+                    m_grid.setU(i,j,0);//Solids are stationary
+                }
+                else
+                {
+                    m_grid.velocityGridU().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexIM1 == -1 ? 0.0 : pressures[fluidIndexIM1]));
+                }
+            }
+            else
+            {
+                m_grid.knownFlagsGridU().at(i,j) = false;
+            }
+
+            //V part
+            if(m_grid.isFluid(i,j-1) || m_grid.isFluid(i,j))
+            {
+                if(m_grid.isSolid(i,j-1) || m_grid.isSolid(i,j))
+                {
+                    m_grid.velocityGridV().at(i,j) = 0;//Solids are stationary
+                }
+                else
+                {
+                    m_grid.velocityGridV().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexJM1 == -1 ? 0.0 : pressures[fluidIndexJM1]));
+                }
+            }
+            else
+            {
+                m_grid.knownFlagsGridV().at(i,j) = false;
+            }
+        }
+    }
+
+    if(anyNanInf(m_grid.velocityGridU().data()))
+    {
+        std::cout << "NaN or inf in U vector!\n" << std::flush;
+    }
+
+    if(anyNanInf(m_grid.velocityGridV().data()))
+    {
+        std::cout << "NaN or inf in V vector!\n" << std::flush;
     }
 }
 

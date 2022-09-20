@@ -1,6 +1,6 @@
 #include "emitter.h"
 
-Emitter::Emitter(float viscosity, Geometry2d geo):
+Emitter::Emitter(float viscosity, Geometry2d& geo):
     m_viscosity(viscosity),
     m_geometry(geo)
 {
@@ -12,7 +12,7 @@ void Emitter::setViscosity(float viscosity)
     m_viscosity = viscosity;
 }
 
-float Emitter::viscosity()
+float Emitter::viscosity() const
 {
     return m_viscosity;
 }
