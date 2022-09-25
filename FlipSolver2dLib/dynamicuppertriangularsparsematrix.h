@@ -10,14 +10,23 @@
 
 class Logger;
 
+using SparseRowUnit = std::pair<int, double>;
+using SparseRow = std::vector<SparseRowUnit>;
+
 class DynamicUpperTriangularSparseMatrix : public SquareMatrix
 {
 public:
-    using SparseRowUnit = std::pair<int, double>;
-    using SparseRow = std::vector<SparseRowUnit>;
     friend Logger;
 
     DynamicUpperTriangularSparseMatrix(int size, int avgRowLength = 7);
+
+    DynamicUpperTriangularSparseMatrix(DynamicUpperTriangularSparseMatrix &m) = default;
+
+    DynamicUpperTriangularSparseMatrix(const DynamicUpperTriangularSparseMatrix &m) = default;
+
+    DynamicUpperTriangularSparseMatrix(DynamicUpperTriangularSparseMatrix &&m) = default;
+
+    void copyUpperTriangleTo(DynamicUpperTriangularSparseMatrix &m) const;
 
     void setAdiag(int i, int j, double value, MACFluidGrid &grid);
 
@@ -33,14 +42,18 @@ public:
 
     void addToAy(int i, int j, double value, MACFluidGrid &grid);
 
-    int rowSize(int rowIndex) override;
+    int rowSize(int rowIndex) const override;
+
+    bool isStored(int rowIdx, int colIdx);
 
     int elementCount() const ;
 
-    std::vector<SparseRow> data() const;
+    std::vector<SparseRow>& data();
 
     void setValue(int rowIndex, int columnIndex, double value) override;
     double getValue(int rowIndex, int columnIndex) const override;
+
+    std::vector<double> operator*(std::vector<double> &v) const;
 
     std::string toString();
 

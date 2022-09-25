@@ -39,7 +39,7 @@ protected:
 
 void binDump(UpperTriangularMatrix & m, std::string path);
 
-Logger &operator<<(Logger &l, const DynamicUpperTriangularSparseMatrix &m);
+Logger &operator<<(Logger &l, DynamicUpperTriangularSparseMatrix &m);
 
 Logger &operator<<(Logger &l, const UpperTriangularMatrix &m);
 

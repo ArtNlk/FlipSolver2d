@@ -1,8 +1,9 @@
 #include "uppertriangularmatrix.h"
+#include "logger.h"
 
 #include <stdexcept>
 
-UpperTriangularMatrix::UpperTriangularMatrix(DynamicUpperTriangularSparseMatrix &dynamicMatrix):
+UpperTriangularMatrix::UpperTriangularMatrix(const DynamicUpperTriangularSparseMatrix &dynamicMatrix):
     SquareMatrix(dynamicMatrix.size()),
     m_rowStart(dynamicMatrix.size()+1)
 {
@@ -16,7 +17,7 @@ UpperTriangularMatrix::UpperTriangularMatrix(DynamicUpperTriangularSparseMatrix 
     }
 
     int totalIndex = 0;
-      std::vector<DynamicUpperTriangularSparseMatrix::SparseRow> rows = dynamicMatrix.data();
+    std::vector<SparseRow> rows = const_cast<DynamicUpperTriangularSparseMatrix&>(dynamicMatrix).data();
     for(int i = 0; i < size(); i++)
     {
         for(int j = 0; j < rows[i].size(); j++)
@@ -48,7 +49,7 @@ void UpperTriangularMatrix::setValue(int row, int col, double value)
     throw std::runtime_error("Set value is not supported in non-dynamic matrices");
 }
 
-int UpperTriangularMatrix::rowSize(int rowIndex)
+int UpperTriangularMatrix::rowSize(int rowIndex) const
 {
     throw std::runtime_error("Row size is not supported in non-dynamic matrices");
 }

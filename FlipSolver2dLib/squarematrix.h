@@ -14,7 +14,7 @@ public:
     virtual double getValue(int row, int column) const = 0;
     virtual void setValue(int row, int column, double value) = 0;
     int size() const {return m_sizeI;};
-    virtual int rowSize(int rowIndex) = 0;
+    virtual int rowSize(int rowIndex) const = 0;
     int elementCount() {return m_elementCount;};
 
 protected:

@@ -29,9 +29,9 @@ void FlipSolver::project()
     std::vector<double> rhs(m_grid.cellCount(),0.0);
     calcPressureRhs(rhs);
     //debug() << "Calculated rhs: " << rhs;
-    UpperTriangularMatrix mat = getPressureProjectionMatrix();
+    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
     std::vector<double> pressures(m_grid.cellCount(),0.0);
-    if(!m_pcgSolver.solve(mat,m_grid,pressures,rhs,200))
+    if(!m_pcgSolver.solve(mat,pressures,rhs,200))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
@@ -54,11 +54,11 @@ void FlipSolver::applyViscosity()
     std::vector<double> rhs(uValidSamples + vValidSamples, 0);
     std::vector<double> result(uValidSamples + vValidSamples, 0);
     calcViscosityRhs(rhs);
-    UpperTriangularMatrix mat = getViscosityMatrix();
+    DynamicUpperTriangularSparseMatrix mat = getViscosityMatrix();
     //debug() << "mat=" << mat;
     //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
-    if(!m_pcgSolver.solve(mat,m_grid,result,rhs,200))
+    if(!m_pcgSolver.solve(mat,result,rhs,200))
     {
         std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
     }
@@ -665,7 +665,7 @@ void FlipSolver::extrapolateVelocityField(int steps)
     }
 }
 
-UpperTriangularMatrix FlipSolver::getPressureProjectionMatrix()
+DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
 {
     DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(m_grid.cellCount(),7);
 
@@ -716,10 +716,10 @@ UpperTriangularMatrix FlipSolver::getPressureProjectionMatrix()
         }
     }
 
-    return UpperTriangularMatrix(output);
+    return output;
 }
 
-UpperTriangularMatrix FlipSolver::getViscosityMatrix()
+DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
 {
     int validUSamples = m_grid.validVelocitySampleCountU();
     int validVSamples = m_grid.validVelocitySampleCountV();
@@ -912,7 +912,7 @@ UpperTriangularMatrix FlipSolver::getViscosityMatrix()
     }
 
 
-    return UpperTriangularMatrix(output);
+    return output;
 }
 
 void FlipSolver::calcPressureRhs(std::vector<double> &rhs)

@@ -19,7 +19,7 @@ inline double dot(std::vector<double> &v1, std::vector<double> &v2)
     return result;
 }
 
-inline double isZero(const std::vector<double> &v1,const double eps = 1.0e-15)
+inline bool isZero(const std::vector<double> &v1,const double eps = 1.0e-15)
 {
     for(int i = 0; i < v1.size(); i++)
     {

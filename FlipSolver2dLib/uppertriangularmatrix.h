@@ -3,18 +3,19 @@
 
 #include "dynamicuppertriangularsparsematrix.h"
 
+using StaticRowUnit = std::pair<int, double>;
+
 class UpperTriangularMatrix : public SquareMatrix
 {
 public:
-    typedef std::pair<int,double> StaticRowUnit;
 
-    UpperTriangularMatrix(DynamicUpperTriangularSparseMatrix &dynamicMatrix);
+    UpperTriangularMatrix(const DynamicUpperTriangularSparseMatrix &dynamicMatrix);
 
-    virtual double getValue(int row, int col) const override;
+    double getValue(int row, int col) const override;
 
-    virtual void setValue(int row, int col, double value) override;
+    void setValue(int row, int col, double value) override;
 
-    virtual int rowSize(int rowIndex) override;
+    int rowSize(int rowIndex) const override;
 
     double Adiag(int i, int j, MACFluidGrid &grid) const;
 

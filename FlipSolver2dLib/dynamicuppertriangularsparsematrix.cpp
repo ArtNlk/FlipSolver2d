@@ -1,5 +1,7 @@
 #include "dynamicuppertriangularsparsematrix.h"
 
+#include <algorithm>
+
 #include "mathfuncs.h"
 #include "simsettings.h"
 
@@ -12,6 +14,28 @@ DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size,
     for(int i = 0; i < size; i++)
     {
         m_rows[i].reserve(avgRowLength);
+    }
+}
+
+void DynamicUpperTriangularSparseMatrix::copyUpperTriangleTo(DynamicUpperTriangularSparseMatrix &m) const
+{
+    ASSERT(m.size() == this->size());
+    int size = m.size();
+    m.m_elementCount = 0;
+
+    for(int rowIdx = 0; rowIdx < size; rowIdx++)
+    {
+        for(int rowElementIdx = 0; rowElementIdx < m_rows[rowIdx].size(); rowElementIdx++)
+        {
+            if(m_rows[rowIdx][rowElementIdx].first >= rowIdx)
+            {
+                int leftoverLength = m_rows[rowIdx].size() - rowElementIdx;
+                auto last = m_rows[rowIdx].cend();
+                auto first = last - leftoverLength;
+                m.m_rows[rowIdx] = std::vector(first,last);
+                m.m_elementCount += m.m_rows[rowIdx].size();
+            }
+        }
     }
 }
 
@@ -81,11 +105,26 @@ void DynamicUpperTriangularSparseMatrix::addToAy(int i, int j, double value, MAC
     return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
 }
 
-int DynamicUpperTriangularSparseMatrix::rowSize(int rowIndex) { return m_rows[rowIndex].size();}
+int DynamicUpperTriangularSparseMatrix::rowSize(int rowIndex) const { return m_rows[rowIndex].size();}
+
+bool DynamicUpperTriangularSparseMatrix::isStored(int rowIdx, int colIdx)
+{
+    ASSERT(inBounds(rowIdx,colIdx));
+
+    auto sparseRowUnitCmp = [](const SparseRowUnit &a, const SparseRowUnit &b){
+        return a.first < b.first;
+    };
+
+    std::vector<SparseRowUnit> selectedRow = m_rows[rowIdx];
+
+    SparseRowUnit searchValue(colIdx,0.0);
+
+    return std::binary_search(selectedRow.begin(),selectedRow.end(),searchValue,sparseRowUnitCmp);
+}
 
 int DynamicUpperTriangularSparseMatrix::elementCount() const { return m_elementCount;}
 
-std::vector<DynamicUpperTriangularSparseMatrix::SparseRow> DynamicUpperTriangularSparseMatrix::data() const { return m_rows;}
+std::vector<SparseRow>& DynamicUpperTriangularSparseMatrix::data() { return m_rows;}
 
 void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex, double value)
 {
@@ -120,6 +159,24 @@ double DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnInde
     }
 
     return 0;
+}
+
+std::vector<double> DynamicUpperTriangularSparseMatrix::operator*(std::vector<double> &v) const
+{
+    std::vector<double> output(v.size());
+    int rowIdx = 0;
+    for(const auto &row : m_rows)
+    {
+        double result = 0.0;
+        for(const auto &pair : row)
+        {
+            result += v[pair.first] * pair.second;
+        }
+        output[rowIdx] = result;
+        rowIdx++;
+    }
+
+    return output;
 }
 
 std::string DynamicUpperTriangularSparseMatrix::toString()

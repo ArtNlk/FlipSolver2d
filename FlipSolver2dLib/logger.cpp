@@ -25,7 +25,7 @@ void Logger::close()
     m_logFileStream.close();
 }
 
-Logger &operator<<(Logger &l,const DynamicUpperTriangularSparseMatrix &m)
+Logger &operator<<(Logger &l,DynamicUpperTriangularSparseMatrix &m)
 {
 #ifdef NUMPY_LOGGING
     std::ofstream &s = l.stream();

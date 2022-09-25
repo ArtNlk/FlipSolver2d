@@ -53,9 +53,9 @@ public:
 
     void extrapolateVelocityField(int steps = std::numeric_limits<int>().max());
 
-    UpperTriangularMatrix getPressureProjectionMatrix();
+    DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
 
-    UpperTriangularMatrix getViscosityMatrix();
+    DynamicUpperTriangularSparseMatrix getViscosityMatrix();
 
     void project();
 
