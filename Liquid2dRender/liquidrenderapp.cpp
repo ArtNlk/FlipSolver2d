@@ -1,8 +1,10 @@
 #include "liquidrenderapp.h"
+#include <memory>
 #include <stdexcept>
 #include <cstdlib>
 #include <filesystem>
 
+#include "flipsolverbase.h"
 #include "linearindexable2d.h"
 #include "customassert.h"
 #include "globalcallbackhandler.h"
@@ -13,13 +15,14 @@ LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 
 LiquidRenderApp::LiquidRenderApp() :
     m_window(nullptr),
-    m_solver(new FlipSolver(1,true)),
+    m_solver(nullptr),
     m_fluidRenderer(m_startWindowWidth,m_startWindowHeight),
     m_textMenuRenderer(0,0,m_startWindowWidth,m_startWindowHeight,m_fluidRenderer),
     m_renderRequested(false)
 {
     m_windowWidth = m_startWindowWidth;
     m_windowHeight = m_startWindowHeight;
+    m_solver.reset(new FlipFluidSolver(1,true));
     LiquidRenderApp::GLFWCallbackWrapper::SetApplication(this);
 }
 
@@ -33,9 +36,9 @@ void LiquidRenderApp::init()
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
     //loadJson("./scenes/waterfall.json");
-    //loadJson("./scenes/dam_break.json");
+    loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
-    loadJson("./scenes/viscosity_test.json");
+    //loadJson("./scenes/viscosity_test.json");
     int foo = 2;
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
@@ -100,24 +103,6 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_fluidRenderer.updateGrid();
                 break;
 
-                case GLFW_KEY_A:
-                    m_solver->advect();
-                    m_fluidRenderer.update();
-                break;
-
-                case GLFW_KEY_T:
-                    if(mods & GLFW_MOD_SHIFT)
-                    {
-                        initGridForProjection();
-                    }
-                    else
-                    {
-                        m_solver->project();
-                        m_fluidRenderer.updateGrid();
-                    }
-                    m_fluidRenderer.update();
-                break;
-
                 case GLFW_KEY_V:
                     if(mods & GLFW_MOD_SHIFT)
                     {
@@ -139,18 +124,6 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_fluidRenderer.update();
                 break;
 
-                case GLFW_KEY_E:
-                    if(mods & GLFW_MOD_SHIFT)
-                    {
-                        initGridForExtrapolation();
-                    }
-                    else
-                    {
-                        m_solver->extrapolateVelocityField();
-                    }
-                    m_fluidRenderer.update();
-                break;
-
                 case GLFW_KEY_P:
                     if(mods & GLFW_MOD_SHIFT)
                     {
@@ -161,21 +134,6 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                         m_fluidRenderer.particleRenderMode()++;
                     }
                     m_fluidRenderer.update();
-                break;
-
-                case GLFW_KEY_S:
-                if(mods & GLFW_MOD_SHIFT)
-                {
-                    for(int i = 0; i < SimulationStepStage::STAGE_ITER_END; i++)
-                    {
-                        m_solver->stagedStep();
-                    }
-                }
-                else
-                {
-                    m_solver->stagedStep();
-                }
-                m_fluidRenderer.update();
                 break;
 
                 case GLFW_KEY_R:
@@ -276,6 +234,9 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
     SimSettings::cflNumber() = settingsJson["cflNumber"].get<float>();
     SimSettings::picRatio() = settingsJson["picRatio"].get<float>();
+    SimSettings::simType() = settingsJson["simType"].get<std::string>() == "fluid"?
+                SimulationType::SIMULATION_FLUID : SimulationType::SIMULATION_GAS;
+    std::cout << SimSettings::simType();
     std::pair<float,float> v = settingsJson["globalAcceleration"]
                                     .get<std::pair<float,float>>();
     SimSettings::globalAcceleration() = Vertex(v.first,v.second);

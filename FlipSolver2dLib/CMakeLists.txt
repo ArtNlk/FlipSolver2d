@@ -1,5 +1,5 @@
 set(HEADERS
-    flipsolver2d.h
+    flipfluidsolver2d.h
     linearindexable2d.h
     index2d.h
     grid2d.h
@@ -16,10 +16,11 @@ set(HEADERS
     mathfuncs.h
     squarematrix.h
     emitter.h
-    obstacle.h)
+    obstacle.h
+    flipsolverbase.h)
 
 set(SOURCES
-    flipsolver2d.cpp
+    flipfluidsolver2d.cpp
     linearindexable2d.cpp
     index2d.cpp
     grid2d.cpp
@@ -34,7 +35,8 @@ set(SOURCES
     geometry2d.cpp
     mathfuncs.cpp
     emitter.cpp
-    obstacle.cpp)
+    obstacle.cpp
+    flipsolverbase.cpp)
 
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 

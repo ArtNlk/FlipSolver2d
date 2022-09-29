@@ -1,6 +1,7 @@
 #ifndef LIQUIDRENDERAPP_H
 #define LIQUIDRENDERAPP_H
 
+#include "flipsolverbase.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <ft2build.h>
@@ -9,7 +10,7 @@
 
 #include "nlohmann/json.hpp"
 
-#include "flipsolver2d.h"
+#include "flipfluidsolver2d.h"
 #include "fluidrenderer.h"
 #include "geometry2d.h"
 #include "textmenurenderer.h"
@@ -50,7 +51,7 @@ protected:
     void resizeFluidrenderQuad();
 
     GLFWwindow* m_window;
-    std::shared_ptr<FlipSolver> m_solver;
+    std::shared_ptr<FlipSolverBase> m_solver;
     FluidRenderer m_fluidRenderer;
     TextMenuRenderer m_textMenuRenderer;
 

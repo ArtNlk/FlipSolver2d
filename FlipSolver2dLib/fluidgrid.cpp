@@ -17,6 +17,8 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_viscosityGrid(sizeI,sizeJ,0.f),
     m_emitterId(sizeI, sizeJ, -1),
     m_solidId(sizeI, sizeJ,-1),
+    m_temperature(sizeI, sizeJ, 0.f),
+    m_smokeConcentration(sizeI, sizeJ, 0.f),
     m_validUVelocitySampleCount(0),
     m_validVVelocitySampleCount(0),
     m_fluidCellCount(0)
@@ -420,6 +422,16 @@ Grid2d<float> &MACFluidGrid::sdfGrid()
     return m_sdf;
 }
 
+Grid2d<float> &MACFluidGrid::temperatureGrid()
+{
+    return m_temperature;
+}
+
+Grid2d<float> &MACFluidGrid::smokeConcentrationGrid()
+{
+    return m_smokeConcentration;
+}
+
 float MACFluidGrid::sdf(int i, int j)
 {
     return m_sdf.at(i,j);
@@ -470,6 +482,36 @@ void MACFluidGrid::setViscosity(Index2d index, float value)
     m_viscosityGrid.at(index) = value;
 }
 
+float MACFluidGrid::temperature(int i, int j)
+{
+    return m_temperature.at(i,j);
+}
+
+float MACFluidGrid::temperatureAt(float i, float j)
+{
+    return math::lerpCenteredGrid(i,j,m_temperature);
+}
+
+void MACFluidGrid::setTemperature(int i, int j, float value)
+{
+    m_temperature.setAt(i,j,value);
+}
+
+float MACFluidGrid::smokeConcentration(int i, int j)
+{
+    return m_smokeConcentration.at(i,j);
+}
+
+float MACFluidGrid::smokeConcentrationAt(float i, float j)
+{
+    return math::lerpCenteredGrid(i,j,m_smokeConcentration);
+}
+
+void MACFluidGrid::setSmokeConcentration(int i, int j, float value)
+{
+    m_smokeConcentration.setAt(i,j,value);
+}
+
 int MACFluidGrid::closestSolidId(int i, int j)
 {
     Vertex surfacePoint = closestSurfacePoint(Vertex(static_cast<float>(i) + 0.5f,
@@ -511,7 +553,6 @@ Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
         for(int j = 0; j < internalIterationLimit; j++)
         {
             Vertex q = closestPoint - alpha*sdf*grad;
-            float temp = std::abs(math::lerpCenteredGrid(q.x(),q.y(),m_sdf));
             if(std::abs(math::lerpCenteredGrid(q.x(),q.y(),m_sdf)) < std::abs(sdf))
             {
                 closestPoint = q;

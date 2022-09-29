@@ -3,6 +3,8 @@
 
 #include "geometry2d.h"
 
+enum SimulationType : char {SIMULATION_FLUID, SIMULATION_GAS};
+
 class SimSettings
 {
 public:
@@ -93,6 +95,11 @@ public:
         return m_instance.m_cflNumber;
     }
 
+    static inline SimulationType& simType()
+    {
+        return m_instance.m_simType;
+    }
+
 protected:
     static SimSettings m_instance;
 
@@ -112,6 +119,7 @@ protected:
     int m_maxSubsteps;
     float m_picRatio;
     float m_cflNumber;
+    SimulationType m_simType;
 };
 
 #endif // SIMSETTINGS_H

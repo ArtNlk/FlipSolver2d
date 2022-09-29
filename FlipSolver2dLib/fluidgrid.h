@@ -156,6 +156,10 @@ public:
 
     Grid2d<float> &sdfGrid();
 
+    Grid2d<float> &temperatureGrid();
+
+    Grid2d<float> &smokeConcentrationGrid();
+
     float sdf(int i, int j);
 
     float sdfAt(float i, float j);
@@ -175,6 +179,18 @@ public:
     void setViscosity(int i, int j, float value);
 
     void setViscosity(Index2d index, float value);
+
+    float temperature(int i, int j);
+
+    float temperatureAt(float i, float j);
+
+    void setTemperature(int i, int j, float value);
+
+    float smokeConcentration(int i, int j);
+
+    float smokeConcentrationAt(float i, float j);
+
+    void setSmokeConcentration(int i, int j, float value);
 
     int closestSolidId(int i, int j);
 
@@ -215,6 +231,8 @@ protected:
     Grid2d<float> m_viscosityGrid;
     Grid2d<int> m_emitterId;
     Grid2d<int> m_solidId;
+    Grid2d<float> m_temperature;
+    Grid2d<float> m_smokeConcentration;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;
