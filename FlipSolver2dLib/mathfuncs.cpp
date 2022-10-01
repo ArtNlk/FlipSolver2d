@@ -141,3 +141,8 @@ float math::bilinearHat(float x, float y)
 {
     return math::linearHat(x) * math::linearHat(y) * math::linearHat(0.f);
 }
+
+float math::avg(float a, float b)
+{
+    return (a+b)/2.f;
+}

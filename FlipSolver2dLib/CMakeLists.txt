@@ -17,7 +17,8 @@ set(HEADERS
     squarematrix.h
     emitter.h
     obstacle.h
-    flipsolverbase.h)
+    flipsolverbase.h
+    flipsmokesolver.h)
 
 set(SOURCES
     flipfluidsolver2d.cpp
@@ -36,7 +37,8 @@ set(SOURCES
     mathfuncs.cpp
     emitter.cpp
     obstacle.cpp
-    flipsolverbase.cpp)
+    flipsolverbase.cpp
+    flipsmokesolver.cpp)
 
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 

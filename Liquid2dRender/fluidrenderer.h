@@ -16,7 +16,10 @@ enum FluidRenderMode : int {RENDER_MATERIAL,
                             RENDER_SDF,
                             RENDER_KNOWN_FLAG_U,
                             RENDER_KNOWN_FLAG_V,
+                            RENDER_KNOWN_FLAG_CENTERED,
                             RENDER_VISCOSITY,
+                            RENDER_TEMPERATURE,
+                            RENDER_SMOKE_CONCENTRATION,
                             GRID_RENDER_ITER_END};
 inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
@@ -139,8 +142,11 @@ protected:
     void updateGridFromVComponent();
     void updateGridFromUKnownFlag();
     void updateGridFromVKnownFlag();
+    void updateGridFromCenteredKnownFlag();
     void updateGridFromSdf();
     void updateGridFromViscosity();
+    void updateGridFromTemperature();
+    void updateGridFromConcentration();
     void updateVectorsStaggered();
     void updateVectorsCentered();
     void updateVectorsSdfGrad();
@@ -153,7 +159,7 @@ protected:
     void setVectorColor(int x, int y, Color c);
     void setParticleColor(int idx, Color c);
 
-    Color velocityColorRamp(float val);
+    Color hueColorRamp(float val);
     Color velocityComponentColorRamp(float val);
 
     unsigned int m_vbo_grid;

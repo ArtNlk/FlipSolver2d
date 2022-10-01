@@ -17,7 +17,7 @@ void FlipFluidSolver::step()
     extrapolateVelocityField(1);
     Grid2d<float> prevU = m_grid.velocityGridU();
     Grid2d<float> prevV = m_grid.velocityGridV();
-    applyGlobalAcceleration();
+    applyBodyForces();
     project();
     updateVelocityFromSolids();
     applyViscosity();

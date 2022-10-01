@@ -1,7 +1,9 @@
 #include "emitter.h"
 
-Emitter::Emitter(float viscosity, Geometry2d& geo):
+Emitter::Emitter(float viscosity, float temperature, float concentration, Geometry2d& geo):
     m_viscosity(viscosity),
+    m_temperature(temperature),
+    m_concentrartion(concentration),
     m_geometry(geo)
 {
 
@@ -25,4 +27,24 @@ Geometry2d &Emitter::geometry()
 void Emitter::setGeometry(Geometry2d& geometry)
 {
     m_geometry = geometry;
+}
+
+float Emitter::temperature() const
+{
+    return m_temperature;
+}
+
+void Emitter::setTemperature(float newTemperature)
+{
+    m_temperature = newTemperature;
+}
+
+float Emitter::concentrartion() const
+{
+    return m_concentrartion;
+}
+
+void Emitter::setConcentrartion(float newConcentrartion)
+{
+    m_concentrartion = newConcentrartion;
 }

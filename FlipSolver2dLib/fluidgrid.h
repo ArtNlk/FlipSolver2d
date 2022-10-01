@@ -84,6 +84,8 @@ public:
 
     bool isFluid(int i, int j);
 
+    bool isStrictFluid(int i, int j);
+
     bool isSolid(int i, int j);
 
     bool isEmpty(int i, int j);

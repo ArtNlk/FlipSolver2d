@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 
+#include "flipsmokesolver.h"
 #include "flipsolverbase.h"
 #include "linearindexable2d.h"
 #include "customassert.h"
@@ -22,7 +23,6 @@ LiquidRenderApp::LiquidRenderApp() :
 {
     m_windowWidth = m_startWindowWidth;
     m_windowHeight = m_startWindowHeight;
-    m_solver.reset(new FlipFluidSolver(1,true));
     LiquidRenderApp::GLFWCallbackWrapper::SetApplication(this);
 }
 
@@ -36,10 +36,12 @@ void LiquidRenderApp::init()
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
     //loadJson("./scenes/waterfall.json");
-    loadJson("./scenes/dam_break.json");
+    //loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
     //loadJson("./scenes/viscosity_test.json");
-    int foo = 2;
+    loadJson("./scenes/smoke_test.json");
+    //loadJson("./scenes/smoke_test_empty.json");
+
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
     {
@@ -217,6 +219,18 @@ void LiquidRenderApp::loadJson(std::string fileName)
     json sceneJson;
     sceneFile >> sceneJson;
     settingsFromJson(sceneJson["settings"]);
+
+    switch(SimSettings::simType())
+    {
+        case SIMULATION_FLUID:
+                m_solver.reset(new FlipFluidSolver(1,true));
+        break;
+
+        case SIMULATION_GAS:
+                m_solver.reset(new FlipSmokeSolver(1,true));
+        break;
+    }
+
     solverFromJson(sceneJson["solver"]);
 }
 
@@ -229,14 +243,14 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::frameDt() = 1.f / SimSettings::fps();
     SimSettings::maxSubsteps() = settingsJson["maxSubsteps"].get<int>();
     SimSettings::stepDt() = SimSettings::frameDt() / SimSettings::maxSubsteps();
-    SimSettings::density() = 1;
+    SimSettings::density() = 0.001;
     SimSettings::randomSeed() = settingsJson["seed"].get<int>();
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
     SimSettings::cflNumber() = settingsJson["cflNumber"].get<float>();
     SimSettings::picRatio() = settingsJson["picRatio"].get<float>();
     SimSettings::simType() = settingsJson["simType"].get<std::string>() == "fluid"?
                 SimulationType::SIMULATION_FLUID : SimulationType::SIMULATION_GAS;
-    std::cout << SimSettings::simType();
+    SimSettings::ambientTemp() = 273.0f;
     std::pair<float,float> v = settingsJson["globalAcceleration"]
                                     .get<std::pair<float,float>>();
     SimSettings::globalAcceleration() = Vertex(v.first,v.second);
@@ -273,13 +287,15 @@ Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
     float viscosity = emitterJson["viscosity"].get<float>();
     std::vector<std::pair<float,float>> verts = emitterJson["verts"]
                                                 .get<std::vector<std::pair<float,float>>>();
+    float temp = emitterJson.contains("temperature") ? emitterJson["temperature"].get<float>() : 273.f;
+    float conc = emitterJson.contains("concentrartion") ? emitterJson["concentration"].get<float>() : 1.f;
     Geometry2d geo;
     for(auto v : verts)
     {
         geo.addVertex(Vertex(v.first,v.second));
     }
 
-    return Emitter(viscosity,geo);
+    return Emitter(viscosity,temp,conc,geo);
 }
 
 Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)

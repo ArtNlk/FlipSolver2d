@@ -17,7 +17,10 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_renderModeTexts[FluidRenderMode::RENDER_SDF] = "Render SDF";
     m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_U] = "Render U flag";
     m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_V] = "Render V flag";
+    m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_CENTERED] = "Render centered flag";
     m_renderModeTexts[FluidRenderMode::RENDER_VISCOSITY] = "Render viscosity";
+    m_renderModeTexts[FluidRenderMode::RENDER_TEMPERATURE] = "Render temperature";
+    m_renderModeTexts[FluidRenderMode::RENDER_SMOKE_CONCENTRATION] = "Render smoke concentrartion";
 
     m_vectorRenderModeTexts.assign(VectorRenderMode::VECTOR_RENDER_ITER_END + 1,"");
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER] = "Vector center avg velocity";

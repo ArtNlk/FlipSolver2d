@@ -6,7 +6,7 @@
 class Emitter
 {
 public:
-    Emitter(float viscosity, Geometry2d& geo);
+    Emitter(float viscosity, float temperature, float concentration, Geometry2d& geo);
 
     void setViscosity(float viscosity);
 
@@ -16,8 +16,16 @@ public:
 
     void setGeometry(Geometry2d &newGeometry);
 
+    float temperature() const;
+    void setTemperature(float newTemperature);
+
+    float concentrartion() const;
+    void setConcentrartion(float newConcentrartion);
+
 protected:
     float m_viscosity;
+    float m_temperature;
+    float m_concentrartion;
     Geometry2d m_geometry;
 };
 

@@ -13,6 +13,7 @@ enum FluidCellMaterial : char
 };
 
 constexpr bool fluidTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::FLUID) != 0);}
+constexpr bool strictFluidTest(FluidCellMaterial m) { return (m == FluidCellMaterial::FLUID);}
 constexpr bool emptyTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::EMPTY) != 0);}
 constexpr bool solidTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::SOLID) != 0);}
 constexpr bool sourceTest(FluidCellMaterial m) { return (m == FluidCellMaterial::SOURCE);}

@@ -1,0 +1,31 @@
+{
+  "settings": {
+    "simType": "smoke",
+    "domainSizeI": 150,
+    "domainSizeJ": 50,
+    "resolution": 200,
+    "fps": 30,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "cflNumber": 1,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "source",
+        "viscosity": 0,
+        "temperature": 300,
+        "concentration": 1,
+        "verts": [
+          [140,20],
+          [140,30],
+          [147,30],
+          [147,20]
+        ]
+      }
+    ]
+  }
+}

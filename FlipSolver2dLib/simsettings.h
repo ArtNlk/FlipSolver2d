@@ -100,6 +100,11 @@ public:
         return m_instance.m_simType;
     }
 
+    static inline float& ambientTemp()
+    {
+        return m_instance.m_ambientTemperature;
+    }
+
 protected:
     static SimSettings m_instance;
 
@@ -119,6 +124,7 @@ protected:
     int m_maxSubsteps;
     float m_picRatio;
     float m_cflNumber;
+    float m_ambientTemperature;
     SimulationType m_simType;
 };
 

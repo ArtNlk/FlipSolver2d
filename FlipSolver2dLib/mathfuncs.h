@@ -9,6 +9,7 @@ namespace math
     float frac(float v);
     int integr(float v);
     float lerp(float a, float b, float f);
+    float avg(float a,float b);
     float bSpline(float value);
     float quadraticBSpline(float x, float y);
     float linearHat(float value);

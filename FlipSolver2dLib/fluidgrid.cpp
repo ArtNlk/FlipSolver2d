@@ -4,6 +4,7 @@
 
 #include "fluidcell.h"
 #include "mathfuncs.h"
+#include "simsettings.h"
 
 MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
@@ -17,7 +18,7 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_viscosityGrid(sizeI,sizeJ,0.f),
     m_emitterId(sizeI, sizeJ, -1),
     m_solidId(sizeI, sizeJ,-1),
-    m_temperature(sizeI, sizeJ, 0.f),
+    m_temperature(sizeI, sizeJ, SimSettings::ambientTemp()),
     m_smokeConcentration(sizeI, sizeJ, 0.f),
     m_validUVelocitySampleCount(0),
     m_validVVelocitySampleCount(0),
@@ -167,6 +168,12 @@ bool MACFluidGrid::isFluid(int i, int j)
 {
     if(!inBounds(i,j)) return false;
     return fluidTest(m_materialGrid.at(i,j));
+}
+
+bool MACFluidGrid::isStrictFluid(int i, int j)
+{
+    if(!inBounds(i,j)) return false;
+    return strictFluidTest(m_materialGrid.at(i,j));
 }
 
 bool MACFluidGrid::isSolid(int i, int j)

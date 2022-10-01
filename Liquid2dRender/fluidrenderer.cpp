@@ -450,9 +450,17 @@ void FluidRenderer::updateGrid()
     case RENDER_KNOWN_FLAG_V:
         updateGridFromVKnownFlag();
         break;
-
+    case RENDER_KNOWN_FLAG_CENTERED:
+        updateGridFromCenteredKnownFlag();
+        break;
     case RENDER_VISCOSITY:
         updateGridFromViscosity();
+        break;
+    case RENDER_TEMPERATURE:
+        updateGridFromTemperature();
+        break;
+    case RENDER_SMOKE_CONCENTRATION:
+        updateGridFromConcentration();
         break;
 
     default:
@@ -610,6 +618,20 @@ void FluidRenderer::updateGridFromVKnownFlag()
     }
 }
 
+void FluidRenderer::updateGridFromCenteredKnownFlag()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = m_solver->grid().knownFlagsCenteredParams().at(i,j)? 1.f : 0.f;
+            setCellColor(i,j,Color(brightness,brightness,brightness));
+        }
+    }
+}
+
 void FluidRenderer::updateGridFromSdf()
 {
     float max = std::max(m_solver->gridSizeI(),m_solver->gridSizeJ());
@@ -649,6 +671,34 @@ void FluidRenderer::updateGridFromViscosity()
         {
             float brightness = m_solver->grid().viscosityGrid().at(i,j) / 100;
             setCellColor(i,j,Color(brightness,brightness,brightness));
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromTemperature()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            Color c = hueColorRamp(m_solver->grid().temperatureGrid().at(i,j) / 500.f);
+            setCellColor(i,j,c);
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromConcentration()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = m_solver->grid().smokeConcentrationGrid().at(i,j);
+            setCellColor(i,j,Color(brightness,brightness, brightness));
         }
     }
 }
@@ -708,7 +758,7 @@ void FluidRenderer::updateVectorsStaggered()
             Vertex newVector = Vertex(gridspaceVelocity.y() / scaleFactor,
                                        gridspaceVelocity.x() / scaleFactor);
             updateVector(i,j,newVector);
-            setVectorColor(i,j,velocityColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
+            setVectorColor(i,j,hueColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
         }
     }
 }
@@ -732,7 +782,7 @@ void FluidRenderer::updateVectorsCentered()
             Vertex newVector = Vertex((gridspaceVelocity.y() / scaleFactor),
                                        (gridspaceVelocity.x() / scaleFactor));
             updateVector(i,j,newVector);
-            setVectorColor(i,j,velocityColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
+            setVectorColor(i,j,hueColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
         }
     }
 }
@@ -781,7 +831,7 @@ void FluidRenderer::reloadParticlesVelocity()
     m_particleVerts.clear();
     for(MarkerParticle &particle : m_solver->markerParticles())
     {
-        addParticle(particle.position,velocityColorRamp(particle.velocity.distFromZero() / m_velocityRangeMax));
+        addParticle(particle.position,hueColorRamp(particle.velocity.distFromZero() / m_velocityRangeMax * SimSettings::dx()));
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {
@@ -845,7 +895,7 @@ void FluidRenderer::setParticleColor(int idx, Color c)
     m_particleVerts[linearIndex + 2] = c.bf();
 }
 
-Color FluidRenderer::velocityColorRamp(float val)
+Color FluidRenderer::hueColorRamp(float val)
 {
     float hue = std::clamp(val,0.f,1.f) * (m_hueMaxVelocity - m_hueMinVelocity) + m_hueMinVelocity;
     return Color::fromHSVA(hue,1.f,1.f);
