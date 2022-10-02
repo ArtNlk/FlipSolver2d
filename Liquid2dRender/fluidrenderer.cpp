@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <utility>
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
@@ -61,7 +62,7 @@ FluidRenderer::FluidRenderer(int textureWidth, int textureHeight) :
 
 void FluidRenderer::init(std::shared_ptr<FlipSolverBase> solver)
 {
-    m_solver = solver;
+    m_solver = std::move(solver);
     float gridHeightF = m_solver->grid().sizeI() * SimSettings::dx();
     float gridWidthF = m_solver->grid().sizeJ() * SimSettings::dx();
     m_projection = glm::ortho(0.f,static_cast<float>(gridWidthF),
@@ -444,23 +445,26 @@ void FluidRenderer::updateGrid()
     case FluidRenderMode::RENDER_SDF:
         updateGridFromSdf();
         break;
-    case RENDER_KNOWN_FLAG_U:
+    case FluidRenderMode::RENDER_KNOWN_FLAG_U:
         updateGridFromUKnownFlag();
         break;
-    case RENDER_KNOWN_FLAG_V:
+    case FluidRenderMode::RENDER_KNOWN_FLAG_V:
         updateGridFromVKnownFlag();
         break;
-    case RENDER_KNOWN_FLAG_CENTERED:
+    case FluidRenderMode::RENDER_KNOWN_FLAG_CENTERED:
         updateGridFromCenteredKnownFlag();
         break;
-    case RENDER_VISCOSITY:
+    case FluidRenderMode::RENDER_VISCOSITY:
         updateGridFromViscosity();
         break;
-    case RENDER_TEMPERATURE:
+    case FluidRenderMode::RENDER_TEMPERATURE:
         updateGridFromTemperature();
         break;
-    case RENDER_SMOKE_CONCENTRATION:
+    case FluidRenderMode::RENDER_SMOKE_CONCENTRATION:
         updateGridFromConcentration();
+        break;
+    case FluidRenderMode::RENDER_DIV_CONTROL:
+        updateGridFromDivergence();
         break;
 
     default:
@@ -699,6 +703,21 @@ void FluidRenderer::updateGridFromConcentration()
         {
             float brightness = m_solver->grid().smokeConcentrationGrid().at(i,j);
             setCellColor(i,j,Color(brightness,brightness, brightness));
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromDivergence()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = (m_solver->grid().divergenceControl(i,j) / 20) + 0.5f;
+            std::clamp(brightness,0.f,1.f);
+            setCellColor(i,j,Color(brightness,brightness,brightness));
         }
     }
 }

@@ -285,7 +285,7 @@ void LiquidRenderApp::solverFromJson(json solverJson)
                                         .get<std::vector<json>>();
     for(json &geo : objects)
     {
-        addGeometryFromJson(geo);
+        addObjectFromJson(geo);
     }
 }
 
@@ -296,13 +296,14 @@ Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
                                                 .get<std::vector<std::pair<float,float>>>();
     float temp = tryGetValue(emitterJson,"temperature",273.f);
     float conc = tryGetValue(emitterJson,"concentrartion",1.f);
+    float div = tryGetValue(emitterJson,"divergence",0.f);
     Geometry2d geo;
     for(auto v : verts)
     {
         geo.addVertex(Vertex(v.first,v.second));
     }
 
-    return Emitter(viscosity,temp,conc,geo);
+    return Emitter(viscosity,temp,conc,div,geo);
 }
 
 Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)
@@ -319,34 +320,42 @@ Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)
     return Obstacle(friction,geo);
 }
 
-void LiquidRenderApp::addGeometryFromJson(json geometryJson)
+Sink LiquidRenderApp::sinkFromJson(json sinkJson)
 {
-    std::vector<std::pair<float,float>> verts = geometryJson["verts"]
+    std::vector<std::pair<float,float>> verts = sinkJson["verts"]
                                                 .get<std::vector<std::pair<float,float>>>();
-    std::string geoType = geometryJson["type"].get<std::string>();
+    float div = tryGetValue(sinkJson,"divergence",0.f);
     Geometry2d geo;
     for(auto v : verts)
     {
         geo.addVertex(Vertex(v.first,v.second));
     }
 
+    return Sink(div,geo);
+}
+
+void LiquidRenderApp::addObjectFromJson(json ojectJson)
+{
+    std::string geoType = ojectJson["type"].get<std::string>();
+
     if(geoType == "solid")
     {
-        Obstacle o = obstacleFromJson(geometryJson);
+        Obstacle o = obstacleFromJson(ojectJson);
         m_solver->addGeometry(o);
     }
     else if(geoType == "source")
     {
-        Emitter e = emitterFromJson(geometryJson);
+        Emitter e = emitterFromJson(ojectJson);
         m_solver->addSource(e);
     }
     else if(geoType == "sink")
     {
-        m_solver->addSink(geo);
+        Sink s = sinkFromJson(ojectJson);
+        m_solver->addSink(s);
     }
     else if(geoType == "fluid")
     {
-        Emitter e = emitterFromJson(geometryJson);
+        Emitter e = emitterFromJson(ojectJson);
         m_solver->addInitialFluid(e);
     }
 }

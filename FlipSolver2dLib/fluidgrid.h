@@ -162,6 +162,8 @@ public:
 
     Grid2d<float> &smokeConcentrationGrid();
 
+    Grid2d<float> &divergenceControlGrid();
+
     float sdf(int i, int j);
 
     float sdfAt(float i, float j);
@@ -193,6 +195,10 @@ public:
     float smokeConcentrationAt(float i, float j);
 
     void setSmokeConcentration(int i, int j, float value);
+
+    float &divergenceControl(int i, int j);
+
+    void setDivergeceControl(int i, int j, float value);
 
     int closestSolidId(int i, int j);
 
@@ -235,6 +241,7 @@ protected:
     Grid2d<int> m_solidId;
     Grid2d<float> m_temperature;
     Grid2d<float> m_smokeConcentration;
+    Grid2d<float> m_divergenceControl;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;

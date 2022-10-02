@@ -3,11 +3,11 @@
 
 TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRenderer &fluidRenderer) :
     m_fluidRenderer(fluidRenderer),
+    m_textRenderer(width,height),
     m_x(x),
     m_y(y),
     m_width(width),
-    m_height(height),
-    m_textRenderer(width,height)
+    m_height(height)
 {
     m_renderModeTexts.assign(FluidRenderMode::GRID_RENDER_ITER_END,"");
     m_renderModeTexts[FluidRenderMode::RENDER_MATERIAL] = "Render material";
@@ -20,6 +20,7 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_CENTERED] = "Render centered flag";
     m_renderModeTexts[FluidRenderMode::RENDER_VISCOSITY] = "Render viscosity";
     m_renderModeTexts[FluidRenderMode::RENDER_TEMPERATURE] = "Render temperature";
+    m_renderModeTexts[FluidRenderMode::RENDER_DIV_CONTROL] = "Render divergence control";
     m_renderModeTexts[FluidRenderMode::RENDER_SMOKE_CONCENTRATION] = "Render smoke concentrartion";
 
     m_vectorRenderModeTexts.assign(VectorRenderMode::VECTOR_RENDER_ITER_END + 1,"");

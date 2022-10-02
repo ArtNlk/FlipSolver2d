@@ -60,6 +60,7 @@
       },
       {
         "type": "sink",
+        "divergence": -10,
         "verts": [
           [3,40],
           [3,47],
@@ -70,6 +71,7 @@
       {
         "type": "source",
         "viscosity": 0,
+        "divergence": 2,
         "temperature": 373,
         "concentration": 1,
         "verts": [

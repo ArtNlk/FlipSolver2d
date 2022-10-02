@@ -20,6 +20,7 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_solidId(sizeI, sizeJ,-1),
     m_temperature(sizeI, sizeJ, SimSettings::ambientTemp()),
     m_smokeConcentration(sizeI, sizeJ, 0.f),
+    m_divergenceControl(sizeI,sizeJ, 0.f),
     m_validUVelocitySampleCount(0),
     m_validVVelocitySampleCount(0),
     m_fluidCellCount(0)
@@ -439,6 +440,11 @@ Grid2d<float> &MACFluidGrid::smokeConcentrationGrid()
     return m_smokeConcentration;
 }
 
+Grid2d<float> &MACFluidGrid::divergenceControlGrid()
+{
+    return m_divergenceControl;
+}
+
 float MACFluidGrid::sdf(int i, int j)
 {
     return m_sdf.at(i,j);
@@ -517,6 +523,16 @@ float MACFluidGrid::smokeConcentrationAt(float i, float j)
 void MACFluidGrid::setSmokeConcentration(int i, int j, float value)
 {
     m_smokeConcentration.setAt(i,j,value);
+}
+
+float& MACFluidGrid::divergenceControl(int i, int j)
+{
+    return m_divergenceControl.at(i,j);
+}
+
+void MACFluidGrid::setDivergeceControl(int i, int j, float value)
+{
+    m_divergenceControl.at(i,j) = value;
 }
 
 int MACFluidGrid::closestSolidId(int i, int j)

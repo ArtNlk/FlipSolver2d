@@ -194,7 +194,8 @@ void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
             if (!m_grid.isSolid(i,j))
             {
                 rhs[m_grid.linearIndex(i,j)] = -scale * static_cast<double>(m_grid.getU(i+1,j) - m_grid.getU(i,j)
-                                                              +m_grid.getV(i,j+1) - m_grid.getV(i,j));
+                                                              +m_grid.getV(i,j+1) - m_grid.getV(i,j))
+                                                                + m_grid.divergenceControl(i,j);
 
                 if(m_grid.isSolid(i-1,j))
                 {
