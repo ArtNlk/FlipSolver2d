@@ -60,7 +60,7 @@ FluidRenderer::FluidRenderer(int textureWidth, int textureHeight) :
 
 }
 
-void FluidRenderer::init(std::shared_ptr<FlipSolverBase> solver)
+void FluidRenderer::init(std::shared_ptr<FlipSolver> solver)
 {
     m_solver = std::move(solver);
     float gridHeightF = m_solver->grid().sizeI() * SimSettings::dx();
@@ -491,7 +491,7 @@ float FluidRenderer::fluidGridAspect()
     return static_cast<float>(m_solver->gridSizeI()) / m_solver->gridSizeJ();
 }
 
-std::shared_ptr<FlipSolverBase> FluidRenderer::solver()
+std::shared_ptr<FlipSolver> FluidRenderer::solver()
 {
     return m_solver;
 }

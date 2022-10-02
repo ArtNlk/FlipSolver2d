@@ -2,9 +2,9 @@
 #define FLIPSMOKESOLVER_H
 
 #include "dynamicuppertriangularsparsematrix.h"
-#include "flipsolverbase.h"
+#include "flipsolver2d.h"
 
-class FlipSmokeSolver : public FlipSolverBase
+class FlipSmokeSolver : public FlipSolver
 {
 public:
     FlipSmokeSolver(int extrapRadius = 1, bool vonNeumannNeighbors = false);

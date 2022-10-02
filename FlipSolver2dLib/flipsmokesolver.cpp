@@ -4,7 +4,7 @@
 #include "simsettings.h"
 
 FlipSmokeSolver::FlipSmokeSolver(int extrapRadius, bool vonNeumannNeighbors):
-    FlipSolverBase(extrapRadius, vonNeumannNeighbors)
+    FlipSolver(extrapRadius, vonNeumannNeighbors)
 {
     //m_grid.temperatureGrid().fill(SimSettings::ambientTemp());
 }
@@ -123,7 +123,7 @@ void FlipSmokeSolver::particleToGrid()
                         centeredWeights.at(iIdx,jIdx) += weightCentered;
                         m_grid.viscosityGrid().at(iIdx,jIdx) += weightCentered * p.viscosity;
                         m_grid.temperatureGrid().at(iIdx,jIdx) += weightCentered * p.temperature;
-                        m_grid.smokeConcentrationGrid().at(iIdx,jIdx) += weightCentered * p.concentration;
+                        m_grid.smokeConcentrationGrid().at(iIdx,jIdx) += weightCentered * p.smokeConcentrartion;
                         m_grid.knownFlagsCenteredParams().at(iIdx,jIdx) = true;
                     }
                 }

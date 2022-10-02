@@ -1,9 +1,9 @@
-#ifndef FLIPSOLVER_H
-#define FLIPSOLVER_H
+#ifndef FLIPFLUIDSOLVER_H
+#define FLIPFLUIDSOLVER_H
 
-#include "flipsolverbase.h"
+#include "flipsolver2d.h"
 
-class FlipFluidSolver : public FlipSolverBase
+class FlipFluidSolver : public FlipSolver
 {
 public:
     FlipFluidSolver(int extrapRadius = 1, bool vonNeumannNeighbors = false);
@@ -13,4 +13,4 @@ public:
     void step() override;
 };
 
-#endif // FLIPSOLVER_H
+#endif // FLIPFLUIDSOLVER_H

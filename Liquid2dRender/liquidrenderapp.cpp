@@ -5,7 +5,7 @@
 #include <filesystem>
 
 #include "flipsmokesolver.h"
-#include "flipsolverbase.h"
+#include "flipsolver2d.h"
 #include "linearindexable2d.h"
 #include "customassert.h"
 #include "globalcallbackhandler.h"

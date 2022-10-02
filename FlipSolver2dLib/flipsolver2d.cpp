@@ -170,7 +170,7 @@ void FlipSolver::step()
     extrapolateVelocityField(1);
     Grid2d<float> prevU = m_grid.velocityGridU();
     Grid2d<float> prevV = m_grid.velocityGridV();
-    applyGlobalAcceleration();
+    applyBodyForces();
     project();
     updateVelocityFromSolids();
     applyViscosity();
@@ -210,7 +210,7 @@ void FlipSolver::stagedStep()
     case STAGE_APPLY_GLOBAL_ACCELERATION:
         prevU = m_grid.velocityGridU();
         prevV = m_grid.velocityGridV();
-        applyGlobalAcceleration();
+        applyBodyForces();
         break;
     case STAGE_PROJECT:
         project();
@@ -320,6 +320,7 @@ void FlipSolver::updateSources()
                 {
                     m_grid.setMaterial(i,j,FluidCellMaterial::SOURCE);
                     m_grid.setEmitterId(i,j,emitterIdx);
+                    m_grid.divergenceControl(i,j) = e.divergence();
                 }
             }
         }
@@ -333,11 +334,12 @@ void FlipSolver::updateSinks()
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            for(Geometry2d& geo : m_sinks)
+            for(Sink& s : m_sinks)
             {
-                if(geo.signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                if(s.geo().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
                 {
                     m_grid.setMaterial(i,j,FluidCellMaterial::SINK);
+                    m_grid.divergenceControl(i,j) = s.divergence();
                 }
             }
         }
@@ -383,7 +385,7 @@ void FlipSolver::addSource(Emitter &emitter)
     m_sources.push_back(emitter);
 }
 
-void FlipSolver::addSink(Geometry2d &geometry)
+void FlipSolver::addSink(Sink &geometry)
 {
     m_sinks.push_back(geometry);
 }
@@ -436,7 +438,9 @@ void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
                     Vertex velocity = m_grid.velocityAt(pos);
                     int emitterId = m_grid.emitterId(i,j);
                     float viscosity = m_sources[emitterId].viscosity();
-                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
+                    float conc = m_sources[emitterId].concentrartion();
+                    float temp = m_sources[emitterId].temperature();
+                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity,temp,conc});
                 }
             }
         }
@@ -449,7 +453,7 @@ void FlipSolver::seedInitialFluid()
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if(m_grid.isFluid(i,j))
+            if(m_grid.isStrictFluid(i,j))
             {
                 for(int p = 0; p < SimSettings::particlesPerCell(); p++)
                 {
@@ -473,7 +477,7 @@ std::vector<Emitter> &FlipSolver::sourceObjects()
     return m_sources;
 }
 
-std::vector<Geometry2d> &FlipSolver::sinkObjects()
+std::vector<Sink> &FlipSolver::sinkObjects()
 {
     return m_sinks;
 }
@@ -1054,7 +1058,7 @@ void FlipSolver::updateVelocityFromSolids()
     }
 }
 
-void FlipSolver::applyPressuresToVelocityField(std::vector<double> pressures)
+void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 {
     double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx());
 
@@ -1135,6 +1139,9 @@ void FlipSolver::particleToGrid()
     m_grid.viscosityGrid().fill(0.f);
     m_grid.knownFlagsGridU().fill(false);
     m_grid.knownFlagsGridV().fill(false);
+    m_grid.knownFlagsCenteredParams().fill(false);
+    m_grid.smokeConcentrationGrid().fill(0.f);
+    m_grid.temperatureGrid().fill(0);
 
     for(MarkerParticle &p : m_markerParticles)
     {
@@ -1180,6 +1187,8 @@ void FlipSolver::particleToGrid()
                     {
                         centeredWeights.at(iIdx,jIdx) += weightCentered;
                         m_grid.viscosityGrid().at(iIdx,jIdx) += weightCentered * p.viscosity;
+                        m_grid.temperatureGrid().at(iIdx,jIdx) += weightCentered * p.temperature;
+                        m_grid.smokeConcentrationGrid().at(iIdx,jIdx) += weightCentered * p.smokeConcentrartion;
                         m_grid.knownFlagsCenteredParams().at(iIdx,jIdx) = true;
                     }
                 }
@@ -1191,14 +1200,32 @@ void FlipSolver::particleToGrid()
     {
         for (int j = 0; j < m_grid.sizeJ() + 1; j++)
         {
-            if(m_grid.velocityGridU().inBounds(i,j)) m_grid.velocityGridU().at(i,j) /= uWeights.at(i,j);
-            if(m_grid.velocityGridV().inBounds(i,j)) m_grid.velocityGridV().at(i,j) /= vWeights.at(i,j);
-            if(m_grid.viscosityGrid().inBounds(i,j)) m_grid.viscosityGrid().at(i,j) /= centeredWeights.at(i,j);
+            if(m_grid.velocityGridU().inBounds(i,j))
+            {
+                m_grid.velocityGridU().at(i,j) /= uWeights.at(i,j);
+            }
+            if(m_grid.velocityGridV().inBounds(i,j))
+            {
+                m_grid.velocityGridV().at(i,j) /= vWeights.at(i,j);
+            }
+            if(m_grid.knownFlagsCenteredParams().inBounds(i,j))
+            {
+                if(m_grid.knownFlagsCenteredParams().at(i,j))
+                {
+                    m_grid.viscosityGrid().at(i,j) /= centeredWeights.at(i,j);
+                    m_grid.smokeConcentrationGrid().at(i,j) /= centeredWeights.at(i,j);
+                    m_grid.temperatureGrid().at(i,j) /= centeredWeights.at(i,j);
+                }
+                else
+                {
+                    m_grid.temperatureGrid().at(i,j) = SimSettings::ambientTemp();
+                }
+            }
         }
     }
 }
 
-void FlipSolver::applyGlobalAcceleration()
+void FlipSolver::applyBodyForces()
 {
     for (int i = 0; i < m_grid.sizeI() + 1; i++)
     {

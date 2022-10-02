@@ -17,7 +17,7 @@ set(HEADERS
     squarematrix.h
     emitter.h
     obstacle.h
-    flipsolverbase.h
+    flipsolver2d.h
     flipsmokesolver.h
     sink.h)
 
@@ -38,7 +38,7 @@ set(SOURCES
     mathfuncs.cpp
     emitter.cpp
     obstacle.cpp
-    flipsolverbase.cpp
+    flipsolver2d.cpp
     flipsmokesolver.cpp
     sink.cpp)
 

@@ -1,7 +1,7 @@
 #include "flipfluidsolver2d.h"
 
 FlipFluidSolver::FlipFluidSolver(int extrapRadius, bool vonNeumannNeighbors) :
-    FlipSolverBase(extrapRadius, vonNeumannNeighbors)
+    FlipSolver(extrapRadius, vonNeumannNeighbors)
 {
 
 }

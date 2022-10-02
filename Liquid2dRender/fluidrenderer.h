@@ -1,6 +1,6 @@
 #ifndef FLUIDRENDERER_H
 #define FLUIDRENDERER_H
-#include "flipsolverbase.h"
+#include "flipsolver2d.h"
 #include "glad/glad.h"
 #include <glm/glm.hpp>
 
@@ -46,7 +46,7 @@ class FluidRenderer
 {
 public:
     FluidRenderer(int textureWidth, int textureHeight);
-    void init(std::shared_ptr<FlipSolverBase> solver);
+    void init(std::shared_ptr<FlipSolver> solver);
     void render();
     void update();
     void updateGrid();
@@ -116,7 +116,7 @@ public:
 
     float fluidGridAspect();
 
-    std::shared_ptr<FlipSolverBase> solver();
+    std::shared_ptr<FlipSolver> solver();
 
 protected:
     void addGridVertex(Vertex v, Color c = Color());
@@ -224,7 +224,7 @@ protected:
     bool m_geometryEnabled;
     bool m_particlesEnabled;
 
-    std::shared_ptr<FlipSolverBase> m_solver;
+    std::shared_ptr<FlipSolver> m_solver;
 };
 
 #endif // FLUIDRENDERER_H

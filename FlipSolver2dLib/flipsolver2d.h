@@ -11,6 +11,7 @@
 #include "uppertriangularmatrix.h"
 #include "geometry2d.h"
 #include "emitter.h"
+#include "sink.h"
 
 class LiquidRenderApp;
 
@@ -19,6 +20,8 @@ struct MarkerParticle
     Vertex position;
     Vertex velocity;
     float viscosity;
+    float temperature;
+    float smokeConcentrartion;
 };
 
 enum SimulationStepStage : int {STAGE_RESEED,
@@ -42,6 +45,8 @@ class FlipSolver
 public:
     FlipSolver(int extrapRadius = 1, bool vonNeumannNeighbors = false);
 
+    virtual ~FlipSolver() = default;
+
     inline MACFluidGrid &grid() {return m_grid;}
 
     inline void setExrapolationRadius(int radius)
@@ -53,11 +58,11 @@ public:
 
     void extrapolateVelocityField(int steps = std::numeric_limits<int>().max());
 
-    DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
+    virtual DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
 
     DynamicUpperTriangularSparseMatrix getViscosityMatrix();
 
-    void project();
+    virtual void project();
 
     void applyViscosity();
 
@@ -65,7 +70,7 @@ public:
 
     void particleUpdate(Grid2d<float>& prevU, Grid2d<float>& prevV);
 
-    void step();
+    virtual void step();
 
     void stagedStep();
 
@@ -87,7 +92,7 @@ public:
 
     void addSource(Emitter& emitter);
 
-    void addSink(Geometry2d& geometry);
+    void addSink(Sink &geometry);
 
     void addInitialFluid(Emitter& emitter);
 
@@ -101,7 +106,7 @@ public:
 
     std::vector<Emitter> &sourceObjects();
 
-    std::vector<Geometry2d> &sinkObjects();
+    std::vector<Sink> &sinkObjects();
 
     std::vector<MarkerParticle> &markerParticles();
 
@@ -111,7 +116,7 @@ protected:
 
     friend class ::LiquidRenderApp;
 
-    void calcPressureRhs(std::vector<double> &rhs);
+    virtual void calcPressureRhs(std::vector<double> &rhs);
 
     void calcViscosityRhs(std::vector<double> &rhs);
 
@@ -127,13 +132,13 @@ protected:
 
     void updateVelocityFromSolids();
 
-    void applyPressuresToVelocityField(std::vector<double> pressures);
+    virtual void applyPressuresToVelocityField(std::vector<double> &pressures);
 
     Vertex rk3Integrate(Vertex currentPosition, float dt);
 
-    void particleToGrid();
+    virtual void particleToGrid();
 
-    void applyGlobalAcceleration();
+    virtual void applyBodyForces();
 
     float maxParticleVelocity();
 
@@ -146,7 +151,7 @@ protected:
     std::mt19937 m_randEngine;
     std::vector<Obstacle> m_obstacles;
     std::vector<Emitter> m_sources;
-    std::vector<Geometry2d> m_sinks;
+    std::vector<Sink> m_sinks;
     std::vector<Emitter> m_initialFluid;
     SimulationStepStage m_stepStage;
 };
