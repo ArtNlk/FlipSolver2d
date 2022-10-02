@@ -44,7 +44,7 @@ void FlipSmokeSolver::applyBodyForces()
                 float tempDiff = tempAt - SimSettings::ambientTemp();
                 float concentration = m_grid.smokeConcentrationAt(i,static_cast<float>(j) + 0.5f);
                 float accelerationU = (alpha * concentration - beta * tempDiff) *
-                                        SimSettings::globalAcceleration().x();
+                                        SimSettings::globalAcceleration().x() * SimSettings::stepDt();
                 m_grid.velocityGridU().at(i,j) += accelerationU;
             }
             if(m_grid.velocityGridV().inBounds(i,j))
@@ -53,7 +53,7 @@ void FlipSmokeSolver::applyBodyForces()
                 float tempDiff = tempAt - SimSettings::ambientTemp();
                 float concentration = m_grid.smokeConcentrationAt(static_cast<float>(i) + 0.5f,j);
                 float accelerationV = (alpha * concentration - beta * tempDiff) *
-                                        SimSettings::globalAcceleration().y();
+                                        SimSettings::globalAcceleration().y() * SimSettings::stepDt();
                 m_grid.velocityGridV().at(i,j) += accelerationV;
             }
         }

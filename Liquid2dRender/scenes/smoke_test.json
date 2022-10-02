@@ -70,7 +70,7 @@
       {
         "type": "source",
         "viscosity": 0,
-        "temperature": 300,
+        "temperature": 373,
         "concentration": 1,
         "verts": [
           [40,20],
