@@ -32,6 +32,10 @@ protected:
     void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
     void loadJson(std::string fileName);
+
+    template<class T>
+    T tryGetValue(json input, std::string key, T defaultValue);
+
     void settingsFromJson(json settingsJson);
     void solverFromJson(json solverJson);
     Emitter emitterFromJson(json emitterJson);
