@@ -660,7 +660,7 @@ void FluidRenderer::updateGridFromSdf()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            float dist = m_solver->grid().sdf(i,j);
+            float dist = m_solver->grid().solidSdf(i,j);
             float brightness = std::pow(std::abs(dist) / max,0.4);
 //            if (std::abs(dist - 10.f) < 1e-0f)
 //            {
@@ -829,7 +829,7 @@ void FluidRenderer::updateVectorsSdfGrad()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceSdf = simmath::gradCenteredGrid(static_cast<float>(i) +0.5f,static_cast<float>(j) +0.5f, m_solver->grid().sdfGrid());
+            Vertex gridspaceSdf = simmath::gradCenteredGrid(static_cast<float>(i) +0.5f,static_cast<float>(j) +0.5f, m_solver->grid().solidSdfGrid());
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceSdf.distFromZero() / SimSettings::dx();
             //float scaleFactor = 1;

@@ -165,7 +165,9 @@ public:
 
     Grid2d<float> &viscosityGrid();
 
-    Grid2d<float> &sdfGrid();
+    Grid2d<float> &solidSdfGrid();
+
+    Grid2d<float> &fluidSdfGrid();
 
     Grid2d<float> &temperatureGrid();
 
@@ -175,15 +177,17 @@ public:
 
     Grid2d<int> &particleCountGrid();
 
-    float sdf(int i, int j);
+    float solidSdf(int i, int j);
 
-    float sdfAt(float i, float j);
+    float solidSdfAt(float i, float j);
 
-    float sdf(Index2d index);
+    float solidSdf(Index2d index);
 
-    void setSdf(int i, int j, float value);
+    void setSolidSdf(int i, int j, float value);
 
-    void setSdf(Index2d index, float value);
+    void setSolidSdf(Index2d index, float value);
+
+    float fluidSdfAt(float i, float j);
 
     float viscosity(int i, int j);
 
@@ -243,7 +247,7 @@ protected:
     Grid2d<FluidMaterial> m_materialGrid;
     StaggeredVelocityGrid m_fluidVelocityGrid;
     StaggeredVelocityGrid m_airVelocityGrid;
-    Grid2d<float> m_sdf;
+    Grid2d<float> m_solidSdf;
     Grid2d<bool> m_knownCenteredParams;
     Grid2d<float> m_viscosityGrid;
     Grid2d<int> m_emitterId;
@@ -252,6 +256,7 @@ protected:
     Grid2d<float> m_smokeConcentration;
     Grid2d<float> m_divergenceControl;
     Grid2d<int> m_particleCounts;
+    Grid2d<float> m_fluidSdf;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;

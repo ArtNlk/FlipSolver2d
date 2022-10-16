@@ -124,7 +124,7 @@ void FlipSolver::advect()
 //            substepCount++;
 //        }
         p.position = rk3Integrate(p.position,SimSettings::stepDt());
-        if(m_grid.sdfAt(p.position.x(),p.position.y()) < 0.f)
+        if(m_grid.solidSdfAt(p.position.x(),p.position.y()) < 0.f)
         {
             p.position = m_grid.closestSurfacePoint(p.position);
         }
@@ -242,7 +242,7 @@ void FlipSolver::updateSolids()
                     dist = sdf;
                 }
             }
-            m_grid.setSdf(i,j,dist);
+            m_grid.setSolidSdf(i,j,dist);
             if(dist < 0)
             {
                 m_grid.setMaterial(i,j,FluidMaterial::SOLID);
