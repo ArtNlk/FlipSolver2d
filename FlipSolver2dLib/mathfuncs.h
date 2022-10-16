@@ -4,7 +4,7 @@
 #include "grid2d.h"
 #include "geometry2d.h"
 
-namespace math
+namespace simmath
 {
     float frac(float v);
     int integr(float v);

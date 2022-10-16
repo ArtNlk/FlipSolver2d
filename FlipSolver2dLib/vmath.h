@@ -5,7 +5,7 @@
 #include <cmath>
 #include <customassert.h>
 
-namespace vmath
+namespace vsimmath
 {
 inline double dot(std::vector<double> &v1, std::vector<double> &v2)
 {

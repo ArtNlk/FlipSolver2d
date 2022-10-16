@@ -1,0 +1,97 @@
+{
+  "settings": {
+    "simType": "fluid",
+    "domainSizeI": 50,
+    "domainSizeJ": 50,
+    "resolution": 100,
+    "fps": 30,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "cflNumber": 1,
+    "temperatureDecayRate": 0.1,
+    "concentrationDecayRate": 0.05,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "solid",
+        "verts": [
+          [47,0],
+          [47,50],
+          [50,50],
+          [50,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [3,0],
+          [3,3],
+          [47,3],
+          [47,0]
+        ]
+      },
+          {
+        "type": "solid",
+        "verts": [
+          [0,0],
+          [0,50],
+          [3,50],
+          [3,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [3,47],
+          [3,50],
+          [47,50],
+          [47,47]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [13,3],
+          [20,24],
+          [24,24],
+          [36,3]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [13,47],
+          [20,26],
+          [23,26],
+          [36,47]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "concentration": 1,
+        "verts": [
+          [8,3],
+          [8,8],
+          [11,8],
+          [11,3]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "concentration": 1,
+        "verts": [
+          [8,47],
+          [8,42],
+          [11,42],
+          [11,47]
+        ]
+      }
+    ]
+  }
+}

@@ -10,6 +10,7 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
     m_materialGrid(sizeI,sizeJ,FluidCellMaterial::EMPTY),
     m_fluidVelocityGrid(sizeI, sizeJ),
+    m_airVelocityGrid(sizeI, sizeJ),
     m_sdf(sizeI,sizeJ,0.f),
     m_knownCenteredParams(sizeI,sizeJ, false),
     m_viscosityGrid(sizeI,sizeJ,0.f),
@@ -292,74 +293,84 @@ void MACFluidGrid::updateValidVLinearMapping()
     m_validVVelocitySampleCount = linearIdx;
 }
 
-void MACFluidGrid::setU(Index2d index, float value, bool knownStatus)
+void MACFluidGrid::setFluidU(Index2d index, float value, bool knownStatus)
 {
     m_fluidVelocityGrid.velocityGridU().at(index) = value;
     m_fluidVelocityGrid.uSampleValidityGrid().at(index) = knownStatus;
 }
 
-void MACFluidGrid::setU(Index2d index, float value)
+void MACFluidGrid::setFluidU(Index2d index, float value)
 {
     m_fluidVelocityGrid.velocityGridU().at(index) = value;
 }
 
-void MACFluidGrid::setU(int i, int j, float value, bool knownStatus)
+void MACFluidGrid::setFluidU(int i, int j, float value, bool knownStatus)
 {
     m_fluidVelocityGrid.velocityGridU().at(i,j) = value;
     m_fluidVelocityGrid.uSampleValidityGrid().at(i,j) = knownStatus;
 }
 
-void MACFluidGrid::setU(int i, int j, float value)
+void MACFluidGrid::setFluidU(int i, int j, float value)
 {
     m_fluidVelocityGrid.velocityGridU().at(i,j) = value;
 }
 
-void MACFluidGrid::setV(Index2d index, float value, bool knownStatus)
+void MACFluidGrid::setFluidV(Index2d index, float value, bool knownStatus)
 {
     m_fluidVelocityGrid.velocityGridV().at(index) = value;
     m_fluidVelocityGrid.vSampleValidityGrid().at(index) = knownStatus;
 }
 
-void MACFluidGrid::setV(Index2d index, float value)
+void MACFluidGrid::setFluidV(Index2d index, float value)
 {
     m_fluidVelocityGrid.velocityGridV().at(index) = value;
 }
 
-void MACFluidGrid::setV(int i, int j, float value, bool knownStatus)
+void MACFluidGrid::setFluidV(int i, int j, float value, bool knownStatus)
 {
     m_fluidVelocityGrid.velocityGridV().at(i,j) = value;
     m_fluidVelocityGrid.vSampleValidityGrid().at(i,j) = knownStatus;
 }
 
-void MACFluidGrid::setV(int i, int j, float value)
+void MACFluidGrid::setFluidV(int i, int j, float value)
 {
     m_fluidVelocityGrid.velocityGridV().at(i,j) = value;
 }
 
-float MACFluidGrid::getU(Index2d index)
+void MACFluidGrid::setAirU(int i, int j, float value)
 {
-    return m_fluidVelocityGrid.velocityGridU().at(index);
+    m_airVelocityGrid.velocityGridU().at(i,j) = value;
 }
 
-float MACFluidGrid::getU(int i, int j)
+void MACFluidGrid::setAirV(int i, int j, float value)
 {
-    return m_fluidVelocityGrid.velocityGridU().at(i,j);
-}
-
-float MACFluidGrid::getV(Index2d index)
-{
-    return m_fluidVelocityGrid.velocityGridV().at(index);
-}
-
-float MACFluidGrid::getV(int i, int j)
-{
-    return m_fluidVelocityGrid.velocityGridV().at(i,j);
+    m_airVelocityGrid.velocityGridV().at(i,j) = value;
 }
 
 void MACFluidGrid::getSize(int &sizeI, int &sizeJ) const
 {
     sizeI = m_sizeI;
     sizeJ = m_sizeJ;
+}
+
+float MACFluidGrid::getFluidU(int i, int j)
+{
+    return m_fluidVelocityGrid.velocityGridU().at(i,j);
+}
+
+float MACFluidGrid::getFluidV(int i, int j)
+{
+    return m_fluidVelocityGrid.velocityGridV().at(i,j);
+}
+
+float MACFluidGrid::getAirU(int i, int j)
+{
+    return m_airVelocityGrid.velocityGridU().at(i,j);
+}
+
+float MACFluidGrid::getAirV(int i, int j)
+{
+    return m_airVelocityGrid.velocityGridV().at(i,j);
 }
 
 int MACFluidGrid::cellCount() const
@@ -384,12 +395,22 @@ Vertex MACFluidGrid::fluidVelocityAt(Vertex position)
 
 float MACFluidGrid::viscosityAt(Vertex position)
 {
-    return math::lerpCenteredGrid(position.x(), position.y(), m_viscosityGrid);
+    return simmath::lerpCenteredGrid(position.x(), position.y(), m_viscosityGrid);
 }
 
 Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
 {
     return m_materialGrid;
+}
+
+StaggeredVelocityGrid &MACFluidGrid::fluidVelocityGrid()
+{
+    return m_fluidVelocityGrid;
+}
+
+StaggeredVelocityGrid &MACFluidGrid::airVelocityGrid()
+{
+    return m_airVelocityGrid;
 }
 
 Grid2d<float> &MACFluidGrid::velocityGridU()
@@ -449,7 +470,7 @@ float MACFluidGrid::sdf(int i, int j)
 
 float MACFluidGrid::sdfAt(float i, float j)
 {
-    return math::lerpCenteredGrid(i,j,m_sdf);
+    return simmath::lerpCenteredGrid(i,j,m_sdf);
 }
 
 float MACFluidGrid::sdf(Index2d index)
@@ -474,7 +495,7 @@ float MACFluidGrid::viscosity(int i, int j)
 
 float MACFluidGrid::viscosityAt(float i, float j)
 {
-    return math::lerpCenteredGrid(i,j,m_viscosityGrid);
+    return simmath::lerpCenteredGrid(i,j,m_viscosityGrid);
 }
 
 float MACFluidGrid::viscosity(Index2d index)
@@ -499,7 +520,7 @@ float MACFluidGrid::temperature(int i, int j)
 
 float MACFluidGrid::temperatureAt(float i, float j)
 {
-    return math::lerpCenteredGrid(i,j,m_temperature);
+    return simmath::lerpCenteredGrid(i,j,m_temperature);
 }
 
 void MACFluidGrid::setTemperature(int i, int j, float value)
@@ -514,7 +535,7 @@ float MACFluidGrid::smokeConcentration(int i, int j)
 
 float MACFluidGrid::smokeConcentrationAt(float i, float j)
 {
-    return math::lerpCenteredGrid(i,j,m_smokeConcentration);
+    return simmath::lerpCenteredGrid(i,j,m_smokeConcentration);
 }
 
 void MACFluidGrid::setSmokeConcentration(int i, int j, float value)
@@ -563,8 +584,8 @@ std::vector<int> MACFluidGrid::nearValidSolidIds(int i, int j)
 Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
 {
     Vertex closestPoint = pos;
-    float sdf = math::lerpCenteredGrid(pos.x(),pos.y(),m_sdf);
-    Vertex grad = math::gradCenteredGrid(pos.x(),pos.y(),m_sdf);
+    float sdf = simmath::lerpCenteredGrid(pos.x(),pos.y(),m_sdf);
+    Vertex grad = simmath::gradCenteredGrid(pos.x(),pos.y(),m_sdf);
     static const int iterationLimit = 100;
     static const int internalIterationLimit = 10;
     for(int i = 0; i < iterationLimit; i++)
@@ -573,11 +594,11 @@ Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
         for(int j = 0; j < internalIterationLimit; j++)
         {
             Vertex q = closestPoint - alpha*sdf*grad;
-            if(std::abs(math::lerpCenteredGrid(q.x(),q.y(),m_sdf)) < std::abs(sdf))
+            if(std::abs(simmath::lerpCenteredGrid(q.x(),q.y(),m_sdf)) < std::abs(sdf))
             {
                 closestPoint = q;
-                sdf = math::lerpCenteredGrid(q.x(),q.y(),m_sdf);
-                grad = math::gradCenteredGrid(q.x(),q.y(),m_sdf);
+                sdf = simmath::lerpCenteredGrid(q.x(),q.y(),m_sdf);
+                grad = simmath::gradCenteredGrid(q.x(),q.y(),m_sdf);
                 if(std::abs(sdf) < 1e-5f)
                 {
                     return closestPoint;

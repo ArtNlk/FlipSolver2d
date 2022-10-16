@@ -80,8 +80,8 @@ void FlipSmokeSolver::particleToGrid()
 
     for(MarkerParticle &p : m_markerParticles)
     {
-        int i = math::integr(p.position.x());
-        int j = math::integr(p.position.y());
+        int i = simmath::integr(p.position.x());
+        int j = simmath::integr(p.position.y());
         //Run over all cells that this particle might affect
         for (int iOffset = -3; iOffset < 3; iOffset++)
         {
@@ -89,12 +89,12 @@ void FlipSmokeSolver::particleToGrid()
             {
                 int iIdx = i+iOffset;
                 int jIdx = j+jOffset;
-                float weightU = math::quadraticBSpline(p.position.x() - (iIdx),
+                float weightU = simmath::quadraticBSpline(p.position.x() - (iIdx),
                                                      p.position.y() - (static_cast<float>(jIdx) + 0.5f));
 
-                float weightV = math::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
+                float weightV = simmath::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
                                                      p.position.y() - (jIdx));
-                float weightCentered = math::quadraticBSpline(p.position.x() - (iIdx),
+                float weightCentered = simmath::quadraticBSpline(p.position.x() - (iIdx),
                                                      p.position.y() - (jIdx));
                 if(uWeights.inBounds(iIdx,jIdx))
                 {
@@ -193,26 +193,26 @@ void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
         {
             if (!m_grid.isSolid(i,j))
             {
-                rhs[m_grid.linearIndex(i,j)] = -scale * static_cast<double>(m_grid.getU(i+1,j) - m_grid.getU(i,j)
-                                                              +m_grid.getV(i,j+1) - m_grid.getV(i,j))
+                rhs[m_grid.linearIndex(i,j)] = -scale * static_cast<double>(m_grid.getFluidU(i+1,j) - m_grid.getFluidU(i,j)
+                                                              +m_grid.getFluidV(i,j+1) - m_grid.getFluidV(i,j))
                                                                 + m_grid.divergenceControl(i,j);
 
                 if(m_grid.isSolid(i-1,j))
                 {
-                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getU(i,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getFluidU(i,j) - 0);
                 }
                 if(m_grid.isSolid(i+1,j))
                 {
-                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getU(i+1,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getFluidU(i+1,j) - 0);
                 }
 
                 if(m_grid.isSolid(i,j-1))
                 {
-                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getV(i,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getFluidV(i,j) - 0);
                 }
                 if(m_grid.isSolid(i,j+1))
                 {
-                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getV(i,j+1) - 0);
+                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getFluidV(i,j+1) - 0);
                 }
             }
         }
@@ -235,7 +235,7 @@ void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressur
             {
                 if(m_grid.isSolid(i-1,j) || m_grid.isSolid(i,j))
                 {
-                    m_grid.setU(i,j,0);//Solids are stationary
+                    m_grid.setFluidU(i,j,0);//Solids are stationary
                 }
                 else
                 {

@@ -518,7 +518,7 @@ void FluidRenderer::updateGridFromMaterial()
                     else
                     {
                         float smokeConcentration = m_solver->grid().smokeConcentration(i,j);
-                        float opacity = math::lerp(0.01f,1.f,smokeConcentration);
+                        float opacity = simmath::lerp(0.01f,1.f,smokeConcentration);
                         float temp = m_solver->grid().temperature(i,j);
                         float intensity = std::clamp((std::clamp(temp, 773.f,temp) - 773.f) / 277.f, 0.f, 1.f);
                         Color c = getBlackbodyColor(temp);
@@ -559,10 +559,10 @@ void FluidRenderer::updateGridFromVelocity()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            //float r = (m_solver->grid().getU(i,j) - min) / diff;
-            //float g = (m_solver->grid().getV(i,j) - min) / diff;
-            float r = (std::abs(m_solver->grid().getU(i,j))) / m_velocityComponentRangeMax;
-            float g = (std::abs(m_solver->grid().getV(i,j))) / m_velocityComponentRangeMax;
+            //float r = (m_solver->grid().getFluidU(i,j) - min) / diff;
+            //float g = (m_solver->grid().getFluidV(i,j) - min) / diff;
+            float r = (std::abs(m_solver->grid().getFluidU(i,j))) / m_velocityComponentRangeMax;
+            float g = (std::abs(m_solver->grid().getFluidV(i,j))) / m_velocityComponentRangeMax;
             setCellColor(i,j,Color(r,g,0.0));
         }
     }
@@ -574,10 +574,10 @@ void FluidRenderer::updateGridFromUComponent()
 //                                            m_solver->grid().data().end(),
 //                                            [] (const FluidCell& a, const FluidCell& b)
 //                                            {
-//                                                return a.getU() < b.getU();
+//                                                return a.getFluidU() < b.getFluidU();
 //                                            });
-//    float min = minMaxValues.first->getU();
-//    float max = minMaxValues.second->getU();
+//    float min = minMaxValues.first->getFluidU();
+//    float max = minMaxValues.second->getFluidU();
 
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
@@ -585,7 +585,7 @@ void FluidRenderer::updateGridFromUComponent()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            float brightness = std::clamp(std::abs(m_solver->grid().getU(i,j))
+            float brightness = std::clamp(std::abs(m_solver->grid().getFluidU(i,j))
                     / m_velocityComponentRangeMax,0.f,1.f);
             setCellColor(i,j,Color(brightness,brightness,brightness));
         }
@@ -601,7 +601,7 @@ void FluidRenderer::updateGridFromVComponent()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            float brightness = std::clamp(std::abs(m_solver->grid().getV(i,j))
+            float brightness = std::clamp(std::abs(m_solver->grid().getFluidV(i,j))
                     / m_velocityComponentRangeMax,0.f,1.f);
             setCellColor(i,j,Color(brightness,brightness,brightness));
         }
@@ -784,7 +784,7 @@ void FluidRenderer::updateVectorsStaggered()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceVelocity(m_solver->grid().getU(i,j),m_solver->grid().getV(i,j));
+            Vertex gridspaceVelocity(m_solver->grid().getFluidU(i,j),m_solver->grid().getFluidV(i,j));
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceVelocity.distFromZero() / SimSettings::dx();
             //float scaleFactor = 1;
@@ -807,8 +807,8 @@ void FluidRenderer::updateVectorsCentered()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceVelocity(math::lerpUGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().velocityGridU()),
-                                     math::lerpVGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().velocityGridV()));
+            Vertex gridspaceVelocity(simmath::lerpUGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().velocityGridU()),
+                                     simmath::lerpVGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().velocityGridV()));
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceVelocity.distFromZero() / SimSettings::dx();
             //float scaleFactor = 1;
@@ -829,7 +829,7 @@ void FluidRenderer::updateVectorsSdfGrad()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceSdf = math::gradCenteredGrid(static_cast<float>(i) +0.5f,static_cast<float>(j) +0.5f, m_solver->grid().sdfGrid());
+            Vertex gridspaceSdf = simmath::gradCenteredGrid(static_cast<float>(i) +0.5f,static_cast<float>(j) +0.5f, m_solver->grid().sdfGrid());
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceSdf.distFromZero() / SimSettings::dx();
             //float scaleFactor = 1;

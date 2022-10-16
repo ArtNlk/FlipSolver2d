@@ -107,31 +107,35 @@ public:
 
     VelocitySampleState vVelocitySampleState(int i, int j);
 
-    void setU(Index2d index, float value, bool knownStatus);
+    void setFluidU(Index2d index, float value, bool knownStatus);
 
-    void setU(Index2d index, float value);
+    void setFluidU(Index2d index, float value);
 
-    void setU(int i, int j, float value, bool knownStatus);
+    void setFluidU(int i, int j, float value, bool knownStatus);
 
-    void setU(int i, int j, float value);
+    void setFluidU(int i, int j, float value);
 
-    void setV(Index2d index, float value, bool knownStatus);
+    void setFluidV(Index2d index, float value, bool knownStatus);
 
-    void setV(Index2d index, float value);
+    void setFluidV(Index2d index, float value);
 
-    void setV(int i, int j, float value, bool knownStatus);
+    void setFluidV(int i, int j, float value, bool knownStatus);
 
-    void setV(int i, int j, float value);
+    void setFluidV(int i, int j, float value);
 
-    float getU(Index2d index);
+    void setAirU(int i, int j, float value);
 
-    float getU(int i, int j);
-
-    float getV(Index2d index);
-
-    float getV(int i, int j);
+    void setAirV(int i, int j, float value);
 
     void getSize(int& sizeI, int& sizeJ) const;
+
+    float getFluidU(int i, int j);
+
+    float getFluidV(int i, int j);
+
+    float getAirU(int i, int j);
+
+    float getAirV(int i, int j);
 
     int cellCount() const;
 
@@ -144,6 +148,10 @@ public:
     float viscosityAt(Vertex position);
 
     Grid2d<FluidCellMaterial> &materialGrid();
+
+    StaggeredVelocityGrid& fluidVelocityGrid();
+
+    StaggeredVelocityGrid& airVelocityGrid();
 
     Grid2d<float> &velocityGridU();
 
@@ -232,6 +240,7 @@ protected:
 
     Grid2d<FluidCellMaterial> m_materialGrid;
     StaggeredVelocityGrid m_fluidVelocityGrid;
+    StaggeredVelocityGrid m_airVelocityGrid;
     Grid2d<float> m_sdf;
     Grid2d<bool> m_knownCenteredParams;
     Grid2d<float> m_viscosityGrid;

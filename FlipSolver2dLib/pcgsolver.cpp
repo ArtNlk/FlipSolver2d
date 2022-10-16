@@ -16,7 +16,7 @@ const double PCGSolver::m_tol = 1.0e-14;
 bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
 {
     result.assign(result.size(),0);
-    if (vmath::isZero(vec))
+    if (vsimmath::isZero(vec))
     {
         return true;
     }
@@ -27,15 +27,15 @@ bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::v
     std::vector<double> aux_before = aux;
     applyICPrecond(precond,residual,aux);
     std::vector<double> search = aux;
-    double sigma = vmath::dot(aux,residual);
+    double sigma = vsimmath::dot(aux,residual);
     double err = 0.0;
     for (int i = 0; i < iterLimit; i++)
     {
         aux = matrix * search;
-        double alpha = sigma/(vmath::dot(aux,search));
-        vmath::addMul(result,result,search,alpha);
-        vmath::subMul(residual,residual,aux,alpha);
-        err = vmath::maxAbs(residual);
+        double alpha = sigma/(vsimmath::dot(aux,search));
+        vsimmath::addMul(result,result,search,alpha);
+        vsimmath::subMul(residual,residual,aux,alpha);
+        err = vsimmath::maxAbs(residual);
 //        if(i % 5 == 0)
 //        {
 //            std::cout << "Solver: " << i << " : " << err << "\n";
@@ -49,9 +49,9 @@ bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::v
         }
         aux = residual;
         applyICPrecond(precond,residual,aux);
-        double newSigma = vmath::dot(aux,residual);
+        double newSigma = vsimmath::dot(aux,residual);
         double beta = newSigma/(sigma);
-        vmath::addMul(search,aux,search,beta);
+        vsimmath::addMul(search,aux,search,beta);
         sigma = newSigma;
     }
 

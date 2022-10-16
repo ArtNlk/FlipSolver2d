@@ -34,7 +34,7 @@ Grid2d<bool> &StaggeredVelocityGrid::vSampleValidityGrid()
 
 Vertex StaggeredVelocityGrid::velocityAt(float i, float j)
 {
-    return Vertex(math::lerpUGrid(i, j, m_velocityGridU),math::lerpVGrid(i, j, m_velocityGridV));
+    return Vertex(simmath::lerpUGrid(i, j, m_velocityGridU),simmath::lerpVGrid(i, j, m_velocityGridV));
 }
 
 Vertex StaggeredVelocityGrid::velocityAt(Vertex position)

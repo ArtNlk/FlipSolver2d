@@ -58,7 +58,7 @@ void FlipSolver::applyViscosity()
     //debug() << "mat=" << mat;
     //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
-    if(!m_pcgSolver.solve(mat,result,rhs,200))
+    if(!PCGSolver::solve(mat,result,rhs,200))
     {
         std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
     }
@@ -77,12 +77,12 @@ void FlipSolver::applyViscosity()
             int linearIdxV = m_grid.linearViscosityVelocitySampleIndexV(i,j);
             if(linearIdxU != -1)
             {
-                m_grid.setU(i,j,result[linearIdxU]);
+                m_grid.setFluidU(i,j,result[linearIdxU]);
             }
 
             if(linearIdxV != -1)
             {
-                m_grid.setV(i,j,result[vBaseIndex + linearIdxV]);
+                m_grid.setFluidV(i,j,result[vBaseIndex + linearIdxV]);
             }
         }
     }
@@ -129,8 +129,8 @@ void FlipSolver::advect()
             p.position = m_grid.closestSurfacePoint(p.position);
         }
         maxSubsteps = std::max(substepCount,maxSubsteps);
-        int pI = math::integr(p.position.x());
-        int pJ = math::integr(p.position.y());
+        int pI = simmath::integr(p.position.x());
+        int pJ = simmath::integr(p.position.y());
         if(!m_grid.inBounds(pI,pJ) || m_grid.isSink(pI,pJ))
         {
             m_markerParticles.erase(markerParticles().begin() + i);
@@ -145,7 +145,7 @@ void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-        Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
+        Vertex oldVelocity(simmath::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),simmath::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
         Vertex newVelocity = m_grid.fluidVelocityAt(p.position) / SimSettings::dx();
 //        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
 //        {
@@ -226,7 +226,7 @@ void FlipSolver::stagedStep()
         for(int i = m_markerParticles.size() - 1; i >= 0; i--)
         {
             MarkerParticle &p = m_markerParticles[i];
-            Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
+            Vertex oldVelocity(simmath::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),simmath::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
             Vertex newVelocity = m_grid.fluidVelocityAt(p.position) / SimSettings::dx();
             p.velocity = SimSettings::picRatio() * newVelocity + (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
         }
@@ -784,7 +784,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
                         && currLinearIdxV != -1
                         && vImOneLinearIdx != -1)
                 {
-                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,m_grid.viscosityGrid());
+                    float lerpedViscosity = simmath::lerpCenteredGrid(fi-0.5f,fj-0.5f,m_grid.viscosityGrid());
                     //lerpedViscosity = tempVisc;
                     output.addTo(currLinearIdxU,
                                  uJmOneLinearIdx,
@@ -809,7 +809,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
                         && vJpOneLinearIdx != -1
                         && vImOneJpOneLinearIdx != -1)
                 {
-                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj+0.5f,m_grid.viscosityGrid());
+                    float lerpedViscosity = simmath::lerpCenteredGrid(fi-0.5f,fj+0.5f,m_grid.viscosityGrid());
                     //lerpedViscosity = tempVisc;
                     output.addTo(currLinearIdxU,
                                  uJpOneLinearIdx,
@@ -868,7 +868,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
                         && uJmOneLinearIdx != -1
                         && vImOneLinearIdx != -1)
                 {
-                    float lerpedViscosity = math::lerpCenteredGrid(fi-0.5f,fj-0.5f,m_grid.viscosityGrid());
+                    float lerpedViscosity = simmath::lerpCenteredGrid(fi-0.5f,fj-0.5f,m_grid.viscosityGrid());
                     //lerpedViscosity = tempVisc;
 
                     output.addTo(vBaseIndex + currLinearIdxV,
@@ -896,7 +896,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
                         && uIpOneJmOneLinearIdx != -1
                         && vIpOneLinearIdx != -1)
                 {
-                    float lerpedViscosity = math::lerpCenteredGrid(fi+0.5f,fj-0.5f,m_grid.viscosityGrid());
+                    float lerpedViscosity = simmath::lerpCenteredGrid(fi+0.5f,fj-0.5f,m_grid.viscosityGrid());
                     //lerpedViscosity = tempVisc;
 
                     output.addTo(vBaseIndex + currLinearIdxV,
@@ -933,25 +933,25 @@ void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
         {
             if (m_grid.isFluid(i,j))
             {
-                rhs[m_grid.linearIndex(i,j)] = -scale * static_cast<double>(m_grid.getU(i+1,j) - m_grid.getU(i,j)
-                                                              +m_grid.getV(i,j+1) - m_grid.getV(i,j));
+                rhs[m_grid.linearIndex(i,j)] = -scale * static_cast<double>(m_grid.getFluidU(i+1,j) - m_grid.getFluidU(i,j)
+                                                              +m_grid.getFluidV(i,j+1) - m_grid.getFluidV(i,j));
 
                 if(m_grid.isSolid(i-1,j))
                 {
-                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getU(i,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getFluidU(i,j) - 0);
                 }
                 if(m_grid.isSolid(i+1,j))
                 {
-                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getU(i+1,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getFluidU(i+1,j) - 0);
                 }
 
                 if(m_grid.isSolid(i,j-1))
                 {
-                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getV(i,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getFluidV(i,j) - 0);
                 }
                 if(m_grid.isSolid(i,j+1))
                 {
-                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getV(i,j+1) - 0);
+                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getFluidV(i,j+1) - 0);
                 }
             }
         }
@@ -969,13 +969,13 @@ void FlipSolver::calcViscosityRhs(std::vector<double> &rhs)
             int linearIdxV = m_grid.linearViscosityVelocitySampleIndexV(i,j);
             if(linearIdxU != -1)
             {
-                float u = m_grid.getU(i,j);
+                float u = m_grid.getFluidU(i,j);
                 rhs[linearIdxU] = SimSettings::density() * u;
             }
 
             if(linearIdxV != -1)
             {
-                float v = m_grid.getV(i,j);
+                float v = m_grid.getFluidV(i,j);
                 rhs[vBaseIndex + linearIdxV] = SimSettings::density() * v;
             }
         }
@@ -1051,11 +1051,11 @@ void FlipSolver::updateVelocityFromSolids()
                 avg /= ids.size();
                 if(m_grid.uSampleAffectedBySolid(i,j))
                 {
-                    m_grid.setU(i,j,m_grid.getU(i,j) * (1-avg));
+                    m_grid.setFluidU(i,j,m_grid.getFluidU(i,j) * (1-avg));
                 }
                 if(m_grid.vSampleAffectedBySolid(i,j))
                 {
-                    m_grid.setV(i,j,m_grid.getV(i,j) * (1-avg));
+                    m_grid.setFluidV(i,j,m_grid.getFluidV(i,j) * (1-avg));
                 }
             }
         }
@@ -1078,7 +1078,7 @@ void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
             {
                 if(m_grid.isSolid(i-1,j) || m_grid.isSolid(i,j))
                 {
-                    m_grid.setU(i,j,0);//Solids are stationary
+                    m_grid.setFluidU(i,j,0);//Solids are stationary
                 }
                 else
                 {
@@ -1149,8 +1149,8 @@ void FlipSolver::particleToGrid()
 
     for(MarkerParticle &p : m_markerParticles)
     {
-        int i = math::integr(p.position.x());
-        int j = math::integr(p.position.y());
+        int i = simmath::integr(p.position.x());
+        int j = simmath::integr(p.position.y());
         //Run over all cells that this particle might affect
         for (int iOffset = -3; iOffset < 3; iOffset++)
         {
@@ -1158,12 +1158,12 @@ void FlipSolver::particleToGrid()
             {
                 int iIdx = i+iOffset;
                 int jIdx = j+jOffset;
-                float weightU = math::quadraticBSpline(p.position.x() - (iIdx),
+                float weightU = simmath::quadraticBSpline(p.position.x() - (iIdx),
                                                      p.position.y() - (static_cast<float>(jIdx) + 0.5f));
 
-                float weightV = math::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
+                float weightV = simmath::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
                                                      p.position.y() - (jIdx));
-                float weightCentered = math::quadraticBSpline(p.position.x() - (iIdx),
+                float weightCentered = simmath::quadraticBSpline(p.position.x() - (iIdx),
                                                      p.position.y() - (jIdx));
                 if(uWeights.inBounds(iIdx,jIdx))
                 {

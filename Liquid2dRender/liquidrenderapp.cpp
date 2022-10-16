@@ -39,8 +39,9 @@ void LiquidRenderApp::init()
     //loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
     //loadJson("./scenes/viscosity_test.json");
-    loadJson("./scenes/smoke_test.json");
+    //loadJson("./scenes/smoke_test.json");
     //loadJson("./scenes/smoke_test_empty.json");
+    loadJson("./scenes/glugging_test.json");
 
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
@@ -550,8 +551,8 @@ void LiquidRenderApp::initGridForExtrapolation()
     resetGrid();
     for(int i = 0; i < 1000; i++)
     {
-        m_solver->grid().setU(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), static_cast<float>(rand() % 20 - 10)/10,true);
-        m_solver->grid().setV(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), static_cast<float>(rand() % 20 - 10)/10,true);
+        m_solver->grid().setFluidU(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), static_cast<float>(rand() % 20 - 10)/10,true);
+        m_solver->grid().setFluidV(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), static_cast<float>(rand() % 20 - 10)/10,true);
     }
     m_fluidRenderer.updateGrid();
 }
@@ -576,8 +577,8 @@ void LiquidRenderApp::initGridForProjection()
             //m_solver->grid().setU(i,j,static_cast<float>(rand()) / RAND_MAX);
             //m_solver->grid().setV(i,j,static_cast<float>(rand()) / RAND_MAX);
             m_solver->updateSolids();
-            m_solver->grid().setU(i,j,0);
-            m_solver->grid().setV(i,j,10);
+            m_solver->grid().setFluidU(i,j,0);
+            m_solver->grid().setFluidV(i,j,10);
         }
     }
     m_solver->grid().fillKnownFlagsU(true);

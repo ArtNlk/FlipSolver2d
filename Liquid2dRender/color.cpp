@@ -76,10 +76,10 @@ Color Color::fromHSVA(float h, float s, float v, float a)
 
 Color Color::lerp(Color first, Color second, float factor)
 {
-    float r = math::lerp(first.rf(),second.rf(),factor);
-    float g = math::lerp(first.gf(),second.gf(),factor);
-    float b = math::lerp(first.bf(),second.bf(),factor);
-    float a = math::lerp(first.af(),second.af(),factor);
+    float r = simmath::lerp(first.rf(),second.rf(),factor);
+    float g = simmath::lerp(first.gf(),second.gf(),factor);
+    float b = simmath::lerp(first.bf(),second.bf(),factor);
+    float a = simmath::lerp(first.af(),second.af(),factor);
 
     return Color(r,g,b,a);
 }
