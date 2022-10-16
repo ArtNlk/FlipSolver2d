@@ -224,7 +224,7 @@ void LiquidRenderApp::loadJson(std::string fileName)
 
         switch(SimSettings::simType())
         {
-            case SIMULATION_FLUID:
+            case SIMULATION_LIQUID:
                     m_solver.reset(new FlipFluidSolver(1,true));
             break;
 
@@ -257,10 +257,12 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::cflNumber() = tryGetValue(settingsJson,"cflNumber",10);
     SimSettings::picRatio() = tryGetValue(settingsJson,"picRatio",0.03);
     SimSettings::simType() = settingsJson["simType"].get<std::string>() == "fluid"?
-                SimulationType::SIMULATION_FLUID : SimulationType::SIMULATION_GAS;
+                SimulationType::SIMULATION_LIQUID : SimulationType::SIMULATION_GAS;
     SimSettings::ambientTemp() = tryGetValue(settingsJson,"ambientTemperature",273.0f);
     std::pair<float,float> v = tryGetValue(settingsJson,"globalAcceleration",std::pair(9.8,0.f));
     SimSettings::globalAcceleration() = Vertex(v.first,v.second);
+    SimSettings::tempDecayRate() = tryGetValue(settingsJson,"temperatureDecayRate",0.0);
+    SimSettings::concentrartionDecayRate() = tryGetValue(settingsJson,"concentrationDecayRate",0.0);
     if(SimSettings::domainSizeI() > SimSettings::domainSizeJ())
     {
         SimSettings::dx() = static_cast<float>(SimSettings::domainSizeI()) /

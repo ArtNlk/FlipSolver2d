@@ -14,7 +14,7 @@
 #include "mathfuncs.h"
 
 const Color FluidRenderer::m_emptyColor = Color(255,255,255);
-const Color FluidRenderer::m_fluidColor = Color(44, 95, 150);
+const Color FluidRenderer::m_fluidLiquidColor = Color(44, 95, 150);
 const Color FluidRenderer::m_solidColor = Color(94,94,94);
 const Color FluidRenderer::m_sourceColor = Color(22, 196, 193);
 const Color FluidRenderer::m_sinkColor = Color(11, 6, 64);
@@ -511,7 +511,21 @@ void FluidRenderer::updateGridFromMaterial()
                 break;
 
                 case FluidCellMaterial::FLUID:
-                    setCellColor(i,j,m_fluidColor);
+                    if(SimSettings::simType() == SimulationType::SIMULATION_LIQUID)
+                    {
+                        setCellColor(i,j,m_fluidLiquidColor);
+                    }
+                    else
+                    {
+                        float smokeConcentration = m_solver->grid().smokeConcentration(i,j);
+                        float opacity = math::lerp(0.01f,1.f,smokeConcentration);
+                        float temp = m_solver->grid().temperature(i,j);
+                        float intensity = std::clamp((std::clamp(temp, 773.f,temp) - 773.f) / 277.f, 0.f, 1.f);
+                        Color c = getBlackbodyColor(temp);
+                        c = c*intensity;
+                        c = Color::lerp(m_emptyColor,c,opacity);
+                        setCellColor(i,j,c);
+                    }
                 break;
 
                 case FluidCellMaterial::SOLID:
@@ -687,7 +701,7 @@ void FluidRenderer::updateGridFromTemperature()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Color c = hueColorRamp(m_solver->grid().temperatureGrid().at(i,j) / 500.f);
+            Color c = hueColorRamp(m_solver->grid().temperatureGrid().at(i,j) / 3000.f);
             setCellColor(i,j,c);
         }
     }
@@ -924,6 +938,59 @@ Color FluidRenderer::velocityComponentColorRamp(float val)
 {
     float hue = std::clamp(val,0.f,1.f) * (m_hueMaxVelocityComponent - m_hueMinVelocityComponent) + m_hueMinVelocityComponent;
     return Color::fromHSVA(hue,1.f,1.f);
+}
+
+//Taken from https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
+Color FluidRenderer::getBlackbodyColor(float temp)
+{
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    temp /= 100;
+    if(temp <= 66)
+    {
+        r = 255;
+    }
+    else
+    {
+        r = temp - 60;
+        r = 329.698727446 * (std::pow(r,-0.1332047592));
+        r = std::clamp(r,0,255);
+    }
+
+    if(temp <= 66)
+    {
+        g = temp;
+        g = 99.4708025861 * std::log(g) - 161.1195681661;
+        g = std::clamp(g,0,255);
+    }
+    else
+    {
+        g = temp - 60;
+        g = 288.1221695283 * std::pow(g,-0.0755148492);
+        g = std::clamp(g,0,255);
+    }
+
+    if(temp >= 66 )
+    {
+        b = 255;
+    }
+    else
+    {
+
+        if(temp <= 19)
+        {
+            b = 0;
+        }
+        else
+        {
+            b = temp - 10;
+            b = 138.5177312231 * std::log(b) - 305.0447927307;
+            b = std::clamp(b,0,255);
+        }
+    }
+
+    return Color(r,g,b);
 }
 
 void FluidRenderer::dumpToPng(std::string fileName)

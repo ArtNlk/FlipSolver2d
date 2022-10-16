@@ -163,6 +163,7 @@ protected:
 
     Color hueColorRamp(float val);
     Color velocityComponentColorRamp(float val);
+    Color getBlackbodyColor(float temp);
 
     unsigned int m_vbo_grid;
     unsigned int m_vao_grid;
@@ -195,7 +196,7 @@ protected:
     static const char *m_fragShaderSource;
 
     static const Color m_emptyColor;
-    static const Color m_fluidColor;
+    static const Color m_fluidLiquidColor;
     static const Color m_solidColor;
     static const Color m_sourceColor;
     static const Color m_sinkColor;

@@ -32,7 +32,7 @@ void FlipSmokeSolver::step()
 
 void FlipSmokeSolver::applyBodyForces()
 {
-    float alpha = 0.0f;
+    float alpha = 0.01f;
     float beta = 1.f/SimSettings::ambientTemp();
     for (int i = 0; i < m_grid.sizeI() + 1; i++)
     {

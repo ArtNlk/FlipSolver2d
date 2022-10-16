@@ -30,6 +30,13 @@ public:
 
     static Color fromHSVA(float h, float s, float v, float a = 1.f);
 
+    static Color lerp(Color first, Color second, float factor);
+
+    friend Color operator*(Color lhs,const float& rhs)
+    {
+        return Color(lhs.rf() * rhs, lhs.gf() * rhs, lhs.bf() * rhs, lhs.af() * rhs);
+    }
+
     inline int &r() {return m_r;}
     inline int &g() {return m_g;}
     inline int &b() {return m_b;}

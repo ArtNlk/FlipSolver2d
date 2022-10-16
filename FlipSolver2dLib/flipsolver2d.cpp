@@ -155,6 +155,10 @@ void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
 //        {
             p.velocity = SimSettings::picRatio() * newVelocity +
                     (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
+            p.temperature = SimSettings::ambientTemp() +
+                    (p.temperature - SimSettings::ambientTemp()) *
+                    std::exp(-SimSettings::tempDecayRate() * SimSettings::stepDt());
+            p.smokeConcentrartion *= std::exp(-SimSettings::concentrartionDecayRate() * SimSettings::stepDt());
 //        }
     }
 }

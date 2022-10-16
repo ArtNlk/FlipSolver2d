@@ -3,13 +3,15 @@
     "simType": "smoke",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 100,
+    "resolution": 200,
     "fps": 30,
     "maxSubsteps": 10,
     "seed": 0,
     "particlesPerCell": 4,
     "picRatio": 0.03,
     "cflNumber": 1,
+    "temperatureDecayRate": 0.1,
+    "concentrationDecayRate": 0.05,
     "globalAcceleration": [9.8,0]
   },
   "solver": {
@@ -71,8 +73,8 @@
       {
         "type": "source",
         "viscosity": 0,
-        "divergence": 2,
-        "temperature": 373,
+        "divergence": 0,
+        "temperature": 1273,
         "concentration": 1,
         "verts": [
           [40,20],
