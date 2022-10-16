@@ -165,11 +165,10 @@ void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
 
 void FlipSolver::step()
 {
-    Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
     m_grid.updateLinearFluidViscosityMapping();
-    countParticles(particleCounts);
-    reseedParticles(particleCounts);
-    updateMaterialsFromParticles(particleCounts);
+    countParticles();
+    reseedParticles();
+    updateMaterialsFromParticles();
     particleToGrid();
     extrapolateVelocityField(1);
     Grid2d<float> prevU = m_grid.velocityGridU();
@@ -182,63 +181,6 @@ void FlipSolver::step()
     extrapolateVelocityField(1);
     particleUpdate(prevU, prevV);
     advect();
-}
-
-void FlipSolver::stagedStep()
-{
-    static Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
-    static Grid2d<float> prevU(m_grid.velocityGridU().sizeI(), m_grid.velocityGridU().sizeJ());
-    static Grid2d<float> prevV(m_grid.velocityGridV().sizeI(), m_grid.velocityGridV().sizeJ());
-    m_stepStage++;
-    switch(m_stepStage)
-    {
-    case STAGE_RESEED:
-        if(m_frameNumber == 0)
-        {
-            updateInitialFluid();
-            seedInitialFluid();
-        }
-        particleCounts.fill(0);
-        countParticles(particleCounts);
-        reseedParticles(particleCounts);
-        break;
-    case STAGE_UPDATE_MATERIALS:
-        updateMaterialsFromParticles(particleCounts);
-        break;
-    case STAGE_TRANSFER_PARTICLE_VELOCITY:
-        particleToGrid();
-        break;
-    case STAGE_EXTRAPOLATE_VELOCITY:
-        extrapolateVelocityField(1);
-        break;
-    case STAGE_APPLY_GLOBAL_ACCELERATION:
-        prevU = m_grid.velocityGridU();
-        prevV = m_grid.velocityGridV();
-        applyBodyForces();
-        break;
-    case STAGE_PROJECT:
-        project();
-        break;
-    case STAGE_EXTRAPOLATE_AFTER_PROJECTION:
-        extrapolateVelocityField(1);
-        break;
-    case STAGE_UPDATE_PARTICLE_VELOCITIES:
-        for(int i = m_markerParticles.size() - 1; i >= 0; i--)
-        {
-            MarkerParticle &p = m_markerParticles[i];
-            Vertex oldVelocity(simmath::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),simmath::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
-            Vertex newVelocity = m_grid.fluidVelocityAt(p.position) / SimSettings::dx();
-            p.velocity = SimSettings::picRatio() * newVelocity + (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
-        }
-        break;
-    case STAGE_ADVECT:
-        advect();
-        m_frameNumber++;
-        std::cout << "Simulation step finished" << std::endl;
-        break;
-    case STAGE_ITER_END:
-        break;
-    }
 }
 
 void FlipSolver::stepFrame()
@@ -303,7 +245,7 @@ void FlipSolver::updateSolids()
             m_grid.setSdf(i,j,dist);
             if(dist < 0)
             {
-                m_grid.setMaterial(i,j,FluidCellMaterial::SOLID);
+                m_grid.setMaterial(i,j,FluidMaterial::SOLID);
                 m_grid.setSolidId(i,j,minIdx);
             }
         }
@@ -322,7 +264,7 @@ void FlipSolver::updateSources()
                 Emitter& e = m_sources[emitterIdx];
                 if(e.geometry().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
                 {
-                    m_grid.setMaterial(i,j,FluidCellMaterial::SOURCE);
+                    m_grid.setMaterial(i,j,FluidMaterial::SOURCE);
                     m_grid.setEmitterId(i,j,emitterIdx);
                     m_grid.divergenceControl(i,j) = e.divergence();
                 }
@@ -342,7 +284,7 @@ void FlipSolver::updateSinks()
             {
                 if(s.geo().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
                 {
-                    m_grid.setMaterial(i,j,FluidCellMaterial::SINK);
+                    m_grid.setMaterial(i,j,FluidMaterial::SINK);
                     m_grid.divergenceControl(i,j) = s.divergence();
                 }
             }
@@ -361,7 +303,7 @@ void FlipSolver::updateInitialFluid()
             {
                 if(e.geometry().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
                 {
-                    m_grid.setMaterial(i,j,FluidCellMaterial::FLUID);
+                    m_grid.setMaterial(i,j,FluidMaterial::FLUID);
                     m_grid.setViscosity(i,j,e.viscosity());
                 }
             }
@@ -417,7 +359,7 @@ int FlipSolver::frameNumber()
     return m_frameNumber;
 }
 
-void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
+void FlipSolver::reseedParticles()
 {
     for (int i = 0; i < m_grid.sizeI(); i++)
     {
@@ -425,7 +367,7 @@ void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
         {
             if(m_grid.isSource(i,j))
             {
-                int particleCount = particleCounts.at(i,j);
+                int particleCount = m_grid.particleCountGrid().at(i,j);
                 if(particleCount > 20)
                 {
                     std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
@@ -990,16 +932,14 @@ Vertex FlipSolver::jitteredPosInCell(int i, int j)
     return Vertex(x,y);
 }
 
-void FlipSolver::countParticles(Grid2d<int> &output)
+void FlipSolver::countParticles()
 {
-    ASSERT(output.sizeI() == m_grid.sizeI());
-    ASSERT(output.sizeJ() == m_grid.sizeJ());
-    output.fill(0);
+    m_grid.particleCountGrid().fill(0);
     for(MarkerParticle& p : m_markerParticles)
     {
         int i = std::floor(p.position.x());
         int j = std::floor(p.position.y());
-        output.at(i,j) += 1;
+        m_grid.particleCountGrid().at(i,j) += 1;
 //        if(m_grid.isSolid(i,j))
 //        {
 //            std::cout << "Particle in solid at " << i << "," << j << '\n';
@@ -1008,25 +948,25 @@ void FlipSolver::countParticles(Grid2d<int> &output)
     }
 }
 
-void FlipSolver::updateMaterialsFromParticles(Grid2d<int> &particleCount)
+void FlipSolver::updateMaterialsFromParticles()
 {
     for (int i = 0; i < m_grid.sizeI(); i++)
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if(particleCount.at(i,j) != 0)
+            if(m_grid.particleCountGrid().at(i,j) != 0)
             {
                 if(m_grid.isEmpty(i,j))
                 {
-                    m_grid.setMaterial(i,j,FluidCellMaterial::FLUID);
+                    m_grid.setMaterial(i,j,FluidMaterial::FLUID);
                 }
             }
             else
             {
-                FluidCellMaterial m = m_grid.getMaterial(i,j);
-                if(m == FluidCellMaterial::FLUID)
+                FluidMaterial m = m_grid.getMaterial(i,j);
+                if(m == FluidMaterial::FLUID)
                 {
-                    m_grid.setMaterial(i,j,FluidCellMaterial::EMPTY);
+                    m_grid.setMaterial(i,j,FluidMaterial::EMPTY);
                 }
             }
         }

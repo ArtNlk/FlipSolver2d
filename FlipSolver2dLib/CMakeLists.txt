@@ -20,7 +20,8 @@ set(HEADERS
     flipsolver2d.h
     flipsmokesolver.h
     sink.h
-    staggeredvelocitygrid.h)
+    staggeredvelocitygrid.h
+    multiflipsolver.h)
 
 set(SOURCES
     flipfluidsolver2d.cpp
@@ -42,7 +43,8 @@ set(SOURCES
     flipsolver2d.cpp
     flipsmokesolver.cpp
     sink.cpp
-    staggeredvelocitygrid.cpp)
+    staggeredvelocitygrid.cpp
+    multiflipsolver.cpp)
 
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 

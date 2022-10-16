@@ -5,6 +5,7 @@
 #include <random>
 #include <memory>
 
+#include "fluidcell.h"
 #include "obstacle.h"
 #include "pcgsolver.h"
 #include "fluidgrid.h"
@@ -22,6 +23,7 @@ struct MarkerParticle
     float viscosity;
     float temperature;
     float smokeConcentrartion;
+    FluidMaterial material = FluidMaterial::FLUID;
 };
 
 enum SimulationStepStage : int {STAGE_RESEED,
@@ -56,7 +58,7 @@ public:
 
     void init();
 
-    void extrapolateVelocityField(int steps = std::numeric_limits<int>().max());
+    void extrapolateVelocityField(int steps = std::numeric_limits<int>::max());
 
     virtual DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
 
@@ -71,8 +73,6 @@ public:
     void particleUpdate(Grid2d<float>& prevU, Grid2d<float>& prevV);
 
     virtual void step();
-
-    void stagedStep();
 
     void stepFrame();
 
@@ -122,13 +122,13 @@ protected:
 
     Vertex jitteredPosInCell(int i, int j);
 
-    void reseedParticles(Grid2d<int> &particleCounts);
+    void reseedParticles();
 
     void seedInitialFluid();
 
-    void countParticles(Grid2d<int> &output);
+    void countParticles();
 
-    void updateMaterialsFromParticles(Grid2d<int> &particleCount);
+    void updateMaterialsFromParticles();
 
     void updateVelocityFromSolids();
 

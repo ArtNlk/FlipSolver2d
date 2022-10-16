@@ -8,7 +8,7 @@
 
 MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
-    m_materialGrid(sizeI,sizeJ,FluidCellMaterial::EMPTY),
+    m_materialGrid(sizeI,sizeJ,FluidMaterial::EMPTY),
     m_fluidVelocityGrid(sizeI, sizeJ),
     m_airVelocityGrid(sizeI, sizeJ),
     m_sdf(sizeI,sizeJ,0.f),
@@ -19,13 +19,14 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_temperature(sizeI, sizeJ, SimSettings::ambientTemp()),
     m_smokeConcentration(sizeI, sizeJ, 0.f),
     m_divergenceControl(sizeI,sizeJ, 0.f),
+    m_particleCounts(sizeI, sizeJ),
     m_validUVelocitySampleCount(0),
     m_validVVelocitySampleCount(0),
     m_fluidCellCount(0)
 {
 }
 
-void MACFluidGrid::fill(FluidCellMaterial m, float velocityU, float velocityV, bool knownFlagU, bool knownFlagV)
+void MACFluidGrid::fill(FluidMaterial m, float velocityU, float velocityV, bool knownFlagU, bool knownFlagV)
 {
     if(fluidTest(m))
     {
@@ -42,12 +43,12 @@ void MACFluidGrid::fill(FluidCellMaterial m, float velocityU, float velocityV, b
     fillKnownFlagsV(knownFlagV);
 }
 
-void MACFluidGrid::fillMaterial(FluidCellMaterial m)
+void MACFluidGrid::fillMaterial(FluidMaterial m)
 {
     m_materialGrid.fill(m);
 }
 
-void MACFluidGrid::fillMaterialRect(FluidCellMaterial value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
+void MACFluidGrid::fillMaterialRect(FluidMaterial value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
 {
     topLeftX = std::max(0,topLeftX);
     topLeftY = std::max(0,topLeftY);
@@ -57,7 +58,7 @@ void MACFluidGrid::fillMaterialRect(FluidCellMaterial value, int topLeftX, int t
     {
         for(int j = topLeftY; j <= bottomRightY; j++)
         {
-            FluidCellMaterial oldMat = m_materialGrid.at(i,j);
+            FluidMaterial oldMat = m_materialGrid.at(i,j);
             if(fluidTest(oldMat) && oldMat != value)
             {
                 m_fluidCellCount--;
@@ -71,7 +72,7 @@ void MACFluidGrid::fillMaterialRect(FluidCellMaterial value, int topLeftX, int t
     }
 }
 
-void MACFluidGrid::fillMaterialRect(FluidCellMaterial value, Index2d topLeft, Index2d bottomRight)
+void MACFluidGrid::fillMaterialRect(FluidMaterial value, Index2d topLeft, Index2d bottomRight)
 {
     fillMaterialRect(value,topLeft.m_i,topLeft.m_j,bottomRight.m_i,bottomRight.m_j);
 }
@@ -136,21 +137,21 @@ void MACFluidGrid::fillKnownFlagVRect(bool value, Index2d topLeft, Index2d botto
     m_fluidVelocityGrid.vSampleValidityGrid().fillRect(value,topLeft,bottomRight);
 }
 
-FluidCellMaterial MACFluidGrid::getMaterial(Index2d index) const
+FluidMaterial MACFluidGrid::getMaterial(Index2d index) const
 {
-    if(!inBounds(index)) return FluidCellMaterial::EMPTY;
+    if(!inBounds(index)) return FluidMaterial::EMPTY;
     return m_materialGrid.at(index);
 }
 
-FluidCellMaterial MACFluidGrid::getMaterial(int i, int j) const
+FluidMaterial MACFluidGrid::getMaterial(int i, int j) const
 {
-    if(!inBounds(i,j)) return FluidCellMaterial::EMPTY;
+    if(!inBounds(i,j)) return FluidMaterial::EMPTY;
     return m_materialGrid.at(i,j);
 }
 
-void MACFluidGrid::setMaterial(Index2d index, FluidCellMaterial m)
+void MACFluidGrid::setMaterial(Index2d index, FluidMaterial m)
 {
-    FluidCellMaterial oldMat = getMaterial(index);
+    FluidMaterial oldMat = getMaterial(index);
     if(fluidTest(oldMat) && !fluidTest(m))
         m_fluidCellCount--;
     else if(!fluidTest(oldMat) && fluidTest(m))
@@ -158,7 +159,7 @@ void MACFluidGrid::setMaterial(Index2d index, FluidCellMaterial m)
     m_materialGrid.at(index) = m;
 }
 
-void MACFluidGrid::setMaterial(int i, int j, FluidCellMaterial m)
+void MACFluidGrid::setMaterial(int i, int j, FluidMaterial m)
 {
     setMaterial(Index2d(i,j),m);
 }
@@ -398,7 +399,7 @@ float MACFluidGrid::viscosityAt(Vertex position)
     return simmath::lerpCenteredGrid(position.x(), position.y(), m_viscosityGrid);
 }
 
-Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
+Grid2d<FluidMaterial> &MACFluidGrid::materialGrid()
 {
     return m_materialGrid;
 }
@@ -461,6 +462,11 @@ Grid2d<float> &MACFluidGrid::smokeConcentrationGrid()
 Grid2d<float> &MACFluidGrid::divergenceControlGrid()
 {
     return m_divergenceControl;
+}
+
+Grid2d<int> &MACFluidGrid::particleCountGrid()
+{
+    return m_particleCounts;
 }
 
 float MACFluidGrid::sdf(int i, int j)

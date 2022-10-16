@@ -8,11 +8,10 @@ FlipFluidSolver::FlipFluidSolver(int extrapRadius, bool vonNeumannNeighbors) :
 
 void FlipFluidSolver::step()
 {
-    Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
     m_grid.updateLinearFluidViscosityMapping();
-    countParticles(particleCounts);
-    reseedParticles(particleCounts);
-    updateMaterialsFromParticles(particleCounts);
+    countParticles();
+    reseedParticles();
+    updateMaterialsFromParticles();
     particleToGrid();
     extrapolateVelocityField(1);
     Grid2d<float> prevU = m_grid.velocityGridU();

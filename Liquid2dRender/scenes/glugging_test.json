@@ -1,6 +1,6 @@
 {
   "settings": {
-    "simType": "fluid",
+    "simType": "multiflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
     "resolution": 100,
@@ -57,7 +57,7 @@
         "verts": [
           [13,3],
           [20,24],
-          [24,24],
+          [23,24],
           [36,3]
         ]
       },

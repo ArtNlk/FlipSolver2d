@@ -3,7 +3,7 @@
 
 #include <vector>
 
-enum FluidCellMaterial : char
+enum FluidMaterial : char
 {
     FLUID = 0b01000000,
     SOURCE =0b01000001,
@@ -12,17 +12,17 @@ enum FluidCellMaterial : char
     EMPTY = 0b00010000
 };
 
-constexpr bool fluidTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::FLUID) != 0);}
-constexpr bool strictFluidTest(FluidCellMaterial m) { return (m == FluidCellMaterial::FLUID);}
-constexpr bool emptyTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::EMPTY) != 0);}
-constexpr bool solidTest(FluidCellMaterial m) { return ((m & FluidCellMaterial::SOLID) != 0);}
-constexpr bool sourceTest(FluidCellMaterial m) { return (m == FluidCellMaterial::SOURCE);}
-constexpr bool sinkTest(FluidCellMaterial m) { return (m == FluidCellMaterial::SINK);}
+constexpr bool fluidTest(FluidMaterial m) { return ((m & FluidMaterial::FLUID) != 0);}
+constexpr bool strictFluidTest(FluidMaterial m) { return (m == FluidMaterial::FLUID);}
+constexpr bool emptyTest(FluidMaterial m) { return ((m & FluidMaterial::EMPTY) != 0);}
+constexpr bool solidTest(FluidMaterial m) { return ((m & FluidMaterial::SOLID) != 0);}
+constexpr bool sourceTest(FluidMaterial m) { return (m == FluidMaterial::SOURCE);}
+constexpr bool sinkTest(FluidMaterial m) { return (m == FluidMaterial::SINK);}
 
 class FluidCell
 {
 public:
-    FluidCell(FluidCellMaterial& material, float& u, float& v, std::vector<bool>::reference uKnown, std::vector<bool>::reference vKnown) :
+    FluidCell(FluidMaterial& material, float& u, float& v, std::vector<bool>::reference uKnown, std::vector<bool>::reference vKnown) :
         m_material(material),
         m_velocityU(u),
         m_velocityV(v),
@@ -31,17 +31,17 @@ public:
     {
     }
 
-    inline void setMatrial(FluidCellMaterial m)
+    inline void setMatrial(FluidMaterial m)
     {
         m_material = m;
     }
 
-    inline FluidCellMaterial getMaterial() const
+    inline FluidMaterial getMaterial() const
     {
         return m_material;
     }
 
-    inline FluidCellMaterial& material()
+    inline FluidMaterial& material()
     {
         return m_material;
     }
@@ -117,7 +117,7 @@ public:
     }
 
 protected:
-    FluidCellMaterial& m_material;
+    FluidMaterial& m_material;
     float& m_velocityU;
     float& m_velocityV;
     std::vector<bool>::reference m_knownU;

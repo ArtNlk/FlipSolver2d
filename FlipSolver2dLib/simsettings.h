@@ -3,7 +3,7 @@
 
 #include "geometry2d.h"
 
-enum SimulationType : char {SIMULATION_LIQUID, SIMULATION_GAS};
+enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_MULTFLIP};
 
 class SimSettings
 {
@@ -95,7 +95,7 @@ public:
         return m_instance.m_cflNumber;
     }
 
-    static inline SimulationType& simType()
+    static inline SimulationMethod& simMethod()
     {
         return m_instance.m_simType;
     }
@@ -137,7 +137,7 @@ protected:
     float m_ambientTemperature;
     float m_temperatureDecayRate;
     float m_concentrationDecayRate;
-    SimulationType m_simType;
+    SimulationMethod m_simType;
 };
 
 #endif // SIMSETTINGS_H

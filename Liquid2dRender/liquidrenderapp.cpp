@@ -9,6 +9,7 @@
 #include "linearindexable2d.h"
 #include "customassert.h"
 #include "globalcallbackhandler.h"
+#include "multiflipsolver.h"
 #include "simsettings.h"
 
 LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
@@ -223,14 +224,18 @@ void LiquidRenderApp::loadJson(std::string fileName)
         sceneFile >> sceneJson;
         settingsFromJson(sceneJson["settings"]);
 
-        switch(SimSettings::simType())
+        switch(SimSettings::simMethod())
         {
             case SIMULATION_LIQUID:
-                    m_solver.reset(new FlipFluidSolver(1,true));
+                m_solver.reset(new FlipFluidSolver(1,true));
             break;
 
-            case SIMULATION_GAS:
-                    m_solver.reset(new FlipSmokeSolver(1,true));
+            case SIMULATION_SMOKE:
+                m_solver.reset(new FlipSmokeSolver(1,true));
+            break;
+
+            case SIMULATION_MULTFLIP:
+                m_solver.reset(new MultiflipSolver(1, true));
             break;
         }
 
@@ -257,8 +262,21 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
     SimSettings::cflNumber() = tryGetValue(settingsJson,"cflNumber",10);
     SimSettings::picRatio() = tryGetValue(settingsJson,"picRatio",0.03);
-    SimSettings::simType() = settingsJson["simType"].get<std::string>() == "fluid"?
-                SimulationType::SIMULATION_LIQUID : SimulationType::SIMULATION_GAS;
+
+    std::string simTypeName = settingsJson["simType"].get<std::string>();
+    if(simTypeName == "fluid")
+    {
+        SimSettings::simMethod() = SimulationMethod::SIMULATION_LIQUID;
+    }
+    else if(simTypeName == "smoke")
+    {
+        SimSettings::simMethod() = SimulationMethod::SIMULATION_SMOKE;
+    }
+    else if(simTypeName == "multiflip")
+    {
+        SimSettings::simMethod() = SimulationMethod::SIMULATION_MULTFLIP;
+    }
+
     SimSettings::ambientTemp() = tryGetValue(settingsJson,"ambientTemperature",273.0f);
     std::pair<float,float> v = tryGetValue(settingsJson,"globalAcceleration",std::pair(9.8,0.f));
     SimSettings::globalAcceleration() = Vertex(v.first,v.second);

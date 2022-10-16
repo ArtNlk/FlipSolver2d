@@ -39,17 +39,17 @@ class MACFluidGrid : public LinearIndexable2d
 public:
     MACFluidGrid(int sizeI, int sizeJ);
 
-    void fill(FluidCellMaterial m = FluidCellMaterial::EMPTY,
+    void fill(FluidMaterial m = FluidMaterial::EMPTY,
                      float velocityU = 0.f,
                      float velocityV = 0.f,
                      bool knownFlagU = false,
                      bool knownFlagV = false);
 
-    void fillMaterial(FluidCellMaterial m);
+    void fillMaterial(FluidMaterial m);
 
-    void fillMaterialRect(FluidCellMaterial value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
+    void fillMaterialRect(FluidMaterial value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
 
-    void fillMaterialRect(FluidCellMaterial value, Index2d topLeft, Index2d bottomRight);
+    void fillMaterialRect(FluidMaterial value, Index2d topLeft, Index2d bottomRight);
 
     void fillVelocityU(float value);
 
@@ -75,13 +75,13 @@ public:
 
     void fillKnownFlagVRect(bool value, Index2d topLeft, Index2d bottomRight);
 
-    FluidCellMaterial getMaterial(Index2d index) const;
+    FluidMaterial getMaterial(Index2d index) const;
 
-    FluidCellMaterial getMaterial(int i, int j) const;
+    FluidMaterial getMaterial(int i, int j) const;
 
-    void setMaterial(Index2d index, FluidCellMaterial m);
+    void setMaterial(Index2d index, FluidMaterial m);
 
-    void setMaterial(int i, int j, FluidCellMaterial m);
+    void setMaterial(int i, int j, FluidMaterial m);
 
     bool isFluid(int i, int j);
 
@@ -147,7 +147,7 @@ public:
 
     float viscosityAt(Vertex position);
 
-    Grid2d<FluidCellMaterial> &materialGrid();
+    Grid2d<FluidMaterial> &materialGrid();
 
     StaggeredVelocityGrid& fluidVelocityGrid();
 
@@ -172,6 +172,8 @@ public:
     Grid2d<float> &smokeConcentrationGrid();
 
     Grid2d<float> &divergenceControlGrid();
+
+    Grid2d<int> &particleCountGrid();
 
     float sdf(int i, int j);
 
@@ -238,7 +240,7 @@ protected:
 
     void updateValidVLinearMapping();
 
-    Grid2d<FluidCellMaterial> m_materialGrid;
+    Grid2d<FluidMaterial> m_materialGrid;
     StaggeredVelocityGrid m_fluidVelocityGrid;
     StaggeredVelocityGrid m_airVelocityGrid;
     Grid2d<float> m_sdf;
@@ -249,6 +251,7 @@ protected:
     Grid2d<float> m_temperature;
     Grid2d<float> m_smokeConcentration;
     Grid2d<float> m_divergenceControl;
+    Grid2d<int> m_particleCounts;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;

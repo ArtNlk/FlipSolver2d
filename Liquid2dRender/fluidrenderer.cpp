@@ -506,12 +506,12 @@ void FluidRenderer::updateGridFromMaterial()
         {
             switch(m_solver->grid().getMaterial(i,j))
             {
-                case FluidCellMaterial::EMPTY:
+                case FluidMaterial::EMPTY:
                     setCellColor(i,j,m_emptyColor);
                 break;
 
-                case FluidCellMaterial::FLUID:
-                    if(SimSettings::simType() == SimulationType::SIMULATION_LIQUID)
+                case FluidMaterial::FLUID:
+                    if(SimSettings::simMethod() == SimulationMethod::SIMULATION_LIQUID)
                     {
                         setCellColor(i,j,m_fluidLiquidColor);
                     }
@@ -528,15 +528,15 @@ void FluidRenderer::updateGridFromMaterial()
                     }
                 break;
 
-                case FluidCellMaterial::SOLID:
+                case FluidMaterial::SOLID:
                     setCellColor(i,j,m_solidColor);
                 break;
 
-                case FluidCellMaterial::SOURCE:
+                case FluidMaterial::SOURCE:
                     setCellColor(i,j,m_sourceColor);
                 break;
 
-                case FluidCellMaterial::SINK:
+                case FluidMaterial::SINK:
                     setCellColor(i,j,m_sinkColor);
                 break;
 
