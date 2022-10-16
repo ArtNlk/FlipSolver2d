@@ -146,7 +146,7 @@ void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
     {
         MarkerParticle &p = m_markerParticles[i];
         Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
-        Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
+        Vertex newVelocity = m_grid.fluidVelocityAt(p.position) / SimSettings::dx();
 //        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
 //        {
 //            p.velocity = newVelocity;
@@ -227,7 +227,7 @@ void FlipSolver::stagedStep()
         {
             MarkerParticle &p = m_markerParticles[i];
             Vertex oldVelocity(math::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),math::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
-            Vertex newVelocity = m_grid.velocityAt(p.position) / SimSettings::dx();
+            Vertex newVelocity = m_grid.fluidVelocityAt(p.position) / SimSettings::dx();
             p.velocity = SimSettings::picRatio() * newVelocity + (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
         }
         break;
@@ -403,7 +403,7 @@ void FlipSolver::addMarkerParticle(Vertex particle)
 {
     MarkerParticle p;
     p.position = particle;
-    p.velocity = m_grid.velocityAt(particle.x(), particle.y());
+    p.velocity = m_grid.fluidVelocityAt(particle.x(), particle.y());
     m_markerParticles.push_back(p);
 }
 
@@ -439,7 +439,7 @@ void FlipSolver::reseedParticles(Grid2d<int> &particleCounts)
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = m_grid.velocityAt(pos);
+                    Vertex velocity = m_grid.fluidVelocityAt(pos);
                     int emitterId = m_grid.emitterId(i,j);
                     float viscosity = m_sources[emitterId].viscosity();
                     float conc = m_sources[emitterId].concentrartion();
@@ -462,7 +462,7 @@ void FlipSolver::seedInitialFluid()
                 for(int p = 0; p < SimSettings::particlesPerCell(); p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = m_grid.velocityAt(pos);
+                    Vertex velocity = m_grid.fluidVelocityAt(pos);
                     float viscosity = m_grid.viscosityAt(pos);
                     addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
                 }
@@ -1122,9 +1122,9 @@ void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 
 Vertex FlipSolver::rk3Integrate(Vertex currentPosition, float dt)
 {
-    Vertex k1 = m_grid.velocityAt(currentPosition);
-    Vertex k2 = m_grid.velocityAt(currentPosition + 1.f/2.f * dt * k1);
-    Vertex k3 = m_grid.velocityAt(currentPosition + 3.f/4.f * dt * k2);
+    Vertex k1 = m_grid.fluidVelocityAt(currentPosition);
+    Vertex k2 = m_grid.fluidVelocityAt(currentPosition + 1.f/2.f * dt * k1);
+    Vertex k3 = m_grid.fluidVelocityAt(currentPosition + 3.f/4.f * dt * k2);
 
     return currentPosition + (2.f/9.f) * dt * k1 + (3.f/9.f) * dt * k2 + (4.f/9.f) * dt * k3;
 }

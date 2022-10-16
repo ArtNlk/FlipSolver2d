@@ -9,11 +9,8 @@
 MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
     m_materialGrid(sizeI,sizeJ,FluidCellMaterial::EMPTY),
-    m_velocityGridU(sizeI + 1,sizeJ, 0.f),
-    m_velocityGridV(sizeI, sizeJ + 1, 0.f),
+    m_fluidVelocityGrid(sizeI, sizeJ),
     m_sdf(sizeI,sizeJ,0.f),
-    m_knownFlagsU(sizeI + 1, sizeJ, false),
-    m_knownFlagsV(sizeI, sizeJ + 1, false),
     m_knownCenteredParams(sizeI,sizeJ, false),
     m_viscosityGrid(sizeI,sizeJ,0.f),
     m_emitterId(sizeI, sizeJ, -1),
@@ -80,62 +77,62 @@ void MACFluidGrid::fillMaterialRect(FluidCellMaterial value, Index2d topLeft, In
 
 void MACFluidGrid::fillVelocityU(float value)
 {
-    m_velocityGridU.fill(value);
+    m_fluidVelocityGrid.velocityGridU().fill(value);
 }
 
 void MACFluidGrid::fillVelocityURect(float value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
 {
-    m_velocityGridU.fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
+    m_fluidVelocityGrid.velocityGridU().fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
 }
 
 void MACFluidGrid::fillVelocityURect(float value, Index2d topLeft, Index2d bottomRight)
 {
-    m_velocityGridU.fillRect(value,topLeft,bottomRight);
+    m_fluidVelocityGrid.velocityGridU().fillRect(value,topLeft,bottomRight);
 }
 
 void MACFluidGrid::fillVelocityV(float value)
 {
-    m_velocityGridV.fill(value);
+    m_fluidVelocityGrid.velocityGridV().fill(value);
 }
 
 void MACFluidGrid::fillVelocityVRect(float value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
 {
-    m_velocityGridV.fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
+    m_fluidVelocityGrid.velocityGridV().fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
 }
 
 void MACFluidGrid::fillVelocityVRect(float value, Index2d topLeft, Index2d bottomRight)
 {
-    m_velocityGridV.fillRect(value,topLeft,bottomRight);
+    m_fluidVelocityGrid.velocityGridV().fillRect(value,topLeft,bottomRight);
 }
 
 void MACFluidGrid::fillKnownFlagsU(bool value)
 {
-    m_knownFlagsU.fill(value);
+    m_fluidVelocityGrid.uSampleValidityGrid().fill(value);
 }
 
 void MACFluidGrid::fillKnownFlagURect(bool value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
 {
-    m_knownFlagsU.fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
+    m_fluidVelocityGrid.uSampleValidityGrid().fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
 }
 
 void MACFluidGrid::fillKnownFlagURect(bool value, Index2d topLeft, Index2d bottomRight)
 {
-    m_knownFlagsU.fillRect(value,topLeft,bottomRight);
+    m_fluidVelocityGrid.uSampleValidityGrid().fillRect(value,topLeft,bottomRight);
 }
 
 void MACFluidGrid::fillKnownFlagsV(bool value)
 {
-    m_knownFlagsV.fill(value);
+    m_fluidVelocityGrid.vSampleValidityGrid().fill(value);
 }
 
 void MACFluidGrid::fillKnownFlagVRect(bool value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
 {
-    m_knownFlagsV.fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
+    m_fluidVelocityGrid.vSampleValidityGrid().fillRect(value,topLeftX,topLeftY,bottomRightX, bottomRightY);
 }
 
 void MACFluidGrid::fillKnownFlagVRect(bool value, Index2d topLeft, Index2d bottomRight)
 {
-    m_knownFlagsV.fillRect(value,topLeft,bottomRight);
+    m_fluidVelocityGrid.vSampleValidityGrid().fillRect(value,topLeft,bottomRight);
 }
 
 FluidCellMaterial MACFluidGrid::getMaterial(Index2d index) const
@@ -297,66 +294,66 @@ void MACFluidGrid::updateValidVLinearMapping()
 
 void MACFluidGrid::setU(Index2d index, float value, bool knownStatus)
 {
-    m_velocityGridU.at(index) = value;
-    m_knownFlagsU.at(index) = knownStatus;
+    m_fluidVelocityGrid.velocityGridU().at(index) = value;
+    m_fluidVelocityGrid.uSampleValidityGrid().at(index) = knownStatus;
 }
 
 void MACFluidGrid::setU(Index2d index, float value)
 {
-    m_velocityGridU.at(index) = value;
+    m_fluidVelocityGrid.velocityGridU().at(index) = value;
 }
 
 void MACFluidGrid::setU(int i, int j, float value, bool knownStatus)
 {
-    m_velocityGridU.at(i,j) = value;
-    m_knownFlagsU.at(i,j) = knownStatus;
+    m_fluidVelocityGrid.velocityGridU().at(i,j) = value;
+    m_fluidVelocityGrid.uSampleValidityGrid().at(i,j) = knownStatus;
 }
 
 void MACFluidGrid::setU(int i, int j, float value)
 {
-    m_velocityGridU.at(i,j) = value;
+    m_fluidVelocityGrid.velocityGridU().at(i,j) = value;
 }
 
 void MACFluidGrid::setV(Index2d index, float value, bool knownStatus)
 {
-    m_velocityGridV.at(index) = value;
-    m_knownFlagsV.at(index) = knownStatus;
+    m_fluidVelocityGrid.velocityGridV().at(index) = value;
+    m_fluidVelocityGrid.vSampleValidityGrid().at(index) = knownStatus;
 }
 
 void MACFluidGrid::setV(Index2d index, float value)
 {
-    m_velocityGridV.at(index) = value;
+    m_fluidVelocityGrid.velocityGridV().at(index) = value;
 }
 
 void MACFluidGrid::setV(int i, int j, float value, bool knownStatus)
 {
-    m_velocityGridV.at(i,j) = value;
-    m_knownFlagsV.at(i,j) = knownStatus;
+    m_fluidVelocityGrid.velocityGridV().at(i,j) = value;
+    m_fluidVelocityGrid.vSampleValidityGrid().at(i,j) = knownStatus;
 }
 
 void MACFluidGrid::setV(int i, int j, float value)
 {
-    m_velocityGridV.at(i,j) = value;
+    m_fluidVelocityGrid.velocityGridV().at(i,j) = value;
 }
 
-float MACFluidGrid::getU(Index2d index) const
+float MACFluidGrid::getU(Index2d index)
 {
-    return m_velocityGridU.at(index);
+    return m_fluidVelocityGrid.velocityGridU().at(index);
 }
 
-float MACFluidGrid::getU(int i, int j) const
+float MACFluidGrid::getU(int i, int j)
 {
-    return m_velocityGridU.at(i,j);
+    return m_fluidVelocityGrid.velocityGridU().at(i,j);
 }
 
-float MACFluidGrid::getV(Index2d index) const
+float MACFluidGrid::getV(Index2d index)
 {
-    return m_velocityGridV.at(index);
+    return m_fluidVelocityGrid.velocityGridV().at(index);
 }
 
-float MACFluidGrid::getV(int i, int j) const
+float MACFluidGrid::getV(int i, int j)
 {
-    return m_velocityGridV.at(i,j);
+    return m_fluidVelocityGrid.velocityGridV().at(i,j);
 }
 
 void MACFluidGrid::getSize(int &sizeI, int &sizeJ) const
@@ -375,14 +372,14 @@ int MACFluidGrid::fluidCellCount() const
     return m_fluidCellCount;
 }
 
-Vertex MACFluidGrid::velocityAt(float i, float j)
+Vertex MACFluidGrid::fluidVelocityAt(float i, float j)
 {
-    return Vertex(math::lerpUGrid(i, j, m_velocityGridU),math::lerpVGrid(i, j, m_velocityGridV));
+    return m_fluidVelocityGrid.velocityAt(i,j);
 }
 
-Vertex MACFluidGrid::velocityAt(Vertex position)
+Vertex MACFluidGrid::fluidVelocityAt(Vertex position)
 {
-    return velocityAt(position.x(),position.y());
+    return m_fluidVelocityGrid.velocityAt(position.x(),position.y());
 }
 
 float MACFluidGrid::viscosityAt(Vertex position)
@@ -397,22 +394,22 @@ Grid2d<FluidCellMaterial> &MACFluidGrid::materialGrid()
 
 Grid2d<float> &MACFluidGrid::velocityGridU()
 {
-    return m_velocityGridU;
+    return m_fluidVelocityGrid.velocityGridU();
 }
 
 Grid2d<float> &MACFluidGrid::velocityGridV()
 {
-    return m_velocityGridV;
+    return m_fluidVelocityGrid.velocityGridV();
 }
 
 Grid2d<bool> &MACFluidGrid::knownFlagsGridU()
 {
-    return m_knownFlagsU;
+    return m_fluidVelocityGrid.uSampleValidityGrid();
 }
 
 Grid2d<bool> &MACFluidGrid::knownFlagsGridV()
 {
-    return m_knownFlagsV;
+    return m_fluidVelocityGrid.vSampleValidityGrid();
 }
 
 Grid2d<bool> &MACFluidGrid::knownFlagsCenteredParams()

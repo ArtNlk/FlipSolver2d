@@ -9,6 +9,7 @@
 #include "index2d.h"
 #include "logger.h"
 #include "geometry2d.h"
+#include "staggeredvelocitygrid.h"
 
 struct PairHash {
 public:
@@ -122,13 +123,13 @@ public:
 
     void setV(int i, int j, float value);
 
-    float getU(Index2d index) const;
+    float getU(Index2d index);
 
-    float getU(int i, int j) const;
+    float getU(int i, int j);
 
-    float getV(Index2d index) const;
+    float getV(Index2d index);
 
-    float getV(int i, int j) const;
+    float getV(int i, int j);
 
     void getSize(int& sizeI, int& sizeJ) const;
 
@@ -136,9 +137,9 @@ public:
 
     int fluidCellCount() const;
 
-    Vertex velocityAt(float i, float j);
+    Vertex fluidVelocityAt(float i, float j);
 
-    Vertex velocityAt(Vertex position);
+    Vertex fluidVelocityAt(Vertex position);
 
     float viscosityAt(Vertex position);
 
@@ -230,11 +231,8 @@ protected:
     void updateValidVLinearMapping();
 
     Grid2d<FluidCellMaterial> m_materialGrid;
-    Grid2d<float> m_velocityGridU;
-    Grid2d<float> m_velocityGridV;
+    StaggeredVelocityGrid m_fluidVelocityGrid;
     Grid2d<float> m_sdf;
-    Grid2d<bool> m_knownFlagsU;
-    Grid2d<bool> m_knownFlagsV;
     Grid2d<bool> m_knownCenteredParams;
     Grid2d<float> m_viscosityGrid;
     Grid2d<int> m_emitterId;
