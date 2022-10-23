@@ -1,5 +1,6 @@
 #include "flipsolver2d.h"
 
+#include <cmath>
 #include <limits>
 #include <queue>
 
@@ -1181,9 +1182,35 @@ void FlipSolver::applyBodyForces()
     }
 }
 
+void FlipSolver::updateSdf()
+{
+    float particleRadius = SimSettings::particleScale();
+    for(int i = 0; i < m_grid.sizeI(); i++)
+    {
+        for(int j = 0; j < m_grid.sizeJ(); j++)
+        {
+            float distSqrd = std::numeric_limits<float>::max();
+            Vertex centerPoint = Vertex(static_cast<float>(i) + 0.5f,
+                                        static_cast<float>(j) + 0.5f);
+            for(MarkerParticle& p : m_markerParticles)
+            {
+                float diffX = p.position.x() - centerPoint.x();
+                float diffY = p.position.y() - centerPoint.y();
+                float newDistSqrd = diffX*diffX + diffY * diffY - particleRadius;
+                if(newDistSqrd < distSqrd)
+                {
+                    distSqrd = newDistSqrd;
+                }
+            }
+
+            m_grid.fluidSdfGrid().at(i,j) = std::sqrt(distSqrd * SimSettings::dx());
+        }
+    }
+}
+
 float FlipSolver::maxParticleVelocity()
 {
-    float maxVelocitySqr = std::numeric_limits<float>().min();
+    float maxVelocitySqr = std::numeric_limits<float>::min();
     for(MarkerParticle& p : m_markerParticles)
     {
         float velocitySqr = p.velocity.x()*p.velocity.x() + p.velocity.y()*p.velocity.y();

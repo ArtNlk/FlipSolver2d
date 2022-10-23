@@ -24,4 +24,5 @@ void FlipFluidSolver::step()
     extrapolateVelocityField(1);
     particleUpdate(prevU, prevV);
     advect();
+    updateSdf();
 }

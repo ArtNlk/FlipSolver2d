@@ -442,8 +442,11 @@ void FluidRenderer::updateGrid()
     case FluidRenderMode::RENDER_V:
         updateGridFromVComponent();
         break;
-    case FluidRenderMode::RENDER_SDF:
-        updateGridFromSdf();
+    case FluidRenderMode::RENDER_OBSTACLE_SDF:
+        updateGridFromObstacleSdf();
+        break;
+    case FluidRenderMode::RENDER_FLUID_SDF:
+        updateGridFromFluidSdf();
         break;
     case FluidRenderMode::RENDER_KNOWN_FLAG_U:
         updateGridFromUKnownFlag();
@@ -650,7 +653,7 @@ void FluidRenderer::updateGridFromCenteredKnownFlag()
     }
 }
 
-void FluidRenderer::updateGridFromSdf()
+void FluidRenderer::updateGridFromObstacleSdf()
 {
     float max = std::max(m_solver->gridSizeI(),m_solver->gridSizeJ());
 
@@ -661,6 +664,35 @@ void FluidRenderer::updateGridFromSdf()
         for (int j = 0; j < gridWidth; j++)
         {
             float dist = m_solver->grid().solidSdf(i,j);
+            float brightness = std::pow(std::abs(dist) / max,0.4);
+//            if (std::abs(dist - 10.f) < 1e-0f)
+//            {
+//                setCellColor(i,j,Color(255,255,255));
+//                continue;
+//            }
+            if(dist <= 0.f)
+            {
+                setCellColor(i,j,Color(static_cast<int>(87 * brightness), static_cast<int>(202 * brightness), static_cast<int>(255 * brightness)));
+            }
+            else
+            {
+                setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(168 * brightness), static_cast<int>(87 * brightness)));
+            }
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromFluidSdf()
+{
+    float max = std::max(m_solver->gridSizeI(),m_solver->gridSizeJ());
+
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float dist = m_solver->grid().fluidSdfGrid().at(i,j);
             float brightness = std::pow(std::abs(dist) / max,0.4);
 //            if (std::abs(dist - 10.f) < 1e-0f)
 //            {

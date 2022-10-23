@@ -115,6 +115,11 @@ public:
         return m_instance.m_concentrationDecayRate;
     }
 
+    static inline float& particleScale()
+    {
+        return m_instance.m_particleScale;
+    }
+
 protected:
     static SimSettings m_instance;
 
@@ -137,6 +142,7 @@ protected:
     float m_ambientTemperature;
     float m_temperatureDecayRate;
     float m_concentrationDecayRate;
+    float m_particleScale;
     SimulationMethod m_simType;
 };
 

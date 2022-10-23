@@ -140,6 +140,8 @@ protected:
 
     virtual void applyBodyForces();
 
+    virtual void updateSdf();
+
     float maxParticleVelocity();
 
     int m_extrapolationRadius;

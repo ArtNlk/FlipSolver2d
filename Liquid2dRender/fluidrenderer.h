@@ -13,7 +13,8 @@
 enum FluidRenderMode : int {RENDER_MATERIAL,
                             RENDER_VELOCITY,
                             RENDER_U,RENDER_V,
-                            RENDER_SDF,
+                            RENDER_OBSTACLE_SDF,
+                            RENDER_FLUID_SDF,
                             RENDER_KNOWN_FLAG_U,
                             RENDER_KNOWN_FLAG_V,
                             RENDER_KNOWN_FLAG_CENTERED,
@@ -144,7 +145,8 @@ protected:
     void updateGridFromUKnownFlag();
     void updateGridFromVKnownFlag();
     void updateGridFromCenteredKnownFlag();
-    void updateGridFromSdf();
+    void updateGridFromObstacleSdf();
+    void updateGridFromFluidSdf();
     void updateGridFromViscosity();
     void updateGridFromTemperature();
     void updateGridFromConcentration();

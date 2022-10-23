@@ -37,12 +37,12 @@ void LiquidRenderApp::init()
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
     //loadJson("./scenes/waterfall.json");
-    //loadJson("./scenes/dam_break.json");
+    loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
     //loadJson("./scenes/viscosity_test.json");
     //loadJson("./scenes/smoke_test.json");
     //loadJson("./scenes/smoke_test_empty.json");
-    loadJson("./scenes/glugging_test.json");
+    //loadJson("./scenes/glugging_test.json");
 
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
@@ -282,6 +282,7 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::globalAcceleration() = Vertex(v.first,v.second);
     SimSettings::tempDecayRate() = tryGetValue(settingsJson,"temperatureDecayRate",0.0);
     SimSettings::concentrartionDecayRate() = tryGetValue(settingsJson,"concentrationDecayRate",0.0);
+    SimSettings::particleScale() = tryGetValue(settingsJson,"particleScale",0.4);
     if(SimSettings::domainSizeI() > SimSettings::domainSizeJ())
     {
         SimSettings::dx() = static_cast<float>(SimSettings::domainSizeI()) /

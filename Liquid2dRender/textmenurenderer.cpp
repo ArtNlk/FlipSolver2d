@@ -14,7 +14,8 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_renderModeTexts[FluidRenderMode::RENDER_VELOCITY] = "Render velocity";
     m_renderModeTexts[FluidRenderMode::RENDER_U] = "Render U component";
     m_renderModeTexts[FluidRenderMode::RENDER_V] = "Render V component";
-    m_renderModeTexts[FluidRenderMode::RENDER_SDF] = "Render SDF";
+    m_renderModeTexts[FluidRenderMode::RENDER_OBSTACLE_SDF] = "Render obstacle SDF";
+    m_renderModeTexts[FluidRenderMode::RENDER_FLUID_SDF] = "Render fluid SDF";
     m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_U] = "Render U flag";
     m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_V] = "Render V flag";
     m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_CENTERED] = "Render centered flag";
