@@ -2,8 +2,11 @@
 
 #include <cmath>
 #include <algorithm>
+#include <limits>
 
 #include "customassert.h"
+#include "grid2d.h"
+#include "index2d.h"
 
 
 float simmath::frac(float v)
@@ -107,21 +110,17 @@ float simmath::lerpCenteredGrid(float i, float j, Grid2d<float> &grid)
     return simmath::lerp(v1,v2,jLerpFactor);
 }
 
-Vertex simmath::gradCenteredGrid(float i, float j, Grid2d<float> &grid)
+Vertex simmath::gradCenteredGrid(int i, int j, Grid2d<float> &grid)
 {
-    Index2d currentCell(simmath::integr(i),simmath::integr(j));
-    if(!grid.inBounds(currentCell)) return 0.f;
+    float neighborIp1 = grid.inBounds(i+1,j) ? grid.at(i+1,j) : grid.at(i,j);
+    float neighborIm1 = grid.inBounds(i-1,j) ? grid.at(i-1,j) : grid.at(i,j);
+    float neighborJp1 = grid.inBounds(i,j+1) ? grid.at(i,j+1) : grid.at(i,j);
+    float neighborJm1 = grid.inBounds(i,j-1) ? grid.at(i,j-1) : grid.at(i,j);
 
-    Index2d neighborI(simmath::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1, currentCell.m_j);
-    if(!grid.inBounds(neighborI)) neighborI.m_i = currentCell.m_i + -1*(neighborI.m_i - currentCell.m_i);
+    float gradI = neighborIp1 - neighborIm1;
+    float gradJ = neighborJp1 - neighborJm1;
 
-    Index2d neighborJ(currentCell.m_i,simmath::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
-    if(!grid.inBounds(neighborJ)) neighborJ.m_j = currentCell.m_j + -1*(neighborJ.m_j - currentCell.m_j);
-
-    float gradI = simmath::frac(j) >= 0.5f ? grid.at(currentCell) - grid.at(neighborI) : grid.at(neighborI) - grid.at(currentCell);
-    float gradJ = simmath::frac(i) >= 0.5f ? grid.at(currentCell) - grid.at(neighborJ) : grid.at(neighborJ) - grid.at(currentCell);
-
-    return Vertex(gradI, gradJ);
+    return Vertex(gradI/2.f, gradJ/2.f);
 }
 
 float simmath::linearHat(float value)
@@ -145,4 +144,151 @@ float simmath::bilinearHat(float x, float y)
 float simmath::avg(float a, float b)
 {
     return (a+b)/2.f;
+}
+
+void simmath::fastSweep(Grid2d<float> &values, Grid2d<bool> &extrapFlags, std::function<float (Grid2d<float> &, Vertex &, void *)> &updateFunc, void *additionalParameters)
+{
+    int maxIter = 5;
+    float maxError = 0.001;
+    for(int i = 0; i < values.sizeI(); i++)
+    {
+        for(int j = 0; j < values.sizeJ(); j++)
+        {
+            if(extrapFlags.at(i,j))
+            {
+                values.at(i,j) = 1e5f;
+            }
+        }
+    }
+
+    for(int iter = 0; iter < maxIter; iter++)
+    {
+        float err = 0.0;
+        for(int i = 0; i < values.sizeI(); i++)
+        {
+            for(int j = 0; j < values.sizeJ(); j++)
+            {
+                if(extrapFlags.at(i,j))
+                {
+                    Vertex pos(i,j);
+                    float newValue = updateFunc(values, pos, additionalParameters);
+                    if(!std::isnan(newValue))
+                    {
+                        err = std::max(err,std::abs(newValue-values.at(i,j)));
+                        values.at(i,j) = newValue;
+                    }
+                }
+            }
+        }
+
+        for(int i = 0; i < values.sizeI(); i++)
+        {
+            for(int j = values.sizeJ() - 1; j >= 0; j--)
+            {
+                if(extrapFlags.at(i,j))
+                {
+                    Vertex pos(i,j);
+                    float newValue = updateFunc(values, pos,additionalParameters);
+                    if(!std::isnan(newValue))
+                    {
+                        err = std::max(err,std::abs(newValue-values.at(i,j)));
+                        values.at(i,j) = newValue;
+                    }
+                }
+            }
+        }
+
+        for(int i = values.sizeI() - 1; i >= 0; i--)
+        {
+            for(int j = 0; j < values.sizeJ(); j++)
+            {
+                if(extrapFlags.at(i,j))
+                {
+                    Vertex pos(i,j);
+                    float newValue = updateFunc(values, pos,additionalParameters);
+                    if(!std::isnan(newValue))
+                    {
+                        err = std::max(err,std::abs(newValue-values.at(i,j)));
+                        values.at(i,j) = newValue;
+                    }
+                }
+            }
+        }
+
+        for(int i = values.sizeI() - 1; i >= 0; i--)
+        {
+            for(int j = values.sizeJ() - 1; j >= 0; j--)
+            {
+                if(extrapFlags.at(i,j))
+                {
+                    Vertex pos(i,j);
+                    float newValue = updateFunc(values, pos,additionalParameters);
+                    if(!std::isnan(newValue))
+                    {
+                        err = std::max(err,std::abs(newValue-values.at(i,j)));
+                        values.at(i,j) = newValue;
+                    }
+                }
+            }
+        }
+
+        if(err <= maxError)
+        {
+            break;
+        }
+    }
+}
+
+float simmath::normalDerivLinearExapolationUpdate(Grid2d<float> &grid, Vertex &pos, void* /*unused*/)
+{
+    int i = static_cast<int>(pos.x());
+    int j = static_cast<int>(pos.y());
+    float h = grid.sizeI() * grid.sizeJ();
+    Vertex normal = simmath::gradCenteredGrid(i,j,grid).normalized();
+    bool normalXPositive = normal.x() > 0;
+    bool normalYPositive = normal.y() > 0;
+    Index2d iNeighborIndex = normalXPositive? Index2d(i-1,j) : Index2d(i+1,j);
+    if(!grid.inBounds(iNeighborIndex))
+    {
+        iNeighborIndex = Index2d(i,j);
+    }
+    Index2d jNeighborIndex = normalYPositive? Index2d(i,j-1) : Index2d(i,j+1);
+    if(!grid.inBounds(jNeighborIndex))
+    {
+        jNeighborIndex = Index2d(i,j);
+    }
+    float aySign = normalXPositive != normalYPositive? -1 : 1;
+
+    float ax = normal.x() * grid.at(iNeighborIndex);
+    float ay = normal.y() * grid.at(jNeighborIndex) * aySign;
+    float denom = normal.x() + (normal.y() * aySign);
+    return (ax+ay)/denom;
+}
+
+float simmath::sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex &pos, void *normalDerivGridPtr)
+{
+    Grid2d<float>* normalDerivGrid = static_cast<Grid2d<float>*>(normalDerivGridPtr);
+    int i = static_cast<int>(pos.x());
+    int j = static_cast<int>(pos.y());
+    Vertex normal = simmath::gradCenteredGrid(i,j,grid).normalized();
+    bool normalXPositive = normal.x() > 0;
+    bool normalYPositive = normal.y() > 0;
+    Index2d iNeighborIndex = normalXPositive? Index2d(i-1,j) : Index2d(i+1,j);
+    if(!grid.inBounds(iNeighborIndex))
+    {
+        iNeighborIndex = Index2d(i,j);
+    }
+    Index2d jNeighborIndex = normalYPositive? Index2d(i,j-1) : Index2d(i,j+1);
+    if(!grid.inBounds(jNeighborIndex))
+    {
+        jNeighborIndex = Index2d(i,j);
+    }
+    float aySign = normalXPositive != normalYPositive? -1 : 1;
+    float fSign = normalXPositive? 1 : -1;
+
+    float ax = normal.x() * grid.at(iNeighborIndex);
+    float ay = normal.y() * grid.at(jNeighborIndex) * aySign;
+    float fFactor = normalDerivGrid->at(i,j) * fSign;
+    float denom = normal.x() + (normal.y() * aySign);
+    return (ax+ay+fFactor)/denom;
 }

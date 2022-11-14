@@ -122,13 +122,13 @@ protected:
 
     Vertex jitteredPosInCell(int i, int j);
 
-    void reseedParticles();
+    virtual void reseedParticles();
 
-    void seedInitialFluid();
+    virtual void seedInitialFluid();
 
-    void countParticles();
+    virtual void countParticles();
 
-    void updateMaterialsFromParticles();
+    virtual void updateMaterialsFromParticles();
 
     void updateVelocityFromSolids();
 

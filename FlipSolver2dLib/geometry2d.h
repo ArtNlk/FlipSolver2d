@@ -45,6 +45,16 @@ public:
         return (pa - len*h).distFromZero();
     }
 
+    inline Vertex normalized()
+    {
+        float length = distFromZero();
+        if(std::abs(length) < 1e-6f)
+        {
+            return Vertex(0.f,0.f,0.f);
+        }
+        return Vertex(m_x / length, m_y / length, m_z / length);
+    }
+
 protected:
     float m_x;
     float m_y;

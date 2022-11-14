@@ -169,13 +169,17 @@ public:
 
     Grid2d<float> &fluidSdfGrid();
 
+    Grid2d<float> &airSdfGrid();
+
     Grid2d<float> &temperatureGrid();
 
     Grid2d<float> &smokeConcentrationGrid();
 
     Grid2d<float> &divergenceControlGrid();
 
-    Grid2d<int> &particleCountGrid();
+    Grid2d<int> &fluidParticleCountGrid();
+
+    Grid2d<int> &airParticleCountGrid();
 
     float solidSdf(int i, int j);
 
@@ -203,11 +207,15 @@ public:
 
     float temperatureAt(float i, float j);
 
+    float temperatureAt(Vertex& v);
+
     void setTemperature(int i, int j, float value);
 
     float smokeConcentration(int i, int j);
 
     float smokeConcentrationAt(float i, float j);
+
+    float smokeConcentrationAt(Vertex v);
 
     void setSmokeConcentration(int i, int j, float value);
 
@@ -255,8 +263,10 @@ protected:
     Grid2d<float> m_temperature;
     Grid2d<float> m_smokeConcentration;
     Grid2d<float> m_divergenceControl;
-    Grid2d<int> m_particleCounts;
+    Grid2d<int> m_fluidParticleCounts;
+    Grid2d<int> m_airParticleCounts;
     Grid2d<float> m_fluidSdf;
+    Grid2d<float> m_airSdf;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;

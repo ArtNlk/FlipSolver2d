@@ -6,11 +6,11 @@
 FlipSmokeSolver::FlipSmokeSolver(int extrapRadius, bool vonNeumannNeighbors):
     FlipSolver(extrapRadius, vonNeumannNeighbors)
 {
-    //m_grid.temperatureGrid().fill(SimSettings::ambientTemp());
 }
 
 void FlipSmokeSolver::step()
 {
+    updateSdf();
     Grid2d<int> particleCounts(m_grid.sizeI(), m_grid.sizeJ());
     m_grid.updateLinearFluidViscosityMapping();
     countParticles();

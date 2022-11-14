@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "fluidcell.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "png.h"
@@ -20,7 +21,8 @@ const Color FluidRenderer::m_sourceColor = Color(22, 196, 193);
 const Color FluidRenderer::m_sinkColor = Color(11, 6, 64);
 const Color FluidRenderer::m_velocityVectorColor = Color(255,255,255);
 const Color FluidRenderer::m_geometryColor = Color(0,255,0);
-const Color FluidRenderer::m_markerParticleColor = Color(37,0,82);
+const Color FluidRenderer::m_markerParticleFluidColor = Color(37,0,82);
+const Color FluidRenderer::m_markerParticleAirColor = Color(77,190,255);
 
 const char *FluidRenderer::m_vertexShaderSource =
         "#version 330 core\n"
@@ -448,6 +450,9 @@ void FluidRenderer::updateGrid()
     case FluidRenderMode::RENDER_FLUID_SDF:
         updateGridFromFluidSdf();
         break;
+    case FluidRenderMode::RENDER_AIR_SDF:
+        updateGridFromAirSdf();
+        break;
     case FluidRenderMode::RENDER_KNOWN_FLAG_U:
         updateGridFromUKnownFlag();
         break;
@@ -514,7 +519,8 @@ void FluidRenderer::updateGridFromMaterial()
                 break;
 
                 case FluidMaterial::FLUID:
-                    if(SimSettings::simMethod() == SimulationMethod::SIMULATION_LIQUID)
+                    if(SimSettings::simMethod() == SimulationMethod::SIMULATION_LIQUID ||
+                            SimSettings::simMethod() == SimulationMethod::SIMULATION_MULTFLIP)
                     {
                         setCellColor(i,j,m_fluidLiquidColor);
                     }
@@ -694,6 +700,44 @@ void FluidRenderer::updateGridFromFluidSdf()
         {
             float dist = m_solver->grid().fluidSdfGrid().at(i,j);
             float brightness = std::pow(std::abs(dist) / max,0.4);
+            if(brightness > 1.f)
+            {
+                std::cout << "bad fluid sdf " << dist << " at " << i << ' ' << j << '\n';
+            }
+//            if (std::abs(dist - 10.f) < 1e-0f)
+//            {
+//                setCellColor(i,j,Color(255,255,255));
+//                continue;
+//            }
+            if(dist <= 0.f)
+            {
+                setCellColor(i,j,Color(static_cast<int>(87 * brightness), static_cast<int>(202 * brightness), static_cast<int>(255 * brightness)));
+            }
+            else
+            {
+                setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(168 * brightness), static_cast<int>(87 * brightness)));
+            }
+        }
+    }
+}
+
+void FluidRenderer::updateGridFromAirSdf()
+{
+    float max = std::max(m_solver->gridSizeI(),m_solver->gridSizeJ());
+
+
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float dist = m_solver->grid().airSdfGrid().at(i,j);
+            float brightness = std::pow(std::abs(dist) / max,0.4);
+//            if(brightness > 1.f)
+//            {
+//                std::cout << "bad fluid sdf " << dist << " at " << i << ' ' << j << '\n';
+//            }
 //            if (std::abs(dist - 10.f) < 1e-0f)
 //            {
 //                setCellColor(i,j,Color(255,255,255));
@@ -861,7 +905,7 @@ void FluidRenderer::updateVectorsSdfGrad()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceSdf = simmath::gradCenteredGrid(static_cast<float>(i) +0.5f,static_cast<float>(j) +0.5f, m_solver->grid().solidSdfGrid());
+            Vertex gridspaceSdf = simmath::gradCenteredGrid(i,j, m_solver->grid().solidSdfGrid());
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceSdf.distFromZero() / SimSettings::dx();
             //float scaleFactor = 1;
@@ -878,7 +922,9 @@ void FluidRenderer::reloadParticlesSolid()
     m_particleVerts.clear();
     for(MarkerParticle &particle : m_solver->markerParticles())
     {
-        addParticle(particle.position,m_markerParticleColor);
+        Color particleColor = particle.material == FluidMaterial::FLUID? m_markerParticleFluidColor :
+                                                                         m_markerParticleAirColor;
+        addParticle(particle.position,particleColor);
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {

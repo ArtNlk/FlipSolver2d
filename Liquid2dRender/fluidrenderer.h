@@ -15,6 +15,7 @@ enum FluidRenderMode : int {RENDER_MATERIAL,
                             RENDER_U,RENDER_V,
                             RENDER_OBSTACLE_SDF,
                             RENDER_FLUID_SDF,
+                            RENDER_AIR_SDF,
                             RENDER_KNOWN_FLAG_U,
                             RENDER_KNOWN_FLAG_V,
                             RENDER_KNOWN_FLAG_CENTERED,
@@ -147,6 +148,7 @@ protected:
     void updateGridFromCenteredKnownFlag();
     void updateGridFromObstacleSdf();
     void updateGridFromFluidSdf();
+    void updateGridFromAirSdf();
     void updateGridFromViscosity();
     void updateGridFromTemperature();
     void updateGridFromConcentration();
@@ -203,7 +205,8 @@ protected:
     static const Color m_sourceColor;
     static const Color m_sinkColor;
     static const Color m_velocityVectorColor;
-    static const Color m_markerParticleColor;
+    static const Color m_markerParticleFluidColor;
+    static const Color m_markerParticleAirColor;
     static const Color m_geometryColor;
 
     static constexpr float m_velocityRangeMax = 50;

@@ -9,6 +9,20 @@ public:
     MultiflipSolver(int extrapRadius = 1, bool vonNeumannNeighbors = false);
 
     void step() override;
+
+    void updateSdf() override;
+
+    void combineSdf();
+
+    void extrapolateSdf(Grid2d<float>& sdfGrid);
+
+    void countParticles() override;
+
+    void reseedParticles() override;
+
+    void seedInitialFluid() override;
+
+    void updateMaterialsFromParticles() override;
 };
 
 #endif // MULTIFLIPSOLVER_H

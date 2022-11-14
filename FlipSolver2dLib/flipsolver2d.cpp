@@ -166,6 +166,7 @@ void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
 
 void FlipSolver::step()
 {
+    updateSdf();
     m_grid.updateLinearFluidViscosityMapping();
     countParticles();
     reseedParticles();
@@ -366,19 +367,19 @@ void FlipSolver::reseedParticles()
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
+            int particleCount = m_grid.fluidParticleCountGrid().at(i,j);
+            if(particleCount > 20)
+            {
+                std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
+            }
+            //std::cout << particleCount << " at " << i << " , " << j << std::endl;
+            int additionalParticles = SimSettings::particlesPerCell() - particleCount;
+            if(additionalParticles <= 0)
+            {
+                continue;
+            }
             if(m_grid.isSource(i,j))
             {
-                int particleCount = m_grid.particleCountGrid().at(i,j);
-                if(particleCount > 20)
-                {
-                    std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
-                }
-                //std::cout << particleCount << " at " << i << " , " << j << std::endl;
-                int additionalParticles = SimSettings::particlesPerCell() - particleCount;
-                if(additionalParticles <= 0)
-                {
-                    continue;
-                }
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
@@ -389,6 +390,18 @@ void FlipSolver::reseedParticles()
                     float temp = m_sources[emitterId].temperature();
                     addMarkerParticle(MarkerParticle{pos,velocity,viscosity,temp,conc});
                 }
+            }
+            else if(m_grid.fluidSdfGrid().at(i,j) < SimSettings::particleScale() * SimSettings::dx())
+            {
+//                for(int p = 0; p < additionalParticles; p++)
+//                {
+//                    Vertex pos = jitteredPosInCell(i,j);
+//                    Vertex velocity = m_grid.fluidVelocityAt(pos);
+//                    float viscosity = m_grid.viscosityAt(pos);
+//                    float conc = m_grid.smokeConcentrationAt(pos);
+//                    float temp = m_grid.temperatureAt(pos);
+//                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity,temp,conc});
+//                }
             }
         }
     }
@@ -935,12 +948,12 @@ Vertex FlipSolver::jitteredPosInCell(int i, int j)
 
 void FlipSolver::countParticles()
 {
-    m_grid.particleCountGrid().fill(0);
+    m_grid.fluidParticleCountGrid().fill(0);
     for(MarkerParticle& p : m_markerParticles)
     {
         int i = std::floor(p.position.x());
         int j = std::floor(p.position.y());
-        m_grid.particleCountGrid().at(i,j) += 1;
+        m_grid.fluidParticleCountGrid().at(i,j) += 1;
 //        if(m_grid.isSolid(i,j))
 //        {
 //            std::cout << "Particle in solid at " << i << "," << j << '\n';
@@ -955,7 +968,7 @@ void FlipSolver::updateMaterialsFromParticles()
     {
         for (int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if(m_grid.particleCountGrid().at(i,j) != 0)
+            if(m_grid.fluidParticleCountGrid().at(i,j) != 0)
             {
                 if(m_grid.isEmpty(i,j))
                 {

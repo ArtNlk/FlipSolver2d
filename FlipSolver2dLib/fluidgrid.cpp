@@ -19,8 +19,10 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_temperature(sizeI, sizeJ, SimSettings::ambientTemp()),
     m_smokeConcentration(sizeI, sizeJ, 0.f),
     m_divergenceControl(sizeI,sizeJ, 0.f),
-    m_particleCounts(sizeI, sizeJ),
+    m_fluidParticleCounts(sizeI, sizeJ),
+    m_airParticleCounts(sizeI, sizeJ),
     m_fluidSdf(sizeI,sizeJ),
+    m_airSdf(sizeI, sizeJ),
     m_validUVelocitySampleCount(0),
     m_validVVelocitySampleCount(0),
     m_fluidCellCount(0)
@@ -455,6 +457,11 @@ Grid2d<float> &MACFluidGrid::fluidSdfGrid()
     return m_fluidSdf;
 }
 
+Grid2d<float> &MACFluidGrid::airSdfGrid()
+{
+    return m_airSdf;
+}
+
 Grid2d<float> &MACFluidGrid::temperatureGrid()
 {
     return m_temperature;
@@ -470,9 +477,14 @@ Grid2d<float> &MACFluidGrid::divergenceControlGrid()
     return m_divergenceControl;
 }
 
-Grid2d<int> &MACFluidGrid::particleCountGrid()
+Grid2d<int> &MACFluidGrid::fluidParticleCountGrid()
 {
-    return m_particleCounts;
+    return m_fluidParticleCounts;
+}
+
+Grid2d<int> &MACFluidGrid::airParticleCountGrid()
+{
+    return m_airParticleCounts;
 }
 
 float MACFluidGrid::solidSdf(int i, int j)
@@ -540,6 +552,11 @@ float MACFluidGrid::temperatureAt(float i, float j)
     return simmath::lerpCenteredGrid(i,j,m_temperature);
 }
 
+float MACFluidGrid::temperatureAt(Vertex &v)
+{
+    return temperature(v.x(),v.y());
+}
+
 void MACFluidGrid::setTemperature(int i, int j, float value)
 {
     m_temperature.setAt(i,j,value);
@@ -553,6 +570,11 @@ float MACFluidGrid::smokeConcentration(int i, int j)
 float MACFluidGrid::smokeConcentrationAt(float i, float j)
 {
     return simmath::lerpCenteredGrid(i,j,m_smokeConcentration);
+}
+
+float MACFluidGrid::smokeConcentrationAt(Vertex v)
+{
+    return smokeConcentrationAt(v.x(),v.y());
 }
 
 void MACFluidGrid::setSmokeConcentration(int i, int j, float value)

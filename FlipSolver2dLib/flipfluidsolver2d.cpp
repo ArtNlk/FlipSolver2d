@@ -8,6 +8,7 @@ FlipFluidSolver::FlipFluidSolver(int extrapRadius, bool vonNeumannNeighbors) :
 
 void FlipFluidSolver::step()
 {
+    updateSdf();
     m_grid.updateLinearFluidViscosityMapping();
     countParticles();
     reseedParticles();
@@ -24,5 +25,4 @@ void FlipFluidSolver::step()
     extrapolateVelocityField(1);
     particleUpdate(prevU, prevV);
     advect();
-    updateSdf();
 }
