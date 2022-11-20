@@ -103,8 +103,16 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
             switch(key)
             {
                 case GLFW_KEY_M:
-                    m_fluidRenderer.gridRenderMode()++;
-                    m_fluidRenderer.updateGrid();
+                    if(mods & GLFW_MOD_SHIFT)
+                    {
+                        m_fluidRenderer.gridRenderMode()--;
+                        m_fluidRenderer.updateGrid();
+                    }
+                    else
+                    {
+                        m_fluidRenderer.gridRenderMode()++;
+                        m_fluidRenderer.updateGrid();
+                    }
                 break;
 
                 case GLFW_KEY_V:

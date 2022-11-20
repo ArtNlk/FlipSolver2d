@@ -297,6 +297,38 @@ void MACFluidGrid::updateValidVLinearMapping()
     m_validVVelocitySampleCount = linearIdx;
 }
 
+Vertex MACFluidGrid::closestSurfacePoint(Vertex &pos, Grid2d<float> &grid)
+{
+    Vertex closestPoint = pos;
+    float value = simmath::lerpCenteredGrid(pos.x(),pos.y(),grid);
+    Vertex grad = simmath::gradCenteredGrid(pos.x(),pos.y(),grid);
+    static const int iterationLimit = 100;
+    static const int internalIterationLimit = 10;
+    for(int i = 0; i < iterationLimit; i++)
+    {
+        float alpha = 1;
+        for(int j = 0; j < internalIterationLimit; j++)
+        {
+            Vertex q = closestPoint - alpha*value*grad;
+            if(std::abs(simmath::lerpCenteredGrid(q.x(),q.y(),grid)) < std::abs(value))
+            {
+                closestPoint = q;
+                value = simmath::lerpCenteredGrid(q.x(),q.y(),grid);
+                grad = simmath::gradCenteredGrid(q.x(),q.y(),grid);
+                if(std::abs(value) < 1e-5f)
+                {
+                    return closestPoint;
+                }
+            }
+            else
+            {
+                alpha *= 0.7f;
+            }
+        }
+    }
+    return closestPoint;
+}
+
 void MACFluidGrid::setFluidU(Index2d index, float value, bool knownStatus)
 {
     m_fluidVelocityGrid.velocityGridU().at(index) = value;
@@ -594,7 +626,7 @@ void MACFluidGrid::setDivergeceControl(int i, int j, float value)
 
 int MACFluidGrid::closestSolidId(int i, int j)
 {
-    Vertex surfacePoint = closestSurfacePoint(Vertex(static_cast<float>(i) + 0.5f,
+    Vertex surfacePoint = closestSolidSurfacePoint(Vertex(static_cast<float>(i) + 0.5f,
                                               static_cast<float>(j) + 0.5f));
     return m_solidId.at(static_cast<int>(surfacePoint.x()),static_cast<int>(surfacePoint.y()));
 }
@@ -620,36 +652,14 @@ std::vector<int> MACFluidGrid::nearValidSolidIds(int i, int j)
     return output;
 }
 
-Vertex MACFluidGrid::closestSurfacePoint(Vertex pos)
+Vertex MACFluidGrid::closestSolidSurfacePoint(Vertex pos)
 {
-    Vertex closestPoint = pos;
-    float sdf = simmath::lerpCenteredGrid(pos.x(),pos.y(),m_solidSdf);
-    Vertex grad = simmath::gradCenteredGrid(pos.x(),pos.y(),m_solidSdf);
-    static const int iterationLimit = 100;
-    static const int internalIterationLimit = 10;
-    for(int i = 0; i < iterationLimit; i++)
-    {
-        float alpha = 1;
-        for(int j = 0; j < internalIterationLimit; j++)
-        {
-            Vertex q = closestPoint - alpha*sdf*grad;
-            if(std::abs(simmath::lerpCenteredGrid(q.x(),q.y(),m_solidSdf)) < std::abs(sdf))
-            {
-                closestPoint = q;
-                sdf = simmath::lerpCenteredGrid(q.x(),q.y(),m_solidSdf);
-                grad = simmath::gradCenteredGrid(q.x(),q.y(),m_solidSdf);
-                if(std::abs(sdf) < 1e-5f)
-                {
-                    return closestPoint;
-                }
-            }
-            else
-            {
-                alpha *= 0.7f;
-            }
-        }
-    }
-    return closestPoint;
+    return closestSurfacePoint(pos,m_solidSdf);
+}
+
+Vertex MACFluidGrid::closesFluidSurfacePoint(Vertex pos)
+{
+    return closestSurfacePoint(pos,m_fluidSdf);
 }
 
 void MACFluidGrid::updateLinearFluidViscosityMapping()

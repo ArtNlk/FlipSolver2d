@@ -3,7 +3,7 @@
     "simType": "multiflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 100,
+    "resolution": 200,
     "fps": 30,
     "maxSubsteps": 10,
     "seed": 0,

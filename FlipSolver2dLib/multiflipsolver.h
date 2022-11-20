@@ -23,6 +23,8 @@ public:
     void seedInitialFluid() override;
 
     void updateMaterialsFromParticles() override;
+
+    void bumpParticles();
 };
 
 #endif // MULTIFLIPSOLVER_H

@@ -89,6 +89,11 @@ float simmath::lerpVGrid(float i, float j, Grid2d<float> &gridV)
     return simmath::lerp(v1,v2,iLerpFactor);
 }
 
+float simmath::lerpCenteredGrid(Vertex &position, Grid2d<float> &grid)
+{
+    return simmath::lerpCenteredGrid(position.x(), position.y(), grid);
+}
+
 float simmath::lerpCenteredGrid(float i, float j, Grid2d<float> &grid)
 {
     i = std::clamp(i,0.f,static_cast<float>(grid.sizeI() - 1));
@@ -291,4 +296,79 @@ float simmath::sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex &pos, void
     float fFactor = normalDerivGrid->at(i,j) * fSign;
     float denom = normal.x() + (normal.y() * aySign);
     return (ax+ay+fFactor)/denom;
+}
+
+Grid2d<float> simmath::calculateCenteredGridCurvature(Grid2d<float> &grid)
+{
+    Grid2d<float> output(grid.sizeI(), grid.sizeJ(), 0.f);
+    Grid2d<float> tempI(grid.sizeI(), grid.sizeJ(), 0.f);
+    Grid2d<float> tempJ(grid.sizeI(), grid.sizeJ(), 0.f);
+
+//    for(int i = 0; i < grid.sizeI(); i++)
+//    {
+//        for(int j = 0; j < grid.sizeJ(); j++)
+//        {
+//            Vertex deriv = simmath::gradCenteredGrid(i,j,grid);
+//            float derivI = deriv.x();
+//            float derivJ = deriv.y();
+//            Vertex secondDeriv = simmath::secondPartialDerivOnedir(i,j,grid);
+//            float secondDerivI = secondDeriv.x();
+//            float secondDerivJ = secondDeriv.y();
+//            float secondDerivIj = simmath::secondPartialDerivIj(i,j,grid);
+
+//            float firstTerm = derivI*derivI*secondDerivJ;
+//            float secondTerm = 2.f*derivI*derivJ*secondDerivIj;
+//            float thirdTerm = derivJ*derivJ*secondDerivI;
+//            float denom = simmath::gradCenteredGrid(i,j,grid).distFromZero();
+//            denom = denom*denom*denom;
+
+//            output.at(i,j) = (firstTerm + secondTerm + thirdTerm) / denom;
+//        }
+//    }
+
+    for(int i = 0; i < grid.sizeI(); i++)
+    {
+        for(int j = 0; j < grid.sizeJ(); j++)
+        {
+            Vertex grad = simmath::gradCenteredGrid(i,j,grid);
+            Vertex normal = grad / grad.distFromZero();
+            tempI.at(i,j) = normal.x();
+            tempJ.at(i,j) = normal.y();
+        }
+    }
+
+    for(int i = 0; i < grid.sizeI(); i++)
+    {
+        for(int j = 0; j < grid.sizeJ(); j++)
+        {
+            output.at(i,j) = simmath::gradCenteredGrid(i,j,tempI).x();
+            output.at(i,j) += simmath::gradCenteredGrid(i,j,tempJ).y();
+        }
+    }
+
+    return output;
+}
+
+Vertex simmath::secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid)
+{
+    float currentValue = grid.at(i,j);
+    float ip1Value = grid.inBounds(i+1,j) ? grid.at(i+1,j) : grid.at(i,j);
+    float im1Value = grid.inBounds(i-1,j) ? grid.at(i-1,j) : grid.at(i,j);
+    float jp1Value = grid.inBounds(i,j+1) ? grid.at(i,j+1) : grid.at(i,j);
+    float jm1Value = grid.inBounds(i,j-1) ? grid.at(i,j-1) : grid.at(i,j);
+
+    float derivI = ip1Value - 2*currentValue + im1Value;
+    float derivJ = jp1Value - 2*currentValue + jm1Value;
+
+    return Vertex(derivI, derivJ);
+}
+
+float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid)
+{
+    float ip1jp1Value = grid.inBounds(i+1,j+1) ? grid.at(i+1,j+1) : grid.at(i,j);
+    float im1jp1Value = grid.inBounds(i-1,j+1) ? grid.at(i-1,j+1) : grid.at(i,j);
+    float ip1jm1Value = grid.inBounds(i+1,j-1) ? grid.at(i+1,j-1) : grid.at(i,j);
+    float im1jm1Value = grid.inBounds(i-1,j-1) ? grid.at(i-1,j-1) : grid.at(i,j);
+
+    return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value);
 }

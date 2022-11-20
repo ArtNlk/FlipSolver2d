@@ -18,6 +18,7 @@ namespace simmath
     float bilinearHat(float x, float y);
     float lerpUGrid(float i, float j, Grid2d<float> &gridU);
     float lerpVGrid(float i, float j, Grid2d<float> &gridV);
+    float lerpCenteredGrid(Vertex &position, Grid2d<float> &grid);
     float lerpCenteredGrid(float i, float j, Grid2d<float> &grid);
     Vertex gradCenteredGrid(int i, int j, Grid2d<float> &grid);
 
@@ -28,6 +29,9 @@ namespace simmath
 
     float normalDerivLinearExapolationUpdate(Grid2d<float> &grid, Vertex& pos, void*);
     float sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex& pos, void* normalDerivGrid);
+    Grid2d<float> calculateCenteredGridCurvature(Grid2d<float>& grid);
+    Vertex secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid);
+    float secondPartialDerivIj(int i, int j, Grid2d<float> &grid);
 }
 
 #endif // FUNCTIONS_H

@@ -127,7 +127,7 @@ void FlipSolver::advect()
         p.position = rk3Integrate(p.position,SimSettings::stepDt());
         if(m_grid.solidSdfAt(p.position.x(),p.position.y()) < 0.f)
         {
-            p.position = m_grid.closestSurfacePoint(p.position);
+            p.position = m_grid.closestSolidSurfacePoint(p.position);
         }
         maxSubsteps = std::max(substepCount,maxSubsteps);
         int pI = simmath::integr(p.position.x());

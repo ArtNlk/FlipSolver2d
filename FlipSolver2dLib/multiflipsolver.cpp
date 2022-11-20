@@ -1,9 +1,12 @@
 #include "multiflipsolver.h"
 #include "flipsolver2d.h"
 #include "fluidcell.h"
+#include "geometry2d.h"
+#include "grid2d.h"
 #include "mathfuncs.h"
 #include "simsettings.h"
 #include <cmath>
+#include <functional>
 #include <limits>
 
 MultiflipSolver::MultiflipSolver(int extrapRadius, bool vonNeumannNeighbors) :
@@ -19,6 +22,7 @@ void MultiflipSolver::step()
     countParticles();
     reseedParticles();
     combineSdf();
+    bumpParticles();
     updateMaterialsFromParticles();
     particleToGrid();
     extrapolateVelocityField(1);
@@ -235,6 +239,65 @@ void MultiflipSolver::updateMaterialsFromParticles()
                 if(m == FluidMaterial::FLUID)
                 {
                     m_grid.setMaterial(i,j,FluidMaterial::EMPTY);
+                }
+            }
+        }
+    }
+}
+
+void MultiflipSolver::bumpParticles()
+{
+    const float escapeRadius = 1.5f;
+    Grid2d<float> curvatureGrid = simmath::calculateCenteredGridCurvature(m_grid.fluidSdfGrid());
+    for(MarkerParticle& p : m_markerParticles)
+    {
+        float sign = p.material == FluidMaterial::FLUID ? -1.f : 1.f;
+        float sdfAtParticle = simmath::lerpCenteredGrid(p.position.x(),p.position.y(),m_grid.fluidSdfGrid());
+        Vertex sdfGradAtParticle = simmath::gradCenteredGrid(p.position.x(),p.position.y(),m_grid.fluidSdfGrid());
+        float d = sdfAtParticle / std::abs(sdfGradAtParticle.distFromZero());
+        if(std::abs(sdfAtParticle) < escapeRadius)
+        {
+            float curvature = simmath::lerpCenteredGrid(p.position, curvatureGrid);
+            const float curvatureMin = 1.f/(SimSettings::dx()*4);
+            const float curvatureMax = 1.f/(SimSettings::dx()*2);
+            float negativeSignCurvature = -sign*curvature;
+            float targetDist = 0.f;
+            if(negativeSignCurvature < curvatureMin)
+            {
+                targetDist = SimSettings::particleScale();
+            }
+
+            if(negativeSignCurvature <= curvatureMax)
+            {
+                if(sign*d < 0)
+                {
+                    Vertex vectorToNearestPoint = m_grid.closesFluidSurfacePoint(p.position) - p.position;
+                    float distToNearestPoint = vectorToNearestPoint.distFromZero();
+                    if(distToNearestPoint > 0)
+                    {
+                        Vertex newPosition = p.position - (targetDist + distToNearestPoint)*
+                                (vectorToNearestPoint/distToNearestPoint);
+                        if(std::isnan(newPosition.x()) || std::isnan(newPosition.y()) || std::isnan(newPosition.z()))
+                        {
+                            std::cout << "Nan in particle bumping";
+                        }
+                        p.position = newPosition;
+                    }
+                }
+                else if(sign*d < targetDist)
+                {
+                    Vertex vectorToNearestPoint = m_grid.closesFluidSurfacePoint(p.position) - p.position;
+                    float distToNearestPoint = vectorToNearestPoint.distFromZero();
+                    if(distToNearestPoint > 0)
+                    {
+                        Vertex newPosition = p.position + (targetDist - distToNearestPoint)*
+                                (vectorToNearestPoint/distToNearestPoint);
+                        if(std::isnan(newPosition.x()) || std::isnan(newPosition.y()) || std::isnan(newPosition.z()))
+                        {
+                            std::cout << "Nan in particle bumping";
+                        }
+                        p.position = newPosition;
+                    }
                 }
             }
         }

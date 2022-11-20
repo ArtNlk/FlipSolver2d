@@ -227,7 +227,9 @@ public:
 
     std::vector<int> nearValidSolidIds(int i, int j);
 
-    Vertex closestSurfacePoint(Vertex pos);
+    Vertex closestSolidSurfacePoint(Vertex pos);
+
+    Vertex closesFluidSurfacePoint(Vertex pos);
 
     void updateLinearFluidViscosityMapping();
 
@@ -251,6 +253,8 @@ protected:
     void updateValidULinearMapping();
 
     void updateValidVLinearMapping();
+
+    Vertex closestSurfacePoint(Vertex &pos, Grid2d<float> &grid);
 
     Grid2d<FluidMaterial> m_materialGrid;
     StaggeredVelocityGrid m_fluidVelocityGrid;

@@ -30,6 +30,13 @@ inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
     return state;
 }
 
+inline FluidRenderMode& operator--(FluidRenderMode& state, int) {
+    int i = static_cast<int>(state)-1;
+    if(i < 0) i = GRID_RENDER_ITER_END - 1;
+    state = static_cast<FluidRenderMode>((i) % GRID_RENDER_ITER_END);
+    return state;
+}
+
 enum VectorRenderMode : int {VECTOR_RENDER_CENTER,VECTOR_RENDER_STAGGERED,VECTOR_RENDER_SDF_GRADIENT,VECTOR_RENDER_ITER_END};
 inline VectorRenderMode& operator++(VectorRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
