@@ -79,8 +79,8 @@ public:
         switch(m_oobStrat)
         {
         case OOB_EXTEND:
-            std::clamp(i, 0,m_sizeI-1);
-            std::clamp(j,0,m_sizeJ -1);
+            i = std::clamp(i, 0,m_sizeI-1);
+            j = std::clamp(j,0,m_sizeJ -1);
             break;
         case OOB_CONST:
             if(!inBounds(i,j))
@@ -197,8 +197,8 @@ public:
         switch(m_oobStrat)
         {
         case OOB_EXTEND:
-            std::clamp(i, 0,m_sizeI-1);
-            std::clamp(j,0,m_sizeJ -1);
+            i = std::clamp(i, 0,m_sizeI-1);
+            j = std::clamp(j,0,m_sizeJ -1);
             break;
         case OOB_CONST:
             if(!inBounds(i,j))
