@@ -1,9 +1,9 @@
 {
   "settings": {
-    "simType": "multiflip",
+    "simType": "flip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 200,
+    "resolution": 100,
     "fps": 30,
     "maxSubsteps": 10,
     "seed": 0,

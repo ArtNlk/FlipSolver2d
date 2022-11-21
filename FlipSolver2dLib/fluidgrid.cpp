@@ -3,16 +3,17 @@
 #include <cmath>
 
 #include "fluidcell.h"
+#include "grid2d.h"
 #include "mathfuncs.h"
 #include "simsettings.h"
 
 MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
-    m_materialGrid(sizeI,sizeJ,FluidMaterial::EMPTY),
+    m_materialGrid(sizeI,sizeJ,FluidMaterial::EMPTY, OOBStrategy::OOB_CONST, FluidMaterial::SINK),
     m_fluidVelocityGrid(sizeI, sizeJ),
     m_airVelocityGrid(sizeI, sizeJ),
-    m_solidSdf(sizeI,sizeJ,0.f),
-    m_knownCenteredParams(sizeI,sizeJ, false),
+    m_solidSdf(sizeI,sizeJ,0.f, OOBStrategy::OOB_EXTEND),
+    m_knownCenteredParams(sizeI,sizeJ, false, OOBStrategy::OOB_CONST, true),
     m_viscosityGrid(sizeI,sizeJ,0.f),
     m_emitterId(sizeI, sizeJ, -1),
     m_solidId(sizeI, sizeJ,-1),
@@ -21,8 +22,8 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_divergenceControl(sizeI,sizeJ, 0.f),
     m_fluidParticleCounts(sizeI, sizeJ),
     m_airParticleCounts(sizeI, sizeJ),
-    m_fluidSdf(sizeI,sizeJ),
-    m_airSdf(sizeI, sizeJ),
+    m_fluidSdf(sizeI,sizeJ, OOBStrategy::OOB_EXTEND),
+    m_airSdf(sizeI, sizeJ, OOBStrategy::OOB_EXTEND),
     m_validUVelocitySampleCount(0),
     m_validVVelocitySampleCount(0),
     m_fluidCellCount(0)
@@ -169,38 +170,32 @@ void MACFluidGrid::setMaterial(int i, int j, FluidMaterial m)
 
 bool MACFluidGrid::isFluid(int i, int j)
 {
-    if(!inBounds(i,j)) return false;
-    return fluidTest(m_materialGrid.at(i,j));
+    return fluidTest(m_materialGrid.getAt(i,j));
 }
 
 bool MACFluidGrid::isStrictFluid(int i, int j)
 {
-    if(!inBounds(i,j)) return false;
-    return strictFluidTest(m_materialGrid.at(i,j));
+    return strictFluidTest(m_materialGrid.getAt(i,j));
 }
 
 bool MACFluidGrid::isSolid(int i, int j)
 {
-    if(!inBounds(i,j)) return false;
-    return solidTest(m_materialGrid.at(i,j));
+    return solidTest(m_materialGrid.getAt(i,j));
 }
 
 bool MACFluidGrid::isEmpty(int i, int j)
 {
-    if(!inBounds(i,j)) return true;
-    return emptyTest(m_materialGrid.at(i,j));
+    return emptyTest(m_materialGrid.getAt(i,j));
 }
 
 bool MACFluidGrid::isSource(int i, int j)
 {
-    if(!inBounds(i,j)) return false;
-    return sourceTest(m_materialGrid.at(i,j));
+    return sourceTest(m_materialGrid.getAt(i,j));
 }
 
 bool MACFluidGrid::isSink(int i, int j)
 {
-    if(!inBounds(i,j)) return true;
-    return sinkTest(m_materialGrid.at(i,j));
+    return sinkTest(m_materialGrid.getAt(i,j));
 }
 
 bool MACFluidGrid::uVelocitySampleInside(int i, int j)

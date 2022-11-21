@@ -72,7 +72,7 @@
         },
         {
         "type": "source",
-        "viscosity": 1,
+        "viscosity": 0.1,
         "verts": [
           [5,10],
           [5,15],

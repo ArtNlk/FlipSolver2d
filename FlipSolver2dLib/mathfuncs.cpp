@@ -62,8 +62,8 @@ float simmath::lerpUGrid(float i, float j, Grid2d<float> &gridU)
     float iLerpFactor = simmath::frac(i);
     float jLerpFactor = simmath::frac(j) < 0.5f ? 0.5f - simmath::frac(j) : simmath::frac(j) - 0.5f;
 
-    float v1 = gridU.inBounds(cell4) ? simmath::lerp(gridU.at(currentCell),gridU.at(cell4),iLerpFactor) : gridU.at(currentCell);
-    float v2 = gridU.inBounds(cell3) ? simmath::lerp(gridU.at(cell2),gridU.at(cell3),iLerpFactor) : v1;
+    float v1 = simmath::lerp(gridU.getAt(currentCell),gridU.getAt(cell4),iLerpFactor);
+    float v2 = simmath::lerp(gridU.getAt(cell2),gridU.getAt(cell3),iLerpFactor);
 
     return simmath::lerp(v1,v2,jLerpFactor);
 }
@@ -83,8 +83,8 @@ float simmath::lerpVGrid(float i, float j, Grid2d<float> &gridV)
     float iLerpFactor = simmath::frac(i) < 0.5f ? 0.5f - simmath::frac(i) : simmath::frac(i) - 0.5f;
     float jLerpFactor = simmath::frac(j);
 
-    float v1 = gridV.inBounds(cell4) ? simmath::lerp(gridV.at(currentCell),gridV.at(cell4),jLerpFactor) : gridV.at(currentCell);
-    float v2 = gridV.inBounds(cell3) ? simmath::lerp(gridV.at(cell2),gridV.at(cell3),jLerpFactor) : v1;
+    float v1 = simmath::lerp(gridV.getAt(currentCell),gridV.getAt(cell4),jLerpFactor);
+    float v2 = simmath::lerp(gridV.getAt(cell2),gridV.getAt(cell3),jLerpFactor);
 
     return simmath::lerp(v1,v2,iLerpFactor);
 }
@@ -109,18 +109,18 @@ float simmath::lerpCenteredGrid(float i, float j, Grid2d<float> &grid)
     float iLerpFactor = simmath::frac(i) < 0.5f ? 0.5f - simmath::frac(i) : simmath::frac(i) - 0.5f;
     float jLerpFactor = simmath::frac(j) < 0.5f ? 0.5f - simmath::frac(j) : simmath::frac(j) - 0.5f;
 
-    float v1 = grid.inBounds(cell4) ? simmath::lerp(grid.at(currentCell),grid.at(cell4),iLerpFactor) : grid.at(currentCell);
-    float v2 = grid.inBounds(cell3) ? simmath::lerp(grid.at(cell2),grid.at(cell3),iLerpFactor) : v1;
+    float v1 = simmath::lerp(grid.getAt(currentCell),grid.getAt(cell4),iLerpFactor);
+    float v2 = simmath::lerp(grid.getAt(cell2),grid.getAt(cell3),iLerpFactor);
 
     return simmath::lerp(v1,v2,jLerpFactor);
 }
 
 Vertex simmath::gradCenteredGrid(int i, int j, Grid2d<float> &grid)
 {
-    float neighborIp1 = grid.inBounds(i+1,j) ? grid.at(i+1,j) : grid.at(i,j);
-    float neighborIm1 = grid.inBounds(i-1,j) ? grid.at(i-1,j) : grid.at(i,j);
-    float neighborJp1 = grid.inBounds(i,j+1) ? grid.at(i,j+1) : grid.at(i,j);
-    float neighborJm1 = grid.inBounds(i,j-1) ? grid.at(i,j-1) : grid.at(i,j);
+    float neighborIp1 = grid.getAt(i+1,j);
+    float neighborIm1 = grid.getAt(i-1,j);
+    float neighborJp1 = grid.getAt(i,j+1);
+    float neighborJm1 = grid.getAt(i,j-1);
 
     float gradI = neighborIp1 - neighborIm1;
     float gradJ = neighborJp1 - neighborJm1;
@@ -253,19 +253,11 @@ float simmath::normalDerivLinearExapolationUpdate(Grid2d<float> &grid, Vertex &p
     bool normalXPositive = normal.x() > 0;
     bool normalYPositive = normal.y() > 0;
     Index2d iNeighborIndex = normalXPositive? Index2d(i-1,j) : Index2d(i+1,j);
-    if(!grid.inBounds(iNeighborIndex))
-    {
-        iNeighborIndex = Index2d(i,j);
-    }
     Index2d jNeighborIndex = normalYPositive? Index2d(i,j-1) : Index2d(i,j+1);
-    if(!grid.inBounds(jNeighborIndex))
-    {
-        jNeighborIndex = Index2d(i,j);
-    }
     float aySign = normalXPositive != normalYPositive? -1 : 1;
 
-    float ax = normal.x() * grid.at(iNeighborIndex);
-    float ay = normal.y() * grid.at(jNeighborIndex) * aySign;
+    float ax = normal.x() * grid.getAt(iNeighborIndex);
+    float ay = normal.y() * grid.getAt(jNeighborIndex) * aySign;
     float denom = normal.x() + (normal.y() * aySign);
     return (ax+ay)/denom;
 }
@@ -278,22 +270,17 @@ float simmath::sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex &pos, void
     Vertex normal = simmath::gradCenteredGrid(i,j,grid).normalized();
     bool normalXPositive = normal.x() > 0;
     bool normalYPositive = normal.y() > 0;
+
     Index2d iNeighborIndex = normalXPositive? Index2d(i-1,j) : Index2d(i+1,j);
-    if(!grid.inBounds(iNeighborIndex))
-    {
-        iNeighborIndex = Index2d(i,j);
-    }
+
     Index2d jNeighborIndex = normalYPositive? Index2d(i,j-1) : Index2d(i,j+1);
-    if(!grid.inBounds(jNeighborIndex))
-    {
-        jNeighborIndex = Index2d(i,j);
-    }
+
     float aySign = normalXPositive != normalYPositive? -1 : 1;
     float fSign = normalXPositive? 1 : -1;
 
-    float ax = normal.x() * grid.at(iNeighborIndex);
-    float ay = normal.y() * grid.at(jNeighborIndex) * aySign;
-    float fFactor = normalDerivGrid->at(i,j) * fSign;
+    float ax = normal.x() * grid.getAt(iNeighborIndex);
+    float ay = normal.y() * grid.getAt(jNeighborIndex) * aySign;
+    float fFactor = normalDerivGrid->getAt(i,j) * fSign;
     float denom = normal.x() + (normal.y() * aySign);
     return (ax+ay+fFactor)/denom;
 }
@@ -352,10 +339,10 @@ Grid2d<float> simmath::calculateCenteredGridCurvature(Grid2d<float> &grid)
 Vertex simmath::secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid)
 {
     float currentValue = grid.at(i,j);
-    float ip1Value = grid.inBounds(i+1,j) ? grid.at(i+1,j) : grid.at(i,j);
-    float im1Value = grid.inBounds(i-1,j) ? grid.at(i-1,j) : grid.at(i,j);
-    float jp1Value = grid.inBounds(i,j+1) ? grid.at(i,j+1) : grid.at(i,j);
-    float jm1Value = grid.inBounds(i,j-1) ? grid.at(i,j-1) : grid.at(i,j);
+    float ip1Value = grid.getAt(i+1,j);
+    float im1Value = grid.getAt(i-1,j);
+    float jp1Value = grid.getAt(i,j+1);
+    float jm1Value = grid.getAt(i,j-1);
 
     float derivI = ip1Value - 2*currentValue + im1Value;
     float derivJ = jp1Value - 2*currentValue + jm1Value;
@@ -365,10 +352,10 @@ Vertex simmath::secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid)
 
 float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid)
 {
-    float ip1jp1Value = grid.inBounds(i+1,j+1) ? grid.at(i+1,j+1) : grid.at(i,j);
-    float im1jp1Value = grid.inBounds(i-1,j+1) ? grid.at(i-1,j+1) : grid.at(i,j);
-    float ip1jm1Value = grid.inBounds(i+1,j-1) ? grid.at(i+1,j-1) : grid.at(i,j);
-    float im1jm1Value = grid.inBounds(i-1,j-1) ? grid.at(i-1,j-1) : grid.at(i,j);
+    float ip1jp1Value = grid.getAt(i+1,j+1);
+    float im1jp1Value = grid.getAt(i-1,j+1);
+    float ip1jm1Value = grid.getAt(i+1,j-1);
+    float im1jm1Value = grid.getAt(i-1,j-1);
 
     return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value);
 }

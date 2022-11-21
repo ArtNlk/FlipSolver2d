@@ -41,8 +41,8 @@ void LiquidRenderApp::init()
     //loadJson("./scenes/test_scene.json");
     //loadJson("./scenes/viscosity_test.json");
     //loadJson("./scenes/smoke_test.json");
-    //loadJson("./scenes/smoke_test_empty.json");
-    loadJson("./scenes/glugging_test.json");
+    loadJson("./scenes/smoke_test_empty.json");
+    //loadJson("./scenes/glugging_test.json");
 
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)

@@ -1,13 +1,14 @@
 #include "staggeredvelocitygrid.h"
 
+#include "grid2d.h"
 #include "mathfuncs.h"
 
 StaggeredVelocityGrid::StaggeredVelocityGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
-    m_velocityGridU(sizeI + 1, sizeJ, 0.f),
-    m_velocityGridV(sizeI, sizeJ + 1, 0.f),
-    m_uSampleValidity(sizeI + 1, sizeJ, false),
-    m_vSampleValidity(sizeI, sizeJ + 1, false)
+    m_velocityGridU(sizeI + 1, sizeJ, 0.f, OOBStrategy::OOB_EXTEND),
+    m_velocityGridV(sizeI, sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND),
+    m_uSampleValidity(sizeI + 1, sizeJ, false, OOBStrategy::OOB_CONST, true),
+    m_vSampleValidity(sizeI, sizeJ + 1, false, OOBStrategy::OOB_CONST, true)
 {
 
 }

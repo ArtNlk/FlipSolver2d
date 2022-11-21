@@ -1,16 +1,23 @@
 #ifndef GRID2D_H
 #define GRID2D_H
 
+#include <algorithm>
 #include <vector>
 
 #include "linearindexable2d.h"
+
+enum OOBStrategy : char {OOB_EXTEND,
+                        OOB_CONST,
+                        OOB_ERROR};
 
 template<class T>
 class Grid2d : public LinearIndexable2d
 {
 public:
-    Grid2d(int sizeI, int sizeJ, T initValue = T()) :
-        LinearIndexable2d(sizeI,sizeJ)
+    Grid2d(int sizeI, int sizeJ, T initValue = T(), OOBStrategy oobStrat = OOB_ERROR, T oobVal = T()) :
+        LinearIndexable2d(sizeI,sizeJ),
+        m_oobStrat(oobStrat),
+        m_oobConst(oobVal)
     {
         m_data.assign(sizeI*sizeJ,initValue);
     }
@@ -20,6 +27,11 @@ public:
         std::swap(m_sizeI,other.m_sizeI);
         std::swap(m_sizeJ,other.m_sizeJ);
         m_data.swap(other.m_data);
+    }
+
+    inline OOBStrategy &oobStrat()
+    {
+        return m_oobStrat;
     }
 
     inline T& at(int i, int j)
@@ -57,10 +69,30 @@ public:
         m_data[linearIndex(i,j)] = value;
     }
 
+    inline T getAt(Index2d index) const
+    {
+        return getAt(index.m_i, index.m_j);
+    }
+
     inline T getAt(int i, int j) const
     {
-        ASSERT_BETWEEN(i,-1,m_sizeI);
-        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        switch(m_oobStrat)
+        {
+        case OOB_EXTEND:
+            std::clamp(i, 0,m_sizeI-1);
+            std::clamp(j,0,m_sizeJ -1);
+            break;
+        case OOB_CONST:
+            if(!inBounds(i,j))
+            {
+                return m_oobConst;
+            }
+            break;
+        case OOB_ERROR:
+            ASSERT_BETWEEN(i,-1,m_sizeI);
+            ASSERT_BETWEEN(j,-1,m_sizeJ);
+            break;
+        }
         return m_data[linearIndex(i,j)];
     }
 
@@ -99,16 +131,25 @@ public:
 
 protected:
     std::vector<T> m_data;
+    OOBStrategy m_oobStrat;
+    T m_oobConst;
 };
 
 template<>
 class Grid2d<bool> : public LinearIndexable2d
 {
 public:
-    Grid2d(int sizeI, int sizeJ, bool initValue = false) :
-        LinearIndexable2d(sizeI,sizeJ)
+    Grid2d(int sizeI, int sizeJ, bool initValue = false, OOBStrategy oobStrat = OOB_ERROR, bool oobVal = false) :
+        LinearIndexable2d(sizeI,sizeJ),
+        m_oobStrat(oobStrat),
+        m_oobConst(oobVal)
     {
         m_data.assign(sizeI*sizeJ,initValue);
+    }
+
+    inline OOBStrategy &oobStrat()
+    {
+        return m_oobStrat;
     }
 
     inline std::vector<bool>::reference at(int i, int j)
@@ -146,10 +187,30 @@ public:
         m_data[linearIndex(i,j)] = value;
     }
 
+    inline bool getAt(Index2d index) const
+    {
+        return getAt(index.m_i, index.m_j);
+    }
+
     inline bool getAt(int i, int j) const
     {
-        ASSERT_BETWEEN(i,-1,m_sizeI);
-        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        switch(m_oobStrat)
+        {
+        case OOB_EXTEND:
+            std::clamp(i, 0,m_sizeI-1);
+            std::clamp(j,0,m_sizeJ -1);
+            break;
+        case OOB_CONST:
+            if(!inBounds(i,j))
+            {
+                return m_oobConst;
+            }
+            break;
+        case OOB_ERROR:
+            ASSERT_BETWEEN(i,-1,m_sizeI);
+            ASSERT_BETWEEN(j,-1,m_sizeJ);
+            break;
+        }
         return m_data[linearIndex(i,j)];
     }
 
@@ -214,6 +275,8 @@ public:
 
 protected:
     std::vector<bool> m_data;
+    OOBStrategy m_oobStrat;
+    bool m_oobConst;
 };
 
 #endif // GRID2D_H
