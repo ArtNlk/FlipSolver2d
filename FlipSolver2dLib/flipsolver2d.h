@@ -24,6 +24,7 @@ struct MarkerParticle
     float temperature;
     float smokeConcentrartion;
     FluidMaterial material = FluidMaterial::FLUID;
+    float testValue = 0.f;
 };
 
 enum SimulationStepStage : int {STAGE_RESEED,
@@ -58,19 +59,21 @@ public:
 
     void init();
 
-    void extrapolateVelocityField(int steps = std::numeric_limits<int>::max());
+    virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
 
     virtual DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
 
     DynamicUpperTriangularSparseMatrix getViscosityMatrix();
 
+    int particleCount();
+
     virtual void project();
 
     void applyViscosity();
 
-    void advect();
+    virtual void advect();
 
-    void particleUpdate(Grid2d<float>& prevU, Grid2d<float>& prevV);
+    virtual void particleUpdate();
 
     virtual void step();
 
@@ -128,13 +131,13 @@ protected:
 
     virtual void countParticles();
 
-    virtual void updateMaterialsFromParticles();
+    virtual void updateMaterials();
 
     void updateVelocityFromSolids();
 
     virtual void applyPressuresToVelocityField(std::vector<double> &pressures);
 
-    Vertex rk3Integrate(Vertex currentPosition, float dt);
+    Vertex rk3Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid);
 
     virtual void particleToGrid();
 

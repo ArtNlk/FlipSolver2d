@@ -7,6 +7,7 @@ Logger::Logger()
 {
     m_filePath = "./FluidSimLog.txt";
     m_logFileStream.open(m_filePath);
+    m_logFileStream.precision(40);
     if(m_logFileStream.fail())
     {
         std::cout << "Error opening log file!";
@@ -165,8 +166,8 @@ Logger &operator<<(Logger &l, const std::vector<int> &v)
 
 Logger &operator<<(Logger &l, const std::string &str)
 {
-    l.stream() << str;
-    return l;
+    //std::cout << str.data() << '\n';
+    return l<<str.data();
 }
 
 Logger &operator<<(Logger &l, const double &v)
@@ -195,6 +196,7 @@ Logger &operator<<(Logger &l, const unsigned int &v)
 
 Logger &operator<<(Logger &l, const char* str)
 {
+    //std::cout << str << '\n';
     l.stream() << str;
     return l;
 }

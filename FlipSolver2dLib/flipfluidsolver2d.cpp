@@ -12,17 +12,21 @@ void FlipFluidSolver::step()
     m_grid.updateLinearFluidViscosityMapping();
     countParticles();
     reseedParticles();
-    updateMaterialsFromParticles();
+    updateMaterials();
     particleToGrid();
-    extrapolateVelocityField(1);
-    Grid2d<float> prevU = m_grid.velocityGridU();
-    Grid2d<float> prevV = m_grid.velocityGridV();
+    extrapolateVelocityField(m_grid.fluidVelocityGridU(),m_grid.knownFluidFlagsGridU(),10);
+    extrapolateVelocityField(m_grid.fluidVelocityGridV(),m_grid.knownFluidFlagsGridV(),10);
+
+    m_grid.savedFluidVelocityGrid().velocityGridU() = m_grid.fluidVelocityGridU();
+    m_grid.savedFluidVelocityGrid().velocityGridV() = m_grid.fluidVelocityGridV();
     applyBodyForces();
     project();
     updateVelocityFromSolids();
-    applyViscosity();
-    project();
-    extrapolateVelocityField(1);
-    particleUpdate(prevU, prevV);
+    //applyViscosity();
+    //project();
+    extrapolateVelocityField(m_grid.fluidVelocityGridU(),m_grid.knownFluidFlagsGridU(),10);
+    extrapolateVelocityField(m_grid.fluidVelocityGridV(),m_grid.knownFluidFlagsGridV(),10);
+
+    particleUpdate();
     advect();
 }

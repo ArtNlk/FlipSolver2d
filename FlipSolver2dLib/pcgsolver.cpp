@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include <cmath>
 #include <sstream>
 #include <vector>
 
@@ -22,9 +23,10 @@ bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::v
     }
     DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
     UpperTriangularMatrix matrix(matrixIn);
+
+    //debug() << "mat=" << matrix;
     std::vector<double> residual = vec;
     std::vector<double> aux = vec;
-    std::vector<double> aux_before = aux;
     applyICPrecond(precond,residual,aux);
     std::vector<double> search = aux;
     double sigma = vsimmath::dot(aux,residual);
@@ -62,36 +64,42 @@ bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::v
 
 void PCGSolver::applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, const std::vector<double> &in, std::vector<double> &out)
 {
-    out = std::vector(in);
+    out = in;
 
     std::vector<SparseRow> &rows = const_cast<DynamicUpperTriangularSparseMatrix&>(precond).data();
 
     for(int i = 0; i < out.size(); i++)
     {
-        auto& currentRow = rows[i];
-        if(precond.getValue(i,i) != 0.0)
+        if(std::abs(precond.getValue(i,i)) > 1e-4)
         {
+            auto& currentRow = rows[i];
             out[i] /= precond.getValue(i,i);
 
             for(int elementIdx = 1; elementIdx < currentRow.size(); elementIdx++)
             {
                 int j = currentRow[elementIdx].first;
-                out[j] = out[j] - precond.getValue(i,j) * out[j];
+                if(j > i)
+                {
+                    out[j] = out[j] - precond.getValue(i,j) * out[i];
+                }
             }
         }
     }
 
     for(int i = out.size() - 1; i >= 0; i--)
     {
-        auto& currentRow = rows[i];
-        if(precond.getValue(i,i) != 0.0)
+        if(std::abs(precond.getValue(i,i)) > 1e-4)
         {
+            auto& currentRow = rows[i];
             for(int elementIdx = 1; elementIdx < currentRow.size(); elementIdx++)
             {
                 int j = currentRow[elementIdx].first;
-                out[i] = out[i] - precond.getValue(i,j) * out[j];
+                if(j>i)
+                {
+                    out[i] = out[i] - precond.getValue(i,j) * out[j];
+                }
             }
-            out[i] *= precond.getValue(i,i);
+            out[i] /= precond.getValue(i,i);
         }
     }
 }
@@ -111,12 +119,18 @@ DynamicUpperTriangularSparseMatrix PCGSolver::calcPrecond(const DynamicUpperTria
         if(rowArray[rowIdx][0].second != 0)
         {
             auto& currentRow = rowArray[rowIdx];
-            double diag = currentRow[0].second;
-            currentRow[0].second = sqrt(diag);
+            if(output.getValue(rowIdx,rowIdx) < matrix.getValue(rowIdx,rowIdx) * safety)
+            {
+                output.setValue(rowIdx,rowIdx,sqrt(matrix.getValue(rowIdx,rowIdx)));
+            }
+            else
+            {
+                output.setValue(rowIdx,rowIdx,sqrt(output.getValue(rowIdx,rowIdx)));
+            }
 
             for(int elementIdx = 1; elementIdx < currentRow.size(); elementIdx++)
             {
-                currentRow[elementIdx].second = currentRow[elementIdx].second / diag;
+                currentRow[elementIdx].second = currentRow[elementIdx].second / output.getValue(rowIdx,rowIdx);
             }
 
             for(int elementIdx = 1; elementIdx < currentRow.size(); elementIdx++)

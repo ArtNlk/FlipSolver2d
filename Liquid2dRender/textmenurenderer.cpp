@@ -12,6 +12,7 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_renderModeTexts.assign(FluidRenderMode::GRID_RENDER_ITER_END,"");
     m_renderModeTexts[FluidRenderMode::RENDER_MATERIAL] = "Render material";
     m_renderModeTexts[FluidRenderMode::RENDER_VELOCITY] = "Render velocity";
+    m_renderModeTexts[FluidRenderMode::RENDER_TEST] = "Render test grid";
     m_renderModeTexts[FluidRenderMode::RENDER_U] = "Render U component";
     m_renderModeTexts[FluidRenderMode::RENDER_V] = "Render V component";
     m_renderModeTexts[FluidRenderMode::RENDER_OBSTACLE_SDF] = "Render obstacle SDF";
@@ -28,12 +29,15 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_vectorRenderModeTexts.assign(VectorRenderMode::VECTOR_RENDER_ITER_END + 1,"");
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER] = "Vector center avg velocity";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_STAGGERED] = "Vector staggered velocity";
-    m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_SDF_GRADIENT] = "Vector SDF gradient";
+    m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER_AIR] = "Vector center avg air velocity";
+    m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_SOLID_SDF_GRADIENT] = "Vector solid SDF gradient";
+    m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_FLUID_SDF_GRADIENT] = "Vector fluid SDF gradient";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_ITER_END] = "Vectors off";
 
     m_particleRenderModeTexts.assign(ParticleRenderMode::PARTICLE_RENDER_ITER_END + 1,"");
     m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_VELOCITY] = "Particle velocity";
     m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_SOLID] = "Particle render solid";
+    m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_TEST_VALUE] = "Particle render test value";
     m_particleRenderModeTexts[ParticleRenderMode::PARTICLE_RENDER_ITER_END] = "Particles off";
 }
 
@@ -62,6 +66,14 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
+    temp = "Particle count: " + std::to_string(m_fluidRenderer.solver()->particleCount());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
     temp = "Domain size (IxJ): " + std::to_string(SimSettings::domainSizeI()) + " x " + std::to_string(SimSettings::domainSizeJ());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
@@ -71,6 +83,30 @@ void TextMenuRenderer::render()
 
     currentTextPos += m_nextLineOffset;
     temp = "Grid size (IxJ): " + std::to_string(SimSettings::gridSizeI()) + " x " + std::to_string(SimSettings::gridSizeJ());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "dX: " + std::to_string(SimSettings::dx());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Fluid density: " + std::to_string(SimSettings::fluidDensity());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Air density: " + std::to_string(SimSettings::airDensity());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -119,6 +155,14 @@ void TextMenuRenderer::render()
 
     currentTextPos += m_nextLineOffset;
     temp = "Step dT: " + std::to_string(SimSettings::stepDt());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Frame dT: " + std::to_string(SimSettings::frameDt());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,

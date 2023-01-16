@@ -16,6 +16,14 @@ public:
     Grid2d<bool>& uSampleValidityGrid();
     Grid2d<bool>& vSampleValidityGrid();
 
+    float &u(int i,int j);
+
+    float &v(int i,int j);
+
+    float getU(int i,int j);
+
+    float getV(int i,int j);
+
     Vertex velocityAt(float i, float j);
     Vertex velocityAt(Vertex position);
 

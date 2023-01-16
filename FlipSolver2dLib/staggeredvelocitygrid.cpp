@@ -33,6 +33,26 @@ Grid2d<bool> &StaggeredVelocityGrid::vSampleValidityGrid()
     return m_vSampleValidity;
 }
 
+float &StaggeredVelocityGrid::u(int i, int j)
+{
+    return m_velocityGridU.at(i,j);
+}
+
+float &StaggeredVelocityGrid::v(int i, int j)
+{
+    return m_velocityGridV.at(i,j);
+}
+
+float StaggeredVelocityGrid::getU(int i, int j)
+{
+    return m_velocityGridU.getAt(i,j);
+}
+
+float StaggeredVelocityGrid::getV(int i, int j)
+{
+    return m_velocityGridV.getAt(i,j);
+}
+
 Vertex StaggeredVelocityGrid::velocityAt(float i, float j)
 {
     return Vertex(simmath::lerpUGrid(i, j, m_velocityGridU),simmath::lerpVGrid(i, j, m_velocityGridV));

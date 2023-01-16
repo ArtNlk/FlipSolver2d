@@ -3,12 +3,17 @@
     "simType": "multiflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 200,
-    "fps": 30,
-    "maxSubsteps": 10,
+    "resolution": 50,
+    "fps": 3000,
+    "maxSubsteps": 1,
+    "density": 1,
+    "airDensity": 0.001,
+    "surfaceTensionFactor": 0.01,
+    "pcgIterLimit": 2500,
     "seed": 0,
     "particlesPerCell": 8,
-    "picRatio": 0.03,
+    "particleScale": 0.6,
+    "picRatio": 1.0,
     "cflNumber": 1,
     "temperatureDecayRate": 0.1,
     "concentrationDecayRate": 0.05,
@@ -28,14 +33,15 @@
       {
         "type": "solid",
         "verts": [
-          [3,0],
-          [3,3],
-          [47,3],
-          [47,0]
+          [0,0],
+          [0,3],
+          [50,3],
+          [50,0]
         ]
       },
           {
         "type": "solid",
+        "enabled": true,
         "verts": [
           [0,0],
           [0,50],
@@ -46,49 +52,49 @@
       {
         "type": "solid",
         "verts": [
-          [3,47],
-          [3,50],
-          [47,50],
-          [47,47]
+          [0,47],
+          [0,50],
+          [50,50],
+          [50,47]
         ]
       },
       {
         "type": "solid",
         "verts": [
-          [13,3],
+          [13,0],
           [20,24],
           [23,24],
-          [36,3]
+          [36,0]
         ]
       },
       {
         "type": "solid",
         "verts": [
-          [13,47],
+          [13,50],
           [20,26],
           [23,26],
-          [36,47]
+          [36,50]
         ]
       },
       {
-        "type": "source",
+        "type": "fluid",
         "viscosity": 0,
         "concentration": 1,
         "verts": [
           [8,3],
-          [8,8],
-          [11,8],
+          [8,15],
+          [11,15],
           [11,3]
         ]
       },
       {
-        "type": "source",
+        "type": "fluid",
         "viscosity": 0,
         "concentration": 1,
         "verts": [
           [8,47],
-          [8,42],
-          [11,42],
+          [8,35],
+          [11,35],
           [11,47]
         ]
       }

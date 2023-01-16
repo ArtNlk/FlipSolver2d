@@ -145,6 +145,10 @@ public:
 
     Vertex fluidVelocityAt(Vertex position);
 
+    Vertex airVelocityAt(float i, float j);
+
+    Vertex airVelocityAt(Vertex position);
+
     float viscosityAt(Vertex position);
 
     Grid2d<FluidMaterial> &materialGrid();
@@ -153,13 +157,25 @@ public:
 
     StaggeredVelocityGrid& airVelocityGrid();
 
-    Grid2d<float> &velocityGridU();
+    StaggeredVelocityGrid& savedFluidVelocityGrid();
 
-    Grid2d<float> &velocityGridV();
+    StaggeredVelocityGrid& savedAirVelocityGrid();
 
-    Grid2d<bool> &knownFlagsGridU();
+    Grid2d<float> &fluidVelocityGridU();
 
-    Grid2d<bool> &knownFlagsGridV();
+    Grid2d<float> &fluidVelocityGridV();
+
+    Grid2d<float> &airVelocityGridU();
+
+    Grid2d<float> &airVelocityGridV();
+
+    Grid2d<bool> &knownFluidFlagsGridU();
+
+    Grid2d<bool> &knownFluidFlagsGridV();
+
+    Grid2d<bool> &knownAirFlagsGridU();
+
+    Grid2d<bool> &knownAirFlagsGridV();
 
     Grid2d<bool> &knownFlagsCenteredParams();
 
@@ -170,6 +186,8 @@ public:
     Grid2d<float> &fluidSdfGrid();
 
     Grid2d<float> &airSdfGrid();
+
+    Grid2d<float> &testGrid();
 
     Grid2d<float> &temperatureGrid();
 
@@ -249,6 +267,10 @@ public:
 
     int solidId(int i, int j);
 
+    float getFaceFractionUSample(int i, int j);
+
+    float getFaceFractionVSample(int i, int j);
+
 protected:  
     void updateValidULinearMapping();
 
@@ -259,6 +281,8 @@ protected:
     Grid2d<FluidMaterial> m_materialGrid;
     StaggeredVelocityGrid m_fluidVelocityGrid;
     StaggeredVelocityGrid m_airVelocityGrid;
+    StaggeredVelocityGrid m_savedFluidVelocityGrid;
+    StaggeredVelocityGrid m_savedAirVelocityGrid;
     Grid2d<float> m_solidSdf;
     Grid2d<bool> m_knownCenteredParams;
     Grid2d<float> m_viscosityGrid;
@@ -271,6 +295,7 @@ protected:
     Grid2d<int> m_airParticleCounts;
     Grid2d<float> m_fluidSdf;
     Grid2d<float> m_airSdf;
+    Grid2d<float> m_testGrid;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;

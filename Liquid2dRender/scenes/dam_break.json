@@ -1,14 +1,18 @@
 {
   "settings": {
-    "simType": "flip",
+    "simType": "multiflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
     "resolution": 100,
     "fps": 30,
-    "maxSubsteps": 10,
+    "density": 1000,
+    "airDensity": 300,
+    "maxSubsteps": 1,
+    "pcgIterLimit": 5000,
     "seed": 0,
     "particlesPerCell": 4,
-    "picRatio": 0.03,
+    "particleScale": 0.8,
+    "picRatio": 1,
     "cflNumber": 5,
     "globalAcceleration": [9.8,0]
   },
@@ -16,6 +20,7 @@
     "objects": [
       {
         "type": "solid",
+        "enabled": true,
         "verts": [
           [47,0],
           [47,50],
@@ -25,15 +30,17 @@
       },
       {
         "type": "solid",
+        "enabled": true,
         "verts": [
-          [3,0],
-          [3,3],
-          [47,3],
-          [47,0]
+          [0,0],
+          [0,3],
+          [50,3],
+          [50,0]
         ]
       },
           {
         "type": "solid",
+        "enabled": false,
         "verts": [
           [0,0],
           [0,50],
@@ -43,16 +50,18 @@
       },
       {
         "type": "solid",
+        "enabled": true,
         "verts": [
-          [3,47],
-          [3,50],
-          [47,50],
-          [47,47]
+          [0,47],
+          [0,50],
+          [50,50],
+          [50,47]
         ]
       },
       {
         "type": "fluid",
         "viscosity": 0,
+        "enabled": true,
         "verts": [
           [25,3],
           [25,13],

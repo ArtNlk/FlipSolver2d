@@ -12,6 +12,7 @@
 
 enum FluidRenderMode : int {RENDER_MATERIAL,
                             RENDER_VELOCITY,
+                            RENDER_TEST,
                             RENDER_U,RENDER_V,
                             RENDER_OBSTACLE_SDF,
                             RENDER_FLUID_SDF,
@@ -37,14 +38,22 @@ inline FluidRenderMode& operator--(FluidRenderMode& state, int) {
     return state;
 }
 
-enum VectorRenderMode : int {VECTOR_RENDER_CENTER,VECTOR_RENDER_STAGGERED,VECTOR_RENDER_SDF_GRADIENT,VECTOR_RENDER_ITER_END};
+enum VectorRenderMode : int {VECTOR_RENDER_CENTER,
+                             VECTOR_RENDER_CENTER_AIR,
+                             VECTOR_RENDER_STAGGERED,
+                             VECTOR_RENDER_SOLID_SDF_GRADIENT,
+                             VECTOR_RENDER_FLUID_SDF_GRADIENT,
+                             VECTOR_RENDER_ITER_END};
 inline VectorRenderMode& operator++(VectorRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
     state = static_cast<VectorRenderMode>((i) % VECTOR_RENDER_ITER_END);
     return state;
 }
 
-enum ParticleRenderMode : int {PARTICLE_RENDER_VELOCITY,PARTICLE_RENDER_SOLID,PARTICLE_RENDER_ITER_END};
+enum ParticleRenderMode : int {PARTICLE_RENDER_VELOCITY,
+                               PARTICLE_RENDER_SOLID,
+                               PARTICLE_RENDER_TEST_VALUE,
+                               PARTICLE_RENDER_ITER_END};
 inline ParticleRenderMode& operator++(ParticleRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
     state = static_cast<ParticleRenderMode>((i) % PARTICLE_RENDER_ITER_END);
@@ -148,6 +157,7 @@ protected:
     void updateParticleVerts();
     void updateGridFromMaterial();
     void updateGridFromVelocity();
+    void updateGridFromTestGrid();
     void updateGridFromUComponent();
     void updateGridFromVComponent();
     void updateGridFromUKnownFlag();
@@ -162,9 +172,12 @@ protected:
     void updateGridFromDivergence();
     void updateVectorsStaggered();
     void updateVectorsCentered();
-    void updateVectorsSdfGrad();
+    void updateVectorsCenteredAir();
+    void updateVectorsSolidSdfGrad();
+    void updateVectorsFluidSdfGrad();
     void reloadParticlesSolid();
     void reloadParticlesVelocity();
+    void reloadParticlesFromTestValue();
     void updateVector(int x, int y, Vertex newVector);
     void setCellVertexColor(int vIndex, Color c);
     void setCellColor(int x, int y, Color c);

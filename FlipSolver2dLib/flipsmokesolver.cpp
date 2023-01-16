@@ -15,18 +15,20 @@ void FlipSmokeSolver::step()
     m_grid.updateLinearFluidViscosityMapping();
     countParticles();
     reseedParticles();
-    updateMaterialsFromParticles();
+    updateMaterials();
     particleToGrid();
-    extrapolateVelocityField(1);
-    Grid2d<float> prevU = m_grid.velocityGridU();
-    Grid2d<float> prevV = m_grid.velocityGridV();
+    extrapolateVelocityField(m_grid.fluidVelocityGridU(),m_grid.knownFluidFlagsGridU(),10);
+    extrapolateVelocityField(m_grid.fluidVelocityGridV(),m_grid.knownFluidFlagsGridV(),10);
+    m_grid.savedFluidVelocityGrid().velocityGridU() = m_grid.fluidVelocityGridU();
+    m_grid.savedFluidVelocityGrid().velocityGridV() = m_grid.fluidVelocityGridV();
     applyBodyForces();
     project();
     updateVelocityFromSolids();
 //    applyViscosity();
 //    project();
-    extrapolateVelocityField(1);
-    particleUpdate(prevU, prevV);
+    extrapolateVelocityField(m_grid.fluidVelocityGridU(),m_grid.knownFluidFlagsGridU(),10);
+    extrapolateVelocityField(m_grid.fluidVelocityGridV(),m_grid.knownFluidFlagsGridV(),10);
+    particleUpdate();
     advect();
 }
 
@@ -38,23 +40,23 @@ void FlipSmokeSolver::applyBodyForces()
     {
         for (int j = 0; j < m_grid.sizeJ() + 1; j++)
         {
-            if(m_grid.velocityGridU().inBounds(i,j))
+            if(m_grid.fluidVelocityGridU().inBounds(i,j))
             {
                 float tempAt = m_grid.temperatureAt(i,static_cast<float>(j) + 0.5f);
                 float tempDiff = tempAt - SimSettings::ambientTemp();
                 float concentration = m_grid.smokeConcentrationAt(i,static_cast<float>(j) + 0.5f);
                 float accelerationU = (alpha * concentration - beta * tempDiff) *
                                         SimSettings::globalAcceleration().x() * SimSettings::stepDt();
-                m_grid.velocityGridU().at(i,j) += accelerationU;
+                m_grid.fluidVelocityGridU().at(i,j) += accelerationU;
             }
-            if(m_grid.velocityGridV().inBounds(i,j))
+            if(m_grid.fluidVelocityGridV().inBounds(i,j))
             {
                 float tempAt = m_grid.temperatureAt(static_cast<float>(i) + 0.5f,j);
                 float tempDiff = tempAt - SimSettings::ambientTemp();
                 float concentration = m_grid.smokeConcentrationAt(static_cast<float>(i) + 0.5f,j);
                 float accelerationV = (alpha * concentration - beta * tempDiff) *
                                         SimSettings::globalAcceleration().y() * SimSettings::stepDt();
-                m_grid.velocityGridV().at(i,j) += accelerationV;
+                m_grid.fluidVelocityGridV().at(i,j) += accelerationV;
             }
         }
     }
@@ -62,20 +64,20 @@ void FlipSmokeSolver::applyBodyForces()
 
 void FlipSmokeSolver::particleToGrid()
 {
-    ASSERT(m_grid.velocityGridU().sizeI() == m_grid.velocityGridU().sizeI() && m_grid.velocityGridU().sizeJ() == m_grid.velocityGridU().sizeJ());
-    ASSERT(m_grid.velocityGridV().sizeI() == m_grid.velocityGridV().sizeI() && m_grid.velocityGridV().sizeJ() == m_grid.velocityGridV().sizeJ());
+    ASSERT(m_grid.fluidVelocityGridU().sizeI() == m_grid.fluidVelocityGridU().sizeI() && m_grid.fluidVelocityGridU().sizeJ() == m_grid.fluidVelocityGridU().sizeJ());
+    ASSERT(m_grid.fluidVelocityGridV().sizeI() == m_grid.fluidVelocityGridV().sizeI() && m_grid.fluidVelocityGridV().sizeJ() == m_grid.fluidVelocityGridV().sizeJ());
 
-    Grid2d<float> uWeights(m_grid.velocityGridU().sizeI(),m_grid.velocityGridU().sizeJ(),1e-10f);
-    Grid2d<float> vWeights(m_grid.velocityGridV().sizeI(),m_grid.velocityGridV().sizeJ(),1e-10f);
+    Grid2d<float> uWeights(m_grid.fluidVelocityGridU().sizeI(),m_grid.fluidVelocityGridU().sizeJ(),1e-10f);
+    Grid2d<float> vWeights(m_grid.fluidVelocityGridV().sizeI(),m_grid.fluidVelocityGridV().sizeJ(),1e-10f);
     Grid2d<float> centeredWeights(m_grid.sizeI(),m_grid.sizeJ(),1e-10f);
 
-    m_grid.velocityGridU().fill(0.f);
-    m_grid.velocityGridV().fill(0.f);
+    m_grid.fluidVelocityGridU().fill(0.f);
+    m_grid.fluidVelocityGridV().fill(0.f);
     m_grid.viscosityGrid().fill(0.f);
     m_grid.temperatureGrid().fill(0.f);
     m_grid.smokeConcentrationGrid().fill(0.f);
-    m_grid.knownFlagsGridU().fill(false);
-    m_grid.knownFlagsGridV().fill(false);
+    m_grid.knownFluidFlagsGridU().fill(false);
+    m_grid.knownFluidFlagsGridV().fill(false);
     m_grid.knownFlagsCenteredParams().fill(false);
 
     for(MarkerParticle &p : m_markerParticles)
@@ -101,8 +103,8 @@ void FlipSmokeSolver::particleToGrid()
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         uWeights.at(iIdx,jIdx) += weightU;
-                        m_grid.velocityGridU().at(iIdx,jIdx) += weightU * (p.velocity.x() * SimSettings::dx());
-                        m_grid.knownFlagsGridU().at(iIdx,jIdx) = true;
+                        m_grid.fluidVelocityGridU().at(iIdx,jIdx) += weightU * (p.velocity.x() * SimSettings::dx());
+                        m_grid.knownFluidFlagsGridU().at(iIdx,jIdx) = true;
                     }
                 }
 
@@ -111,8 +113,8 @@ void FlipSmokeSolver::particleToGrid()
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         vWeights.at(iIdx,jIdx) += weightV;
-                        m_grid.velocityGridV().at(iIdx,jIdx) += weightV * (p.velocity.y() * SimSettings::dx());
-                        m_grid.knownFlagsGridV().at(iIdx,jIdx) = true;
+                        m_grid.fluidVelocityGridV().at(iIdx,jIdx) += weightV * (p.velocity.y() * SimSettings::dx());
+                        m_grid.knownFluidFlagsGridV().at(iIdx,jIdx) = true;
                     }
                 }
 
@@ -135,13 +137,13 @@ void FlipSmokeSolver::particleToGrid()
     {
         for (int j = 0; j < m_grid.sizeJ() + 1; j++)
         {
-            if(m_grid.velocityGridU().inBounds(i,j))
+            if(m_grid.fluidVelocityGridU().inBounds(i,j))
             {
-                m_grid.velocityGridU().at(i,j) /= uWeights.at(i,j);
+                m_grid.fluidVelocityGridU().at(i,j) /= uWeights.at(i,j);
             }
-            if(m_grid.velocityGridV().inBounds(i,j))
+            if(m_grid.fluidVelocityGridV().inBounds(i,j))
             {
-                m_grid.velocityGridV().at(i,j) /= vWeights.at(i,j);
+                m_grid.fluidVelocityGridV().at(i,j) /= vWeights.at(i,j);
             }
             if(centeredWeights.inBounds(i,j))
             {
@@ -221,7 +223,7 @@ void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
 
 void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 {
-    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx());
+    double scale = SimSettings::stepDt() / (SimSettings::fluidDensity() * SimSettings::dx());
 
     for (int i = m_grid.sizeI() - 1; i >= 0; i--)
     {
@@ -239,13 +241,13 @@ void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressur
                 }
                 else
                 {
-                    m_grid.velocityGridU().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexIM1 == -1 ? 0.0 : pressures[fluidIndexIM1]));
+                    m_grid.fluidVelocityGridU().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexIM1 == -1 ? 0.0 : pressures[fluidIndexIM1]));
                 }
-                m_grid.knownFlagsGridU().at(i,j) = true;
+                m_grid.knownFluidFlagsGridU().at(i,j) = true;
             }
             else
             {
-                m_grid.knownFlagsGridU().at(i,j) = false;
+                m_grid.knownFluidFlagsGridU().at(i,j) = false;
             }
 
             //V part
@@ -253,27 +255,27 @@ void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressur
             {
                 if(m_grid.isSolid(i,j-1) || m_grid.isSolid(i,j))
                 {
-                    m_grid.velocityGridV().at(i,j) = 0;//Solids are stationary
+                    m_grid.fluidVelocityGridV().at(i,j) = 0;//Solids are stationary
                 }
                 else
                 {
-                    m_grid.velocityGridV().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexJM1 == -1 ? 0.0 : pressures[fluidIndexJM1]));
+                    m_grid.fluidVelocityGridV().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexJM1 == -1 ? 0.0 : pressures[fluidIndexJM1]));
                 }
-                m_grid.knownFlagsGridV().at(i,j) = true;
+                m_grid.knownFluidFlagsGridV().at(i,j) = true;
             }
             else
             {
-                m_grid.knownFlagsGridV().at(i,j) = false;
+                m_grid.knownFluidFlagsGridV().at(i,j) = false;
             }
         }
     }
 
-    if(anyNanInf(m_grid.velocityGridU().data()))
+    if(anyNanInf(m_grid.fluidVelocityGridU().data()))
     {
         std::cout << "NaN or inf in U vector!\n" << std::flush;
     }
 
-    if(anyNanInf(m_grid.velocityGridV().data()))
+    if(anyNanInf(m_grid.fluidVelocityGridV().data()))
     {
         std::cout << "NaN or inf in V vector!\n" << std::flush;
     }
@@ -283,7 +285,7 @@ DynamicUpperTriangularSparseMatrix FlipSmokeSolver::getPressureProjectionMatrix(
 {
     DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(m_grid.cellCount(),7);
 
-    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
+    double scale = SimSettings::stepDt() / (SimSettings::fluidDensity() * SimSettings::dx() * SimSettings::dx());
 
     for(int i = 0; i <  m_grid.sizeI(); i++)
     {

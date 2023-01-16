@@ -438,6 +438,9 @@ void FluidRenderer::updateGrid()
     case FluidRenderMode::RENDER_VELOCITY:
         updateGridFromVelocity();
         break;
+    case FluidRenderMode::RENDER_TEST:
+        updateGridFromTestGrid();
+        break;
     case FluidRenderMode::RENDER_U:
         updateGridFromUComponent();
         break;
@@ -577,6 +580,28 @@ void FluidRenderer::updateGridFromVelocity()
     }
 }
 
+void FluidRenderer::updateGridFromTestGrid()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            float brightness = m_solver->grid().testGrid().at(i,j);
+            //setCellColor(i,j,Color(brightness,brightness,brightness));
+            if(brightness > 0)
+            {
+                setCellColor(i,j,Color(255,255,255) * brightness);
+            }
+            else
+            {
+                setCellColor(i,j,Color(0,0,255) * -brightness);
+            }
+        }
+    }
+}
+
 void FluidRenderer::updateGridFromUComponent()
 {
 //    auto minMaxValues = std::minmax_element(m_solver->grid().data().begin(),
@@ -625,7 +650,7 @@ void FluidRenderer::updateGridFromUKnownFlag()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            float brightness = m_solver->grid().knownFlagsGridU().at(i,j)? 1.f : 0.f;
+            float brightness = m_solver->grid().knownFluidFlagsGridU().at(i,j)? 1.f : 0.f;
             setCellColor(i,j,Color(brightness,brightness,brightness));
         }
     }
@@ -639,7 +664,7 @@ void FluidRenderer::updateGridFromVKnownFlag()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            float brightness = m_solver->grid().knownFlagsGridV().at(i,j)? 1.f : 0.f;
+            float brightness = m_solver->grid().knownFluidFlagsGridV().at(i,j)? 1.f : 0.f;
             setCellColor(i,j,Color(brightness,brightness,brightness));
         }
     }
@@ -709,13 +734,27 @@ void FluidRenderer::updateGridFromFluidSdf()
 //                setCellColor(i,j,Color(255,255,255));
 //                continue;
 //            }
-            if(dist <= 0.f)
+            if (std::abs(dist / SimSettings::dx()) < 1.f)
             {
-                setCellColor(i,j,Color(static_cast<int>(87 * brightness), static_cast<int>(202 * brightness), static_cast<int>(255 * brightness)));
+                if(dist <= 0.f)
+                {
+                    setCellColor(i,j,Color(static_cast<int>(20 * brightness), static_cast<int>(80 * brightness), static_cast<int>(255 * brightness)));
+                }
+                else
+                {
+                    setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(80 * brightness), static_cast<int>(20 * brightness)));
+                }
             }
             else
             {
-                setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(168 * brightness), static_cast<int>(87 * brightness)));
+                if(dist <= 0.f)
+                {
+                    setCellColor(i,j,Color(static_cast<int>(87 * brightness), static_cast<int>(202 * brightness), static_cast<int>(255 * brightness)));
+                }
+                else
+                {
+                    setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(168 * brightness), static_cast<int>(87 * brightness)));
+                }
             }
         }
     }
@@ -734,22 +773,35 @@ void FluidRenderer::updateGridFromAirSdf()
         {
             float dist = m_solver->grid().airSdfGrid().at(i,j);
             float brightness = std::pow(std::abs(dist) / max,0.4);
+            if(brightness > 1.f)
+            {
+                std::cout << "bad air sdf " << dist << " at " << i << ' ' << j << '\n';
+            }
 //            if(brightness > 1.f)
 //            {
 //                std::cout << "bad fluid sdf " << dist << " at " << i << ' ' << j << '\n';
 //            }
-//            if (std::abs(dist - 10.f) < 1e-0f)
-//            {
-//                setCellColor(i,j,Color(255,255,255));
-//                continue;
-//            }
-            if(dist <= 0.f)
+            if (std::abs(dist / SimSettings::dx()) < 1.f)
             {
-                setCellColor(i,j,Color(static_cast<int>(87 * brightness), static_cast<int>(202 * brightness), static_cast<int>(255 * brightness)));
+                if(dist <= 0.f)
+                {
+                    setCellColor(i,j,Color(static_cast<int>(20 * brightness), static_cast<int>(80 * brightness), static_cast<int>(255 * brightness)));
+                }
+                else
+                {
+                    setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(80 * brightness), static_cast<int>(20 * brightness)));
+                }
             }
             else
             {
-                setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(168 * brightness), static_cast<int>(87 * brightness)));
+                if(dist <= 0.f)
+                {
+                    setCellColor(i,j,Color(static_cast<int>(87 * brightness), static_cast<int>(202 * brightness), static_cast<int>(255 * brightness)));
+                }
+                else
+                {
+                    setCellColor(i,j,Color(static_cast<int>(255 * brightness), static_cast<int>(168 * brightness), static_cast<int>(87 * brightness)));
+                }
             }
         }
     }
@@ -823,13 +875,18 @@ void FluidRenderer::updateVectors()
     case VECTOR_RENDER_STAGGERED:
         updateVectorsStaggered();
         break;
-    case VECTOR_RENDER_SDF_GRADIENT:
-        updateVectorsSdfGrad();
+    case VECTOR_RENDER_CENTER_AIR:
+        updateVectorsCenteredAir();
+        break;
+    case VECTOR_RENDER_SOLID_SDF_GRADIENT:
+        updateVectorsSolidSdfGrad();
+        break;
+    case VECTOR_RENDER_FLUID_SDF_GRADIENT:
+        updateVectorsFluidSdfGrad();
         break;
     case VECTOR_RENDER_ITER_END:
         std::cout << "Invalid vector render mode!";
         break;
-
     }
     updateVectorVerts();
 }
@@ -842,6 +899,9 @@ void FluidRenderer::updateParticles()
         break;
     case PARTICLE_RENDER_SOLID:
         reloadParticlesSolid();
+        break;
+    case PARTICLE_RENDER_TEST_VALUE:
+        reloadParticlesFromTestValue();
         break;
     case PARTICLE_RENDER_ITER_END:
         std::cout << "Invalid particle render mode!";
@@ -883,8 +943,8 @@ void FluidRenderer::updateVectorsCentered()
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceVelocity(simmath::lerpUGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().velocityGridU()),
-                                     simmath::lerpVGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().velocityGridV()));
+            Vertex gridspaceVelocity(simmath::lerpUGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().fluidVelocityGridU()),
+                                     simmath::lerpVGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().fluidVelocityGridV()));
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceVelocity.distFromZero() / SimSettings::dx();
             //float scaleFactor = 1;
@@ -896,7 +956,29 @@ void FluidRenderer::updateVectorsCentered()
     }
 }
 
-void FluidRenderer::updateVectorsSdfGrad()
+void FluidRenderer::updateVectorsCenteredAir()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    Vertex vEnd;
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            Vertex gridspaceVelocity(simmath::lerpUGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().airVelocityGridU()),
+                                     simmath::lerpVGrid(static_cast<float>(i) + 0.5,static_cast<float>(j) + 0.5, m_solver->grid().airVelocityGridV()));
+            //Vertex gridspaceVelocity(1,0);
+            float scaleFactor = gridspaceVelocity.distFromZero() / SimSettings::dx();
+            //float scaleFactor = 1;
+            Vertex newVector = Vertex((gridspaceVelocity.y() / scaleFactor),
+                                       (gridspaceVelocity.x() / scaleFactor));
+            updateVector(i,j,newVector);
+            setVectorColor(i,j,hueColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
+        }
+    }
+}
+
+void FluidRenderer::updateVectorsSolidSdfGrad()
 {
     int gridHeight = m_solver->grid().sizeI();
     int gridWidth = m_solver->grid().sizeJ();
@@ -912,6 +994,27 @@ void FluidRenderer::updateVectorsSdfGrad()
             Vertex newVector = Vertex((gridspaceSdf.y() / scaleFactor),
                                        (gridspaceSdf.x() / scaleFactor));
             updateVector(i,j,newVector);
+        }
+    }
+}
+
+void FluidRenderer::updateVectorsFluidSdfGrad()
+{
+    int gridHeight = m_solver->grid().sizeI();
+    int gridWidth = m_solver->grid().sizeJ();
+    Vertex vEnd;
+    for (int i = 0; i < gridHeight; i++)
+    {
+        for (int j = 0; j < gridWidth; j++)
+        {
+            Vertex gridspaceSdfGrad = simmath::gradCenteredGrid(i,j, m_solver->grid().fluidSdfGrid());
+            //Vertex gridspaceVelocity(1,0);
+            float scaleFactor = gridspaceSdfGrad.distFromZero() / SimSettings::dx();
+            //float scaleFactor = 1;
+            Vertex newVector = Vertex((gridspaceSdfGrad.y() / scaleFactor),
+                                       (gridspaceSdfGrad.x() / scaleFactor));
+            updateVector(i,j,newVector);
+            setVectorColor(i,j,hueColorRamp(gridspaceSdfGrad.distFromZero() / 1.f));
         }
     }
 }
@@ -943,6 +1046,25 @@ void FluidRenderer::reloadParticlesVelocity()
     for(MarkerParticle &particle : m_solver->markerParticles())
     {
         addParticle(particle.position,hueColorRamp(particle.velocity.distFromZero() / m_velocityRangeMax * SimSettings::dx()));
+    }
+    if(m_particleVerts.size() > oldParticlesSize)
+    {
+        setupParticleVerts();
+    }
+    else
+    {
+        updateParticleVerts();
+    }
+}
+
+void FluidRenderer::reloadParticlesFromTestValue()
+{
+    int oldParticlesSize = m_particleVerts.size();
+    m_particleVerts.clear();
+    for(MarkerParticle &particle : m_solver->markerParticles())
+    {
+        Color pColor = Color(particle.testValue,particle.testValue,particle.testValue);
+        addParticle(particle.position,pColor);
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {

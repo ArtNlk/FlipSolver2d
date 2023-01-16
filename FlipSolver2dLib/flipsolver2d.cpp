@@ -32,7 +32,7 @@ void FlipSolver::project()
     //debug() << "Calculated rhs: " << rhs;
     DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
     std::vector<double> pressures(m_grid.cellCount(),0.0);
-    if(!m_pcgSolver.solve(mat,pressures,rhs,200))
+    if(!m_pcgSolver.solve(mat,pressures,rhs,SimSettings::pcgIterLimit()))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
@@ -59,7 +59,7 @@ void FlipSolver::applyViscosity()
     //debug() << "mat=" << mat;
     //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
-    if(!PCGSolver::solve(mat,result,rhs,200))
+    if(!PCGSolver::solve(mat,result,rhs,SimSettings::pcgIterLimit()))
     {
         std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
     }
@@ -88,12 +88,12 @@ void FlipSolver::applyViscosity()
         }
     }
 
-    if(anyNanInf(m_grid.velocityGridU().data()))
+    if(anyNanInf(m_grid.fluidVelocityGridU().data()))
     {
         std::cout << "NaN or inf in U velocity after viscosity!\n" << std::flush;
     }
 
-    if(anyNanInf(m_grid.velocityGridV().data()))
+    if(anyNanInf(m_grid.fluidVelocityGridV().data()))
     {
         std::cout << "NaN or inf in V velocity after viscosity!\n" << std::flush;
     }
@@ -105,26 +105,8 @@ void FlipSolver::advect()
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-//        float substepTime = 0.f;
-//        bool finished = false;
         int substepCount = 0;
-//        while(!finished)
-//        {
-//            Vertex velocity = m_grid.velocityAt(p.position.x(),p.position.y());
-//            float maxSubstepSize = 1.f/(velocity.distFromZero() + 1e-15f);
-//            if(substepTime + maxSubstepSize >= SimSettings::stepDt())
-//            {
-//                maxSubstepSize = SimSettings::stepDt() - substepTime;
-//                finished = true;
-//            }
-//            else if(substepTime + 2.f*maxSubstepSize >= SimSettings::stepDt())
-//            {
-//                maxSubstepSize = 0.5f*(SimSettings::stepDt() - substepTime);
-//            }
-//            substepTime += maxSubstepSize;
-//            substepCount++;
-//        }
-        p.position = rk3Integrate(p.position,SimSettings::stepDt());
+        p.position = rk3Integrate(p.position,SimSettings::stepDt(), m_grid.fluidVelocityGrid());
         if(m_grid.solidSdfAt(p.position.x(),p.position.y()) < 0.f)
         {
             p.position = m_grid.closestSolidSurfacePoint(p.position);
@@ -141,8 +123,10 @@ void FlipSolver::advect()
     std::cout << "Advection done in max " << maxSubsteps << " substeps" << std::endl;
 }
 
-void FlipSolver::particleUpdate(Grid2d<float> &prevU, Grid2d<float> &prevV)
+void FlipSolver::particleUpdate()
 {
+    Grid2d<float>& prevU = m_grid.savedFluidVelocityGrid().velocityGridU();
+    Grid2d<float>& prevV = m_grid.savedFluidVelocityGrid().velocityGridV();
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
@@ -170,18 +154,21 @@ void FlipSolver::step()
     m_grid.updateLinearFluidViscosityMapping();
     countParticles();
     reseedParticles();
-    updateMaterialsFromParticles();
+    updateMaterials();
     particleToGrid();
-    extrapolateVelocityField(1);
-    Grid2d<float> prevU = m_grid.velocityGridU();
-    Grid2d<float> prevV = m_grid.velocityGridV();
+    extrapolateVelocityField(m_grid.fluidVelocityGridU(),m_grid.knownFluidFlagsGridU(),10);
+    extrapolateVelocityField(m_grid.fluidVelocityGridV(),m_grid.knownFluidFlagsGridV(),10);
+    m_grid.savedFluidVelocityGrid().velocityGridU() = m_grid.fluidVelocityGridU();
+    m_grid.savedFluidVelocityGrid().velocityGridV() = m_grid.fluidVelocityGridV();
     applyBodyForces();
     project();
     updateVelocityFromSolids();
     applyViscosity();
     project();
-    extrapolateVelocityField(1);
-    particleUpdate(prevU, prevV);
+    extrapolateVelocityField(m_grid.fluidVelocityGridU(),m_grid.knownFluidFlagsGridU(),10);
+    extrapolateVelocityField(m_grid.fluidVelocityGridV(),m_grid.knownFluidFlagsGridV(),10);
+
+    particleUpdate();
     advect();
 }
 
@@ -192,6 +179,7 @@ void FlipSolver::stepFrame()
         updateInitialFluid();
         seedInitialFluid();
     }
+    m_grid.testGrid().fill(0.f);
     float substepTime = 0.f;
     bool finished = false;
     int substepCount = 0;
@@ -452,7 +440,7 @@ SimulationStepStage FlipSolver::stepStage()
     return m_stepStage;
 }
 
-void FlipSolver::extrapolateVelocityField(int steps)
+void FlipSolver::extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps)
 {
     Grid2d<int> markers(m_grid.sizeI(),m_grid.sizeJ(),std::numeric_limits<int>().max());
     std::queue<Index2d> wavefront;
@@ -461,7 +449,7 @@ void FlipSolver::extrapolateVelocityField(int steps)
     {
         for(int j = 0; j < m_grid.sizeJ(); j++)
         {
-            if(m_grid.knownFlagsGridU().at(i,j))
+            if(flagGrid.at(i,j))
             {
                 markers.at(i,j) = 0;
             }
@@ -497,7 +485,7 @@ void FlipSolver::extrapolateVelocityField(int steps)
         {
             if(markers.at(neighborIndex) < markers.at(index))
             {
-                avg += m_grid.velocityGridU().at(neighborIndex);
+                avg += extrapGrid.at(neighborIndex);
                 count++;
             }
             if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= steps)
@@ -506,124 +494,8 @@ void FlipSolver::extrapolateVelocityField(int steps)
                 wavefront.push(neighborIndex);
             }
         }
-        m_grid.velocityGridU().at(index) = avg / count;
-        m_grid.knownFlagsGridU().at(index) = true;
-
-        wavefront.pop();
-    }
-
-    markers.fill(std::numeric_limits<int>().max());
-
-    //Extrapolate V
-    for(int i = 0; i < m_grid.sizeI(); i++)
-    {
-        for(int j = 0; j < m_grid.sizeJ(); j++)
-        {
-            if(m_grid.knownFlagsGridV().at(i,j))
-            {
-                markers.at(i,j) = 0;
-            }
-        }
-    }
-
-    for(int i = 0; i < m_grid.sizeI(); i++)
-    {
-        for(int j = 0; j < m_grid.sizeJ(); j++)
-        {
-            if(markers.at(i,j) != 0)
-            {
-                for(Index2d& neighborIndex : m_grid.getNeighborhood(i,j,m_extrapolationRadius,m_useVonNeumannNeighborhood))
-                {
-                    if(markers.at(neighborIndex) == 0)
-                    {
-                        markers.at(i,j) = 1;
-                        wavefront.push(Index2d(i,j));
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    while(!wavefront.empty())
-    {
-        Index2d index = wavefront.front();
-        std::vector<Index2d> neighbors = m_grid.getNeighborhood(index,m_extrapolationRadius,m_useVonNeumannNeighborhood);
-        double avg = 0;
-        int count = 0;
-        for(Index2d& neighborIndex : neighbors)
-        {
-            if(markers.at(neighborIndex) < markers.at(index))
-            {
-                avg += m_grid.velocityGridV().at(neighborIndex);
-                count++;
-            }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= steps)
-            {
-                markers.at(neighborIndex) = markers.at(index) + 1;
-                wavefront.push(neighborIndex);
-            }
-        }
-        m_grid.velocityGridV().at(index) = avg / count;
-        m_grid.knownFlagsGridV().at(index) = true;
-
-        wavefront.pop();
-    }
-
-    markers.fill(std::numeric_limits<int>().max());
-
-    //Extrapolate centered parameters (color, viscosity, etc.)
-    for(int i = 0; i < m_grid.sizeI(); i++)
-    {
-        for(int j = 0; j < m_grid.sizeJ(); j++)
-        {
-            if(m_grid.knownFlagsCenteredParams().at(i,j))
-            {
-                markers.at(i,j) = 0;
-            }
-        }
-    }
-
-    for(int i = 0; i < m_grid.sizeI(); i++)
-    {
-        for(int j = 0; j < m_grid.sizeJ(); j++)
-        {
-            if(markers.at(i,j) != 0)
-            {
-                for(Index2d& neighborIndex : m_grid.getNeighborhood(i,j,m_extrapolationRadius,m_useVonNeumannNeighborhood))
-                {
-                    if(markers.at(neighborIndex) == 0)
-                    {
-                        markers.at(i,j) = 1;
-                        wavefront.push(Index2d(i,j));
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    while(!wavefront.empty())
-    {
-        Index2d index = wavefront.front();
-        std::vector<Index2d> neighbors = m_grid.getNeighborhood(index,m_extrapolationRadius,m_useVonNeumannNeighborhood);
-        double avg = 0;
-        int count = 0;
-        for(Index2d& neighborIndex : neighbors)
-        {
-            if(markers.at(neighborIndex) < markers.at(index))
-            {
-                avg += m_grid.viscosityGrid().at(neighborIndex);
-                count++;
-            }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= steps)
-            {
-                markers.at(neighborIndex) = markers.at(index) + 1;
-                wavefront.push(neighborIndex);
-            }
-        }
-        m_grid.viscosityGrid().at(index) = avg / count;
-        m_grid.knownFlagsCenteredParams().at(index) = true;
+        extrapGrid.at(index) = avg / count;
+        flagGrid.at(index) = true;
 
         wavefront.pop();
     }
@@ -633,13 +505,13 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
 {
     DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(m_grid.cellCount(),7);
 
-    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx() * SimSettings::dx());
+    double scale = SimSettings::stepDt() / (SimSettings::fluidDensity() * SimSettings::dx() * SimSettings::dx());
 
     for(int i = 0; i <  m_grid.sizeI(); i++)
     {
         for(int j = 0; j <  m_grid.sizeJ(); j++)
         {
-            if( m_grid.isFluid(i,j))
+            if(m_grid.isFluid(i,j))
             {
                 //X Neighbors
                 if( m_grid.isFluid(i-1,j))
@@ -705,7 +577,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
                 int vBaseIndex = validUSamples;
                 ///swap uip/vjp indexes with current index
                 //U component
-                output.addTo(currLinearIdxU,currLinearIdxU,SimSettings::density());
+                output.addTo(currLinearIdxU,currLinearIdxU,SimSettings::fluidDensity());
 
                 int uImOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexU(i-1,j);
 
@@ -789,7 +661,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
                 float fi = static_cast<float>(i);
                 float fj = static_cast<float>(j);
                 int vBaseIndex = validUSamples;
-                output.addTo(vBaseIndex + currLinearIdxV,vBaseIndex + currLinearIdxV,SimSettings::density());
+                output.addTo(vBaseIndex + currLinearIdxV,vBaseIndex + currLinearIdxV,SimSettings::fluidDensity());
 
                 int vJmOneLinearIdx = m_grid.linearViscosityVelocitySampleIndexV(i,j-1);
 
@@ -879,9 +751,14 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
     return output;
 }
 
+int FlipSolver::particleCount()
+{
+    return m_markerParticles.size();
+}
+
 void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
 {
-    double scale = 1/SimSettings::dx();
+    double scale = 1.f/SimSettings::dx();
 
     for (int i = 0; i < m_grid.sizeI(); i++)
     {
@@ -894,20 +771,20 @@ void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
 
                 if(m_grid.isSolid(i-1,j))
                 {
-                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getFluidU(i,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getFluidU(i,j) - 0.f);
                 }
                 if(m_grid.isSolid(i+1,j))
                 {
-                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getFluidU(i+1,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getFluidU(i+1,j) - 0.f);
                 }
 
                 if(m_grid.isSolid(i,j-1))
                 {
-                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getFluidV(i,j) - 0);
+                    rhs[m_grid.linearIndex(i,j)] -= scale * static_cast<double>(m_grid.getFluidV(i,j) - 0.f);
                 }
                 if(m_grid.isSolid(i,j+1))
                 {
-                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getFluidV(i,j+1) - 0);
+                    rhs[m_grid.linearIndex(i,j)] += scale * static_cast<double>(m_grid.getFluidV(i,j+1) - 0.f);
                 }
             }
         }
@@ -926,13 +803,13 @@ void FlipSolver::calcViscosityRhs(std::vector<double> &rhs)
             if(linearIdxU != -1)
             {
                 float u = m_grid.getFluidU(i,j);
-                rhs[linearIdxU] = SimSettings::density() * u;
+                rhs[linearIdxU] = SimSettings::fluidDensity() * u;
             }
 
             if(linearIdxV != -1)
             {
                 float v = m_grid.getFluidV(i,j);
-                rhs[vBaseIndex + linearIdxV] = SimSettings::density() * v;
+                rhs[vBaseIndex + linearIdxV] = SimSettings::fluidDensity() * v;
             }
         }
     }
@@ -962,7 +839,7 @@ void FlipSolver::countParticles()
     }
 }
 
-void FlipSolver::updateMaterialsFromParticles()
+void FlipSolver::updateMaterials()
 {
     for (int i = 0; i < m_grid.sizeI(); i++)
     {
@@ -1018,7 +895,7 @@ void FlipSolver::updateVelocityFromSolids()
 
 void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 {
-    double scale = SimSettings::stepDt() / (SimSettings::density() * SimSettings::dx());
+    double scale = SimSettings::stepDt() / (SimSettings::fluidDensity() * SimSettings::dx());
 
     for (int i = m_grid.sizeI() - 1; i >= 0; i--)
     {
@@ -1036,12 +913,12 @@ void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
                 }
                 else
                 {
-                    m_grid.velocityGridU().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexIM1 == -1 ? 0.0 : pressures[fluidIndexIM1]));
+                    m_grid.fluidVelocityGridU().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexIM1 == -1 ? 0.0 : pressures[fluidIndexIM1]));
                 }
             }
             else
             {
-                m_grid.knownFlagsGridU().at(i,j) = false;
+                m_grid.knownFluidFlagsGridU().at(i,j) = false;
             }
 
             //V part
@@ -1049,54 +926,54 @@ void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
             {
                 if(m_grid.isSolid(i,j-1) || m_grid.isSolid(i,j))
                 {
-                    m_grid.velocityGridV().at(i,j) = 0;//Solids are stationary
+                    m_grid.fluidVelocityGridV().at(i,j) = 0;//Solids are stationary
                 }
                 else
                 {
-                    m_grid.velocityGridV().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexJM1 == -1 ? 0.0 : pressures[fluidIndexJM1]));
+                    m_grid.fluidVelocityGridV().at(i,j) -= scale * (fluidIndex == -1 ? 0.0 : pressures[fluidIndex] - (fluidIndexJM1 == -1 ? 0.0 : pressures[fluidIndexJM1]));
                 }
             }
             else
             {
-                m_grid.knownFlagsGridV().at(i,j) = false;
+                m_grid.knownFluidFlagsGridV().at(i,j) = false;
             }
         }
     }
 
-    if(anyNanInf(m_grid.velocityGridU().data()))
+    if(anyNanInf(m_grid.fluidVelocityGridU().data()))
     {
         std::cout << "NaN or inf in U vector!\n" << std::flush;
     }
 
-    if(anyNanInf(m_grid.velocityGridV().data()))
+    if(anyNanInf(m_grid.fluidVelocityGridV().data()))
     {
         std::cout << "NaN or inf in V vector!\n" << std::flush;
     }
 }
 
-Vertex FlipSolver::rk3Integrate(Vertex currentPosition, float dt)
+Vertex FlipSolver::rk3Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid)
 {
-    Vertex k1 = m_grid.fluidVelocityAt(currentPosition);
-    Vertex k2 = m_grid.fluidVelocityAt(currentPosition + 1.f/2.f * dt * k1);
-    Vertex k3 = m_grid.fluidVelocityAt(currentPosition + 3.f/4.f * dt * k2);
+    Vertex k1 = grid.velocityAt(currentPosition);
+    Vertex k2 = grid.velocityAt(currentPosition + 1.f/2.f * dt * k1);
+    Vertex k3 = grid.velocityAt(currentPosition + 3.f/4.f * dt * k2);
 
     return currentPosition + (2.f/9.f) * dt * k1 + (3.f/9.f) * dt * k2 + (4.f/9.f) * dt * k3;
 }
 
 void FlipSolver::particleToGrid()
 {
-    ASSERT(m_grid.velocityGridU().sizeI() == m_grid.velocityGridU().sizeI() && m_grid.velocityGridU().sizeJ() == m_grid.velocityGridU().sizeJ());
-    ASSERT(m_grid.velocityGridV().sizeI() == m_grid.velocityGridV().sizeI() && m_grid.velocityGridV().sizeJ() == m_grid.velocityGridV().sizeJ());
+    ASSERT(m_grid.fluidVelocityGridU().sizeI() == m_grid.fluidVelocityGridU().sizeI() && m_grid.fluidVelocityGridU().sizeJ() == m_grid.fluidVelocityGridU().sizeJ());
+    ASSERT(m_grid.fluidVelocityGridV().sizeI() == m_grid.fluidVelocityGridV().sizeI() && m_grid.fluidVelocityGridV().sizeJ() == m_grid.fluidVelocityGridV().sizeJ());
 
-    Grid2d<float> uWeights(m_grid.velocityGridU().sizeI(),m_grid.velocityGridU().sizeJ(),1e-10f);
-    Grid2d<float> vWeights(m_grid.velocityGridV().sizeI(),m_grid.velocityGridV().sizeJ(),1e-10f);
+    Grid2d<float> uWeights(m_grid.fluidVelocityGridU().sizeI(),m_grid.fluidVelocityGridU().sizeJ(),1e-10f);
+    Grid2d<float> vWeights(m_grid.fluidVelocityGridV().sizeI(),m_grid.fluidVelocityGridV().sizeJ(),1e-10f);
     Grid2d<float> centeredWeights(m_grid.sizeI(),m_grid.sizeJ(),1e-10f);
 
-    m_grid.velocityGridU().fill(0.f);
-    m_grid.velocityGridV().fill(0.f);
+    m_grid.fluidVelocityGridU().fill(0.f);
+    m_grid.fluidVelocityGridV().fill(0.f);
     m_grid.viscosityGrid().fill(0.f);
-    m_grid.knownFlagsGridU().fill(false);
-    m_grid.knownFlagsGridV().fill(false);
+    m_grid.knownFluidFlagsGridU().fill(false);
+    m_grid.knownFluidFlagsGridV().fill(false);
     m_grid.knownFlagsCenteredParams().fill(false);
     m_grid.smokeConcentrationGrid().fill(0.f);
     m_grid.temperatureGrid().fill(0);
@@ -1124,8 +1001,8 @@ void FlipSolver::particleToGrid()
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         uWeights.at(iIdx,jIdx) += weightU;
-                        m_grid.velocityGridU().at(iIdx,jIdx) += weightU * (p.velocity.x() * SimSettings::dx());
-                        m_grid.knownFlagsGridU().at(iIdx,jIdx) = true;
+                        m_grid.fluidVelocityGridU().at(iIdx,jIdx) += weightU * (p.velocity.x() * SimSettings::dx());
+                        m_grid.knownFluidFlagsGridU().at(iIdx,jIdx) = true;
                     }
                 }
 
@@ -1134,8 +1011,8 @@ void FlipSolver::particleToGrid()
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         vWeights.at(iIdx,jIdx) += weightV;
-                        m_grid.velocityGridV().at(iIdx,jIdx) += weightV * (p.velocity.y() * SimSettings::dx());
-                        m_grid.knownFlagsGridV().at(iIdx,jIdx) = true;
+                        m_grid.fluidVelocityGridV().at(iIdx,jIdx) += weightV * (p.velocity.y() * SimSettings::dx());
+                        m_grid.knownFluidFlagsGridV().at(iIdx,jIdx) = true;
                     }
                 }
 
@@ -1158,13 +1035,13 @@ void FlipSolver::particleToGrid()
     {
         for (int j = 0; j < m_grid.sizeJ() + 1; j++)
         {
-            if(m_grid.velocityGridU().inBounds(i,j))
+            if(m_grid.fluidVelocityGridU().inBounds(i,j))
             {
-                m_grid.velocityGridU().at(i,j) /= uWeights.at(i,j);
+                m_grid.fluidVelocityGridU().at(i,j) /= uWeights.at(i,j);
             }
-            if(m_grid.velocityGridV().inBounds(i,j))
+            if(m_grid.fluidVelocityGridV().inBounds(i,j))
             {
-                m_grid.velocityGridV().at(i,j) /= vWeights.at(i,j);
+                m_grid.fluidVelocityGridV().at(i,j) /= vWeights.at(i,j);
             }
             if(m_grid.knownFlagsCenteredParams().inBounds(i,j))
             {
@@ -1189,8 +1066,8 @@ void FlipSolver::applyBodyForces()
     {
         for (int j = 0; j < m_grid.sizeJ() + 1; j++)
         {
-            if(m_grid.velocityGridU().inBounds(i,j)) m_grid.velocityGridU().at(i,j) += SimSettings::stepDt() * SimSettings::globalAcceleration().x();
-            if(m_grid.velocityGridV().inBounds(i,j)) m_grid.velocityGridV().at(i,j) += SimSettings::stepDt() * SimSettings::globalAcceleration().y();
+            if(m_grid.fluidVelocityGridU().inBounds(i,j)) m_grid.fluidVelocityGridU().at(i,j) += SimSettings::stepDt() * SimSettings::globalAcceleration().x();
+            if(m_grid.fluidVelocityGridV().inBounds(i,j)) m_grid.fluidVelocityGridV().at(i,j) += SimSettings::stepDt() * SimSettings::globalAcceleration().y();
         }
     }
 }

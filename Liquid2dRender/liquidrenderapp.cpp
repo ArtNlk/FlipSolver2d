@@ -41,8 +41,8 @@ void LiquidRenderApp::init()
     //loadJson("./scenes/test_scene.json");
     //loadJson("./scenes/viscosity_test.json");
     //loadJson("./scenes/smoke_test.json");
-    loadJson("./scenes/smoke_test_empty.json");
-    //loadJson("./scenes/glugging_test.json");
+    //loadJson("./scenes/smoke_test_empty.json");
+    loadJson("./scenes/glugging_test.json");
 
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
@@ -190,7 +190,7 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                 {
                     if(mods & GLFW_MOD_SHIFT)
                     {
-                        m_solver->step();
+                        m_solver->stepFrame();
                         m_fluidRenderer.update();
                         render();
                     }
@@ -265,11 +265,20 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::frameDt() = 1.f / SimSettings::fps();
     SimSettings::maxSubsteps() = tryGetValue(settingsJson,"maxSubsteps",30);
     SimSettings::stepDt() = SimSettings::frameDt() / SimSettings::maxSubsteps();
-    SimSettings::density() = tryGetValue(settingsJson,"density",0.1f);
+    SimSettings::fluidDensity() = tryGetValue(settingsJson,"density",0.1f);
+    SimSettings::airDensity() = tryGetValue(settingsJson,"airDensity",SimSettings::fluidDensity() * 0.001f);
     SimSettings::randomSeed() = tryGetValue(settingsJson,"seed",0);
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
     SimSettings::cflNumber() = tryGetValue(settingsJson,"cflNumber",10);
     SimSettings::picRatio() = tryGetValue(settingsJson,"picRatio",0.03);
+    SimSettings::ambientTemp() = tryGetValue(settingsJson,"ambientTemperature",273.0f);
+    std::pair<float,float> v = tryGetValue(settingsJson,"globalAcceleration",std::pair(9.8,0.f));
+    SimSettings::globalAcceleration() = Vertex(v.first,v.second);
+    SimSettings::tempDecayRate() = tryGetValue(settingsJson,"temperatureDecayRate",0.0);
+    SimSettings::concentrartionDecayRate() = tryGetValue(settingsJson,"concentrationDecayRate",0.0);
+    SimSettings::particleScale() = tryGetValue(settingsJson,"particleScale",0.8);
+    SimSettings::surfaceTensionFactor() = tryGetValue(settingsJson,"surfaceTensionFactor",0.0);
+    SimSettings::pcgIterLimit() = tryGetValue(settingsJson,"pcgIterLimit",200);
 
     std::string simTypeName = settingsJson["simType"].get<std::string>();
     if(simTypeName == "fluid")
@@ -285,12 +294,6 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
         SimSettings::simMethod() = SimulationMethod::SIMULATION_MULTFLIP;
     }
 
-    SimSettings::ambientTemp() = tryGetValue(settingsJson,"ambientTemperature",273.0f);
-    std::pair<float,float> v = tryGetValue(settingsJson,"globalAcceleration",std::pair(9.8,0.f));
-    SimSettings::globalAcceleration() = Vertex(v.first,v.second);
-    SimSettings::tempDecayRate() = tryGetValue(settingsJson,"temperatureDecayRate",0.0);
-    SimSettings::concentrartionDecayRate() = tryGetValue(settingsJson,"concentrationDecayRate",0.0);
-    SimSettings::particleScale() = tryGetValue(settingsJson,"particleScale",0.4);
     if(SimSettings::domainSizeI() > SimSettings::domainSizeJ())
     {
         SimSettings::dx() = static_cast<float>(SimSettings::domainSizeI()) /
@@ -364,28 +367,34 @@ Sink LiquidRenderApp::sinkFromJson(json sinkJson)
     return Sink(div,geo);
 }
 
-void LiquidRenderApp::addObjectFromJson(json ojectJson)
+void LiquidRenderApp::addObjectFromJson(json objectJson)
 {
-    std::string geoType = ojectJson["type"].get<std::string>();
+    std::string geoType = objectJson["type"].get<std::string>();
+
+    bool enabled = tryGetValue(objectJson,"enabled",true);
+    if(!enabled)
+    {
+        return;
+    }
 
     if(geoType == "solid")
     {
-        Obstacle o = obstacleFromJson(ojectJson);
+        Obstacle o = obstacleFromJson(objectJson);
         m_solver->addGeometry(o);
     }
     else if(geoType == "source")
     {
-        Emitter e = emitterFromJson(ojectJson);
+        Emitter e = emitterFromJson(objectJson);
         m_solver->addSource(e);
     }
     else if(geoType == "sink")
     {
-        Sink s = sinkFromJson(ojectJson);
+        Sink s = sinkFromJson(objectJson);
         m_solver->addSink(s);
     }
     else if(geoType == "fluid")
     {
-        Emitter e = emitterFromJson(ojectJson);
+        Emitter e = emitterFromJson(objectJson);
         m_solver->addInitialFluid(e);
     }
 }

@@ -30,9 +30,14 @@ public:
         return m_instance.m_dx;
     }
 
-    static inline double& density()
+    static inline double& fluidDensity()
     {
-        return m_instance.m_density;
+        return m_instance.m_fluidDensity;
+    }
+
+    static inline double& airDensity()
+    {
+        return m_instance.m_airDensity;
     }
 
     static inline unsigned int& randomSeed()
@@ -120,13 +125,24 @@ public:
         return m_instance.m_particleScale;
     }
 
+    static inline int& pcgIterLimit()
+    {
+        return m_instance.m_pcgIterLimit;
+    }
+
+    static inline float& surfaceTensionFactor()
+    {
+        return m_instance.m_surfaceTensionFactor;
+    }
+
 protected:
     static SimSettings m_instance;
 
     float m_stepDt;
     float m_frameDt;
     double m_dx;
-    double m_density;
+    double m_fluidDensity;
+    double m_airDensity;
     unsigned int m_seed;
     int m_particlesPerCell;
     Vertex m_globalAcceleration;
@@ -143,6 +159,8 @@ protected:
     float m_temperatureDecayRate;
     float m_concentrationDecayRate;
     float m_particleScale;
+    int m_pcgIterLimit;
+    float m_surfaceTensionFactor;
     SimulationMethod m_simType;
 };
 

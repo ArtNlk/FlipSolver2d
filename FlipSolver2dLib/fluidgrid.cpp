@@ -12,18 +12,21 @@ MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     m_materialGrid(sizeI,sizeJ,FluidMaterial::EMPTY, OOBStrategy::OOB_CONST, FluidMaterial::SINK),
     m_fluidVelocityGrid(sizeI, sizeJ),
     m_airVelocityGrid(sizeI, sizeJ),
+    m_savedFluidVelocityGrid(sizeI, sizeJ),
+    m_savedAirVelocityGrid(sizeI, sizeJ),
     m_solidSdf(sizeI,sizeJ,0.f, OOBStrategy::OOB_EXTEND),
     m_knownCenteredParams(sizeI,sizeJ, false, OOBStrategy::OOB_CONST, true),
-    m_viscosityGrid(sizeI,sizeJ,0.f),
+    m_viscosityGrid(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND),
     m_emitterId(sizeI, sizeJ, -1),
     m_solidId(sizeI, sizeJ,-1),
     m_temperature(sizeI, sizeJ, SimSettings::ambientTemp()),
-    m_smokeConcentration(sizeI, sizeJ, 0.f),
-    m_divergenceControl(sizeI,sizeJ, 0.f),
+    m_smokeConcentration(sizeI, sizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
+    m_divergenceControl(sizeI,sizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
     m_fluidParticleCounts(sizeI, sizeJ),
     m_airParticleCounts(sizeI, sizeJ),
-    m_fluidSdf(sizeI,sizeJ, OOBStrategy::OOB_EXTEND),
-    m_airSdf(sizeI, sizeJ, OOBStrategy::OOB_EXTEND),
+    m_fluidSdf(sizeI,sizeJ, 0.f, OOBStrategy::OOB_EXTEND),
+    m_airSdf(sizeI, sizeJ, 0.f, OOBStrategy::OOB_EXTEND),
+    m_testGrid(sizeI, sizeJ, 0.f),
     m_validUVelocitySampleCount(0),
     m_validVVelocitySampleCount(0),
     m_fluidCellCount(0)
@@ -386,22 +389,22 @@ void MACFluidGrid::getSize(int &sizeI, int &sizeJ) const
 
 float MACFluidGrid::getFluidU(int i, int j)
 {
-    return m_fluidVelocityGrid.velocityGridU().at(i,j);
+    return m_fluidVelocityGrid.velocityGridU().getAt(i,j);
 }
 
 float MACFluidGrid::getFluidV(int i, int j)
 {
-    return m_fluidVelocityGrid.velocityGridV().at(i,j);
+    return m_fluidVelocityGrid.velocityGridV().getAt(i,j);
 }
 
 float MACFluidGrid::getAirU(int i, int j)
 {
-    return m_airVelocityGrid.velocityGridU().at(i,j);
+    return m_airVelocityGrid.velocityGridU().getAt(i,j);
 }
 
 float MACFluidGrid::getAirV(int i, int j)
 {
-    return m_airVelocityGrid.velocityGridV().at(i,j);
+    return m_airVelocityGrid.velocityGridV().getAt(i,j);
 }
 
 int MACFluidGrid::cellCount() const
@@ -424,6 +427,16 @@ Vertex MACFluidGrid::fluidVelocityAt(Vertex position)
     return m_fluidVelocityGrid.velocityAt(position.x(),position.y());
 }
 
+Vertex MACFluidGrid::airVelocityAt(float i, float j)
+{
+    return m_airVelocityGrid.velocityAt(i,j);
+}
+
+Vertex MACFluidGrid::airVelocityAt(Vertex position)
+{
+    return airVelocityAt(position.x(), position.y());
+}
+
 float MACFluidGrid::viscosityAt(Vertex position)
 {
     return simmath::lerpCenteredGrid(position.x(), position.y(), m_viscosityGrid);
@@ -444,24 +457,54 @@ StaggeredVelocityGrid &MACFluidGrid::airVelocityGrid()
     return m_airVelocityGrid;
 }
 
-Grid2d<float> &MACFluidGrid::velocityGridU()
+StaggeredVelocityGrid &MACFluidGrid::savedFluidVelocityGrid()
+{
+    return m_savedFluidVelocityGrid;
+}
+
+StaggeredVelocityGrid &MACFluidGrid::savedAirVelocityGrid()
+{
+    return m_savedAirVelocityGrid;
+}
+
+Grid2d<float> &MACFluidGrid::fluidVelocityGridU()
 {
     return m_fluidVelocityGrid.velocityGridU();
 }
 
-Grid2d<float> &MACFluidGrid::velocityGridV()
+Grid2d<float> &MACFluidGrid::fluidVelocityGridV()
 {
     return m_fluidVelocityGrid.velocityGridV();
 }
 
-Grid2d<bool> &MACFluidGrid::knownFlagsGridU()
+Grid2d<float> &MACFluidGrid::airVelocityGridU()
+{
+    return m_airVelocityGrid.velocityGridU();
+}
+
+Grid2d<float> &MACFluidGrid::airVelocityGridV()
+{
+    return m_airVelocityGrid.velocityGridV();
+}
+
+Grid2d<bool> &MACFluidGrid::knownFluidFlagsGridU()
 {
     return m_fluidVelocityGrid.uSampleValidityGrid();
 }
 
-Grid2d<bool> &MACFluidGrid::knownFlagsGridV()
+Grid2d<bool> &MACFluidGrid::knownFluidFlagsGridV()
 {
     return m_fluidVelocityGrid.vSampleValidityGrid();
+}
+
+Grid2d<bool> &MACFluidGrid::knownAirFlagsGridU()
+{
+    return m_airVelocityGrid.uSampleValidityGrid();
+}
+
+Grid2d<bool> &MACFluidGrid::knownAirFlagsGridV()
+{
+    return m_airVelocityGrid.vSampleValidityGrid();
 }
 
 Grid2d<bool> &MACFluidGrid::knownFlagsCenteredParams()
@@ -487,6 +530,11 @@ Grid2d<float> &MACFluidGrid::fluidSdfGrid()
 Grid2d<float> &MACFluidGrid::airSdfGrid()
 {
     return m_airSdf;
+}
+
+Grid2d<float> &MACFluidGrid::testGrid()
+{
+    return m_testGrid;
 }
 
 Grid2d<float> &MACFluidGrid::temperatureGrid()
@@ -717,4 +765,73 @@ void MACFluidGrid::setSolidId(int i, int j, int solidId)
 int MACFluidGrid::solidId(int i, int j)
 {
     return m_solidId.at(i,j);
+}
+
+float MACFluidGrid::getFaceFractionUSample(int i, int j)
+{
+    float sdfCurrent = m_fluidSdf.getAt(i,j);
+    float sdfAtIm1 = m_fluidSdf.getAt(i-1,j);
+
+    auto calcD = [this,i,j](float sdfCurrent, float sdfneg)
+    {
+        float dxSqrd = SimSettings::dx() * SimSettings::dx();
+        float deltaSqrd = (sdfCurrent - sdfneg) * (sdfCurrent - sdfneg);
+        if(dxSqrd < deltaSqrd)
+        {
+            return 0.0001f;
+        }
+        float result = sqrt(dxSqrd - deltaSqrd);
+        if(std::isnan(result) || std::isinf(result))
+        {
+            std::cout << "Nan U d calculation!\n";
+        }
+        return result;
+    };
+
+    float d = calcD(sdfCurrent,sdfAtIm1);
+    float result = std::clamp(0.5f - (sdfAtIm1 + sdfCurrent) / (2.f * d),0.f,1.f);
+//    if(result < 0.1f)
+//    {
+//        return 0;
+//    }
+    if(std::isnan(result) || std::isinf(result))
+    {
+        std::cout << "Bad U face fraction!\n";
+    }
+
+    return result;
+}
+
+float MACFluidGrid::getFaceFractionVSample(int i, int j)
+{
+    float sdfCurrent = m_fluidSdf.getAt(i,j);
+    float sdfAtJm1 = m_fluidSdf.getAt(i,j-1);
+
+    auto calcD = [this,i,j](float sdfCurrent, float sdfneg)
+    {
+        float dxSqrd = SimSettings::dx() * SimSettings::dx();
+        float deltaSqrd = (sdfCurrent - sdfneg) * (sdfCurrent - sdfneg);
+        if(dxSqrd < deltaSqrd)
+        {
+            return 0.0001f;
+        }
+        float result = sqrt(dxSqrd - deltaSqrd);
+        if(std::isnan(result) || std::isinf(result))
+        {
+            std::cout << "Nan V d calculation!\n";
+        }
+        return result;
+    };
+
+    float d = calcD(sdfCurrent,sdfAtJm1);
+    float result = std::clamp(0.5f - (sdfAtJm1 + sdfCurrent) / (2.f * d), 0.f, 1.f);
+//    if(result < 0.1f)
+//    {
+//        return 0;
+//    }
+    if(std::isnan(result) || std::isinf(result))
+    {
+        std::cout << "Bad V face fraction!\n";
+    }
+    return result;
 }

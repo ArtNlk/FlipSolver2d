@@ -1,6 +1,7 @@
 #include "dynamicuppertriangularsparsematrix.h"
 
 #include <algorithm>
+#include <optional>
 
 #include "mathfuncs.h"
 #include "simsettings.h"
@@ -150,6 +151,10 @@ void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex,
 double DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnIndex) const
 {
     const SparseRow &targetRow = m_rows[rowIndex];
+    if(rowIndex > columnIndex)
+    {
+        std::swap(rowIndex, columnIndex);
+    }
     for(const auto & column : targetRow)
     {
         if(column.first == columnIndex)

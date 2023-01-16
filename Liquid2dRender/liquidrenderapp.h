@@ -42,7 +42,7 @@ protected:
     Emitter emitterFromJson(json emitterJson);
     Obstacle obstacleFromJson(json obstacleJson);
     Sink sinkFromJson(json sinkJson);
-    void addObjectFromJson(json geometryJson);
+    void addObjectFromJson(json objectJson);
     void setupFluidrender();
     void setupFluidrenderQuad();
     void addVert(std::vector<float> &vertexVector, float x, float y, float u, float v);

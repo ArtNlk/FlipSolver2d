@@ -7,6 +7,8 @@
 #include "customassert.h"
 #include "grid2d.h"
 #include "index2d.h"
+#include "logger.h"
+#include "simsettings.h"
 
 
 float simmath::frac(float v)
@@ -153,22 +155,23 @@ float simmath::avg(float a, float b)
 
 void simmath::fastSweep(Grid2d<float> &values, Grid2d<bool> &extrapFlags, std::function<float (Grid2d<float> &, Vertex &, void *)> &updateFunc, void *additionalParameters)
 {
-    int maxIter = 5;
-    float maxError = 0.001;
+    int maxIter = 10;
+    float err = 0.0;
+    float maxError = 1e-4f;
     for(int i = 0; i < values.sizeI(); i++)
     {
         for(int j = 0; j < values.sizeJ(); j++)
         {
             if(extrapFlags.at(i,j))
             {
-                values.at(i,j) = 1e5f;
+                values.at(i,j) = 1e4f;
             }
         }
     }
 
     for(int iter = 0; iter < maxIter; iter++)
     {
-        float err = 0.0;
+        err = 0.f;
         for(int i = 0; i < values.sizeI(); i++)
         {
             for(int j = 0; j < values.sizeJ(); j++)
@@ -239,9 +242,11 @@ void simmath::fastSweep(Grid2d<float> &values, Grid2d<bool> &extrapFlags, std::f
 
         if(err <= maxError)
         {
-            break;
+            std::cout << "fast sweep finished err = " << err << " iter = " << iter << '\n';
+            return;
         }
     }
+    std::cout << "fast sweep out of iter! err = " << err << '\n';
 }
 
 float simmath::normalDerivLinearExapolationUpdate(Grid2d<float> &grid, Vertex &pos, void* /*unused*/)
@@ -287,9 +292,9 @@ float simmath::sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex &pos, void
 
 Grid2d<float> simmath::calculateCenteredGridCurvature(Grid2d<float> &grid)
 {
-    Grid2d<float> output(grid.sizeI(), grid.sizeJ(), 0.f);
-    Grid2d<float> tempI(grid.sizeI(), grid.sizeJ(), 0.f);
-    Grid2d<float> tempJ(grid.sizeI(), grid.sizeJ(), 0.f);
+    Grid2d<float> output(grid.sizeI(), grid.sizeJ(), 0.f, grid.oobStrat());
+    Grid2d<float> tempI(grid.sizeI(), grid.sizeJ(), 0.f, OOBStrategy::OOB_EXTEND);
+    Grid2d<float> tempJ(grid.sizeI(), grid.sizeJ(), 0.f, OOBStrategy::OOB_EXTEND);
 
 //    for(int i = 0; i < grid.sizeI(); i++)
 //    {
@@ -346,8 +351,9 @@ Vertex simmath::secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid)
 
     float derivI = ip1Value - 2*currentValue + im1Value;
     float derivJ = jp1Value - 2*currentValue + jm1Value;
+    float norm = SimSettings::dx() * SimSettings::dx();
 
-    return Vertex(derivI, derivJ);
+    return Vertex(derivI/norm, derivJ/norm);
 }
 
 float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid)
@@ -357,5 +363,5 @@ float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid)
     float ip1jm1Value = grid.getAt(i+1,j-1);
     float im1jm1Value = grid.getAt(i-1,j-1);
 
-    return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value);
+    return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value) / SimSettings::dx() * SimSettings::dx();
 }
