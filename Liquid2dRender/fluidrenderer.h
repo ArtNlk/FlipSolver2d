@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "flipfluidsolver2d.h"
 #include "color.h"
 #include "geometry2d.h"
 

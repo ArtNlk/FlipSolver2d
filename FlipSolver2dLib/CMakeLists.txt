@@ -1,5 +1,4 @@
 set(HEADERS
-    flipfluidsolver2d.h
     linearindexable2d.h
     index2d.h
     grid2d.h
@@ -24,7 +23,6 @@ set(HEADERS
     multiflipsolver.h)
 
 set(SOURCES
-    flipfluidsolver2d.cpp
     linearindexable2d.cpp
     index2d.cpp
     grid2d.cpp

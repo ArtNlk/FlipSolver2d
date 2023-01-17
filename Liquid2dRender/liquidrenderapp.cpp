@@ -36,13 +36,13 @@ void LiquidRenderApp::init()
     GlobalCallbackHandler::instance().init(this,
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
-    //loadJson("./scenes/waterfall.json");
+    loadJson("./scenes/waterfall.json");
     //loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
     //loadJson("./scenes/viscosity_test.json");
     //loadJson("./scenes/smoke_test.json");
     //loadJson("./scenes/smoke_test_empty.json");
-    loadJson("./scenes/glugging_test.json");
+    //loadJson("./scenes/glugging_test.json");
 
     m_window = glfwCreateWindow(m_windowWidth, m_windowHeight, "Flip fluid 2d", NULL, NULL);
     if (m_window == NULL)
@@ -235,7 +235,7 @@ void LiquidRenderApp::loadJson(std::string fileName)
         switch(SimSettings::simMethod())
         {
             case SIMULATION_LIQUID:
-                m_solver.reset(new FlipFluidSolver(1,true));
+                m_solver.reset(new FlipSolver(1,true));
             break;
 
             case SIMULATION_SMOKE:

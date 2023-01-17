@@ -10,7 +10,6 @@
 
 #include "nlohmann/json.hpp"
 
-#include "flipfluidsolver2d.h"
 #include "flipsmokesolver.h"
 #include "fluidrenderer.h"
 #include "geometry2d.h"

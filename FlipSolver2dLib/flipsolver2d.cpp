@@ -158,13 +158,14 @@ void FlipSolver::step()
     particleToGrid();
     extrapolateVelocityField(m_grid.fluidVelocityGridU(),m_grid.knownFluidFlagsGridU(),10);
     extrapolateVelocityField(m_grid.fluidVelocityGridV(),m_grid.knownFluidFlagsGridV(),10);
+
     m_grid.savedFluidVelocityGrid().velocityGridU() = m_grid.fluidVelocityGridU();
     m_grid.savedFluidVelocityGrid().velocityGridV() = m_grid.fluidVelocityGridV();
     applyBodyForces();
     project();
     updateVelocityFromSolids();
-    applyViscosity();
-    project();
+    //applyViscosity();
+    //project();
     extrapolateVelocityField(m_grid.fluidVelocityGridU(),m_grid.knownFluidFlagsGridU(),10);
     extrapolateVelocityField(m_grid.fluidVelocityGridV(),m_grid.knownFluidFlagsGridV(),10);
 
