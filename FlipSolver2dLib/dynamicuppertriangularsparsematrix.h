@@ -28,19 +28,19 @@ public:
 
     void copyUpperTriangleTo(DynamicUpperTriangularSparseMatrix &m) const;
 
-    void setAdiag(int i, int j, double value, MACFluidGrid &grid);
+    void setAdiag(int i, int j, double value, LinearIndexable2d &indexer);
 
-    void setAx(int i, int j, double value, MACFluidGrid &grid);
+    void setAx(int i, int j, double value, LinearIndexable2d &indexer);
 
-    void setAy(int i, int j, double value, MACFluidGrid &grid);
+    void setAy(int i, int j, double value, LinearIndexable2d &indexer);
 
     void addTo(int i, int j, double value);
 
-    void addToAdiag(int i, int j, double value, MACFluidGrid &grid);
+    void addToAdiag(int i, int j, double value, LinearIndexable2d &indexer);
 
-    void addToAx(int i, int j, double value, MACFluidGrid &grid);
+    void addToAx(int i, int j, double value, LinearIndexable2d &indexer);
 
-    void addToAy(int i, int j, double value, MACFluidGrid &grid);
+    void addToAy(int i, int j, double value, LinearIndexable2d &indexer);
 
     int rowSize(int rowIndex) const override;
 

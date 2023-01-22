@@ -2,29 +2,17 @@
 
 #include <cmath>
 
-#include "fluidcell.h"
 #include "grid2d.h"
 #include "mathfuncs.h"
 #include "simsettings.h"
 
 MACFluidGrid::MACFluidGrid(int sizeI, int sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
-    m_materialGrid(sizeI,sizeJ,FluidMaterial::EMPTY, OOBStrategy::OOB_CONST, FluidMaterial::SINK),
-    m_fluidVelocityGrid(sizeI, sizeJ),
     m_airVelocityGrid(sizeI, sizeJ),
-    m_savedFluidVelocityGrid(sizeI, sizeJ),
     m_savedAirVelocityGrid(sizeI, sizeJ),
-    m_solidSdf(sizeI,sizeJ,0.f, OOBStrategy::OOB_EXTEND),
-    m_knownCenteredParams(sizeI,sizeJ, false, OOBStrategy::OOB_CONST, true),
-    m_viscosityGrid(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND),
-    m_emitterId(sizeI, sizeJ, -1),
-    m_solidId(sizeI, sizeJ,-1),
     m_temperature(sizeI, sizeJ, SimSettings::ambientTemp()),
     m_smokeConcentration(sizeI, sizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
-    m_divergenceControl(sizeI,sizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
-    m_fluidParticleCounts(sizeI, sizeJ),
     m_airParticleCounts(sizeI, sizeJ),
-    m_fluidSdf(sizeI,sizeJ, 0.f, OOBStrategy::OOB_EXTEND),
     m_airSdf(sizeI, sizeJ, 0.f, OOBStrategy::OOB_EXTEND),
     m_testGrid(sizeI, sizeJ, 0.f),
     m_validUVelocitySampleCount(0),
@@ -169,92 +157,6 @@ void MACFluidGrid::setMaterial(Index2d index, FluidMaterial m)
 void MACFluidGrid::setMaterial(int i, int j, FluidMaterial m)
 {
     setMaterial(Index2d(i,j),m);
-}
-
-bool MACFluidGrid::isFluid(int i, int j)
-{
-    return fluidTest(m_materialGrid.getAt(i,j));
-}
-
-bool MACFluidGrid::isStrictFluid(int i, int j)
-{
-    return strictFluidTest(m_materialGrid.getAt(i,j));
-}
-
-bool MACFluidGrid::isSolid(int i, int j)
-{
-    return solidTest(m_materialGrid.getAt(i,j));
-}
-
-bool MACFluidGrid::isEmpty(int i, int j)
-{
-    return emptyTest(m_materialGrid.getAt(i,j));
-}
-
-bool MACFluidGrid::isSource(int i, int j)
-{
-    return sourceTest(m_materialGrid.getAt(i,j));
-}
-
-bool MACFluidGrid::isSink(int i, int j)
-{
-    return sinkTest(m_materialGrid.getAt(i,j));
-}
-
-bool MACFluidGrid::uVelocitySampleInside(int i, int j)
-{
-    return (!isEmpty(i,j) && !isEmpty(i-1, j));
-}
-
-bool MACFluidGrid::vVelocitySampleInside(int i, int j)
-{
-    return (!isEmpty(i,j) && !isEmpty(i, j-1));
-}
-
-bool MACFluidGrid::uSampleAffectedBySolid(int i, int j)
-{
-    return (isSolid(i,j+1) || isSolid(i-1, j+1) ||
-            isSolid(i,j) || isSolid(i-1, j) ||
-            isSolid(i,j-1) || isSolid(i-1, j-1));
-}
-
-bool MACFluidGrid::vSampleAffectedBySolid(int i, int j)
-{
-    return (isSolid(i+1,j) || isSolid(i+1, j-1) ||
-            isSolid(i,j) || isSolid(i, j-1) ||
-            isSolid(i-1,j) || isSolid(i-1, j-1));
-}
-
-VelocitySampleState MACFluidGrid::uVelocitySampleState(int i, int j)
-{
-    char currentMat = m_materialGrid.at(i,j) >> 4;
-    char neighborMat = m_materialGrid.at(i-1,j) >> 4;
-    char result = 0;
-
-    result |= currentMat;
-    result |= neighborMat;
-    if ((result & (result - 1)) != 0)
-    {
-        result &= ~(0b1000);
-    }
-
-    return static_cast<VelocitySampleState>(result);
-}
-
-VelocitySampleState MACFluidGrid::vVelocitySampleState(int i, int j)
-{
-    char currentMat = m_materialGrid.at(i,j) >> 4;
-    char neighborMat = m_materialGrid.at(i-1,j) >> 4;
-    char result = 0;
-
-    result |= currentMat;
-    result |= neighborMat;
-    if ((result & (result - 1)) == 0)
-    {
-        result &= 0b1000;
-    }
-
-    return static_cast<VelocitySampleState>(result);
 }
 
 void MACFluidGrid::updateValidULinearMapping()

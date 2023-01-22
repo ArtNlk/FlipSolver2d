@@ -2,9 +2,10 @@ set(HEADERS
     linearindexable2d.h
     index2d.h
     grid2d.h
-    fluidcell.h
     customassert.h
     fluidgrid.h
+    materialgrid.h
+    sdfgrid.h
     simsettings.h
     pcgsolver.h
     vmath.h
@@ -26,8 +27,9 @@ set(SOURCES
     linearindexable2d.cpp
     index2d.cpp
     grid2d.cpp
-    fluidcell.cpp
     fluidgrid.cpp
+    materialgrid.cpp
+    sdfgrid.cpp
     simsettings.cpp
     pcgsolver.cpp
     vmath.cpp

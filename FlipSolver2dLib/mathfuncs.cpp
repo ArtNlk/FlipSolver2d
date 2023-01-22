@@ -3,6 +3,8 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <queue>
+#include <type_traits>
 
 #include "customassert.h"
 #include "grid2d.h"
@@ -91,12 +93,14 @@ float simmath::lerpVGrid(float i, float j, Grid2d<float> &gridV)
     return simmath::lerp(v1,v2,iLerpFactor);
 }
 
-float simmath::lerpCenteredGrid(Vertex &position, Grid2d<float> &grid)
+template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type*>
+float simmath::lerpCenteredGrid(Vertex &position, Grid2d<T> &grid)
 {
     return simmath::lerpCenteredGrid(position.x(), position.y(), grid);
 }
 
-float simmath::lerpCenteredGrid(float i, float j, Grid2d<float> &grid)
+template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type*>
+float simmath::lerpCenteredGrid(float i, float j, Grid2d<T> &grid)
 {
     i = std::clamp(i,0.f,static_cast<float>(grid.sizeI() - 1));
     j = std::clamp(j,0.f,static_cast<float>(grid.sizeJ() - 1));
@@ -364,4 +368,72 @@ float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid)
     float im1jm1Value = grid.getAt(i-1,j-1);
 
     return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value) / SimSettings::dx() * SimSettings::dx();
+}
+
+template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type*>
+void simmath::breadthFirstExtrapolate(Grid2d<T> &extrapolatedGrid, Grid2d<bool> &flagGrid, int extrapRadius,
+                                      int neighborRadius, bool vonNeumannNeighborMode)
+{
+    int sizeI = extrapolatedGrid.sizeI();
+    int sizeJ = extrapolatedGrid.sizeJ();
+    Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
+    std::queue<Index2d> wavefront;
+    //Extrapolate U
+    for(int i = 0; i < sizeI; i++)
+    {
+        for(int j = 0; j < sizeJ; j++)
+        {
+            if(flagGrid.at(i,j))
+            {
+                markers.at(i,j) = 0;
+            }
+        }
+    }
+
+    for(int i = 0; i < sizeI; i++)
+    {
+        for(int j = 0; j < sizeJ; j++)
+        {
+            if(markers.at(i,j) != 0)
+            {
+                for(Index2d& neighborIndex : extrapolatedGrid
+                                                .getNeighborhood(i,j,neighborRadius,vonNeumannNeighborMode))
+                {
+                    if(markers.at(neighborIndex) == 0)
+                    {
+                        markers.at(i,j) = 1;
+                        wavefront.push(Index2d(i,j));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    while(!wavefront.empty())
+    {
+        Index2d index = wavefront.front();
+        std::vector<Index2d> neighbors = extrapolatedGrid.getNeighborhood(index,
+                                                                          neighborRadius,
+                                                                          vonNeumannNeighborMode);
+        double avg = 0;
+        int count = 0;
+        for(Index2d& neighborIndex : neighbors)
+        {
+            if(markers.at(neighborIndex) < markers.at(index))
+            {
+                avg += extrapolatedGrid.at(neighborIndex);
+                count++;
+            }
+            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= extrapRadius)
+            {
+                markers.at(neighborIndex) = markers.at(index) + 1;
+                wavefront.push(neighborIndex);
+            }
+        }
+        extrapolatedGrid.at(index) = avg / count;
+        flagGrid.at(index) = true;
+
+        wavefront.pop();
+    }
 }

@@ -5,10 +5,12 @@
 #include <random>
 #include <memory>
 
-#include "fluidcell.h"
+#include "linearindexable2d.h"
+#include "materialgrid.h"
 #include "obstacle.h"
 #include "pcgsolver.h"
 #include "fluidgrid.h"
+#include "sdfgrid.h"
 #include "uppertriangularmatrix.h"
 #include "geometry2d.h"
 #include "emitter.h"
@@ -27,55 +29,32 @@ struct MarkerParticle
     float testValue = 0.f;
 };
 
-enum SimulationStepStage : int {STAGE_RESEED,
-                                STAGE_UPDATE_MATERIALS,
-                                STAGE_TRANSFER_PARTICLE_VELOCITY,
-                                STAGE_EXTRAPOLATE_VELOCITY,
-                                STAGE_APPLY_GLOBAL_ACCELERATION,
-                                STAGE_PROJECT,
-                                STAGE_EXTRAPOLATE_AFTER_PROJECTION,
-                                STAGE_UPDATE_PARTICLE_VELOCITIES,
-                                STAGE_ADVECT,
-                                STAGE_ITER_END};
-inline SimulationStepStage& operator++(SimulationStepStage& state, int) {
-    const int i = static_cast<int>(state)+1;
-    state = static_cast<SimulationStepStage>((i) % STAGE_ITER_END);
-    return state;
-}
+struct PairHash {
+public:
+  template <typename T, typename U>
+  std::size_t operator()(const std::pair<T, U> &x) const
+  {
+    std::size_t lhs = std::hash<T>()(x.first);
+    std::size_t rhs = std::hash<U>()(x.second);
+    return rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+  }
+};
 
-class FlipSolver
+class FlipSolver : public LinearIndexable2d
 {
 public:
-    FlipSolver(int extrapRadius = 1, bool vonNeumannNeighbors = false);
+    FlipSolver(int sizeI, int sizeJ, int extrapRadius = 1, bool vonNeumannNeighbors = false);
 
     virtual ~FlipSolver() = default;
-
-    inline MACFluidGrid &grid() {return m_grid;}
 
     inline void setExrapolationRadius(int radius)
     {
         m_extrapolationRadius = radius;
     }
 
-    void init();
-
-    virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
-
-    virtual DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
-
-    DynamicUpperTriangularSparseMatrix getViscosityMatrix();
-
     int particleCount();
 
-    virtual void project();
-
-    void applyViscosity();
-
-    virtual void advect();
-
-    virtual void particleUpdate();
-
-    virtual void step();
+    int cellCount();
 
     void stepFrame();
 
@@ -113,15 +92,35 @@ public:
 
     std::vector<MarkerParticle> &markerParticles();
 
-    SimulationStepStage stepStage();
-
 protected:
 
     friend class ::LiquidRenderApp;
 
+    virtual double divergenceAt(int i, int j);
+
+    std::vector<int> validSolidNeighborIds(int i, int j);
+
+    void resetGrids();
+
+    virtual void project();
+
+    void applyViscosity();
+
+    virtual void advect();
+
+    virtual void particleUpdate();
+
+    virtual void step();
+
     virtual void calcPressureRhs(std::vector<double> &rhs);
 
     void calcViscosityRhs(std::vector<double> &rhs);
+
+    virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
+
+    virtual DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
+
+    DynamicUpperTriangularSparseMatrix getViscosityMatrix();
 
     Vertex jitteredPosInCell(int i, int j);
 
@@ -145,12 +144,23 @@ protected:
 
     virtual void updateSdf();
 
+    void updateLinearFluidViscosityMapping();
+
+    void updateValidULinearMapping();
+
+    void updateValidVLinearMapping();
+
+    int linearViscosityVelocitySampleIndexU(int i, int j);
+
+    int linearViscosityVelocitySampleIndexV(int i, int j);
+
     float maxParticleVelocity();
 
     int m_extrapolationRadius;
     bool m_useVonNeumannNeighborhood;
     int m_frameNumber;
-    MACFluidGrid m_grid;
+    int m_validVVelocitySampleCount;
+    int m_validUVelocitySampleCount;
     std::vector<MarkerParticle> m_markerParticles;
     PCGSolver m_pcgSolver;
     std::mt19937 m_randEngine;
@@ -158,7 +168,22 @@ protected:
     std::vector<Emitter> m_sources;
     std::vector<Sink> m_sinks;
     std::vector<Emitter> m_initialFluid;
-    SimulationStepStage m_stepStage;
+
+    StaggeredVelocityGrid m_fluidVelocityGrid;
+    StaggeredVelocityGrid m_savedFluidVelocityGrid;
+    MaterialGrid m_materialGrid;
+    SdfGrid m_solidSdf;
+    SdfGrid m_fluidSdf;
+    Grid2d<bool> m_knownCenteredParams;
+    Grid2d<float> m_viscosityGrid;
+    Grid2d<int> m_emitterId;
+    Grid2d<int> m_solidId;
+    Grid2d<int> m_fluidParticleCounts;
+    Grid2d<float> m_divergenceControl;
+    Grid2d<float> m_testGrid;
+
+    std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
+    std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
 };
 
 #endif // FLIPSOLVER_H

@@ -1,6 +1,6 @@
 #include "multiflipsolver.h"
 #include "flipsolver2d.h"
-#include "fluidcell.h"
+#include "materialgrid.h"
 #include "geometry2d.h"
 #include "grid2d.h"
 #include "logger.h"

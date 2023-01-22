@@ -24,6 +24,20 @@ public:
 
     float getV(int i,int j);
 
+    void setU(int i,int j, float u);
+
+    void setV(int i,int j, float v);
+
+    bool getUValidity(int i,int j);
+
+    bool getVValidity(int i,int j);
+
+    void setUValidity(int i,int j, bool uValidity);
+
+    void setVValidity(int i,int j, bool vValidity);
+
+    void extrapolate(int extrapolationRadius);
+
     Vertex velocityAt(float i, float j);
     Vertex velocityAt(Vertex position);
 
@@ -32,6 +46,8 @@ protected:
     Grid2d<float> m_velocityGridV;
     Grid2d<bool> m_uSampleValidity;
     Grid2d<bool> m_vSampleValidity;
+
+    int m_extrapolationNeighborRadius = 1;
 };
 
 #endif // STAGGEREDVELOCITYGRID_H

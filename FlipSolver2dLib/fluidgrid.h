@@ -3,36 +3,13 @@
 
 #include <unordered_map>
 
-#include "fluidcell.h"
 #include "grid2d.h"
+#include "materialgrid.h"
 #include "customassert.h"
 #include "index2d.h"
 #include "logger.h"
 #include "geometry2d.h"
 #include "staggeredvelocitygrid.h"
-
-struct PairHash {
-public:
-  template <typename T, typename U>
-  std::size_t operator()(const std::pair<T, U> &x) const
-  {
-    std::size_t lhs = std::hash<T>()(x.first);
-    std::size_t rhs = std::hash<U>()(x.second);
-    return rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
-  }
-};
-
-//Bit mask:
-//1<<0 - partial submersion?
-//1<<1 - Fluid
-//1<<2 - Solid
-//1<<3 - Air
-enum VelocitySampleState : char {IN_FLUID = 0b0100,
-                                 IN_SOLID = 0b0010,
-                                 IN_AIR = 0b0001,
-                                 BORDER_FLUID_SOLID = 0b1110,
-                                 BORDER_FLUID_AIR = 0b1101,
-                                 BORDER_SOLID_AIR = 0b1011};
 
 class MACFluidGrid : public LinearIndexable2d
 {
@@ -83,29 +60,7 @@ public:
 
     void setMaterial(int i, int j, FluidMaterial m);
 
-    bool isFluid(int i, int j);
 
-    bool isStrictFluid(int i, int j);
-
-    bool isSolid(int i, int j);
-
-    bool isEmpty(int i, int j);
-
-    bool isSource(int i, int j);
-
-    bool isSink(int i, int j);
-
-    bool uVelocitySampleInside(int i, int j);
-
-    bool vVelocitySampleInside(int i, int j);
-
-    bool uSampleAffectedBySolid(int i, int j);
-
-    bool vSampleAffectedBySolid(int i, int j);
-
-    VelocitySampleState uVelocitySampleState(int i, int j);
-
-    VelocitySampleState vVelocitySampleState(int i, int j);
 
     void setFluidU(Index2d index, float value, bool knownStatus);
 
@@ -249,16 +204,6 @@ public:
 
     Vertex closesFluidSurfacePoint(Vertex pos);
 
-    void updateLinearFluidViscosityMapping();
-
-    int linearViscosityVelocitySampleIndexU(int i, int j);
-
-    int linearViscosityVelocitySampleIndexV(int i, int j);
-
-    int validVelocitySampleCountU();
-
-    int validVelocitySampleCountV();
-
     void setEmitterId(int i, int j, int id);
 
     int emitterId(int i, int j);
@@ -272,32 +217,14 @@ public:
     float getFaceFractionVSample(int i, int j);
 
 protected:  
-    void updateValidULinearMapping();
 
-    void updateValidVLinearMapping();
 
-    Vertex closestSurfacePoint(Vertex &pos, Grid2d<float> &grid);
-
-    Grid2d<FluidMaterial> m_materialGrid;
-    StaggeredVelocityGrid m_fluidVelocityGrid;
     StaggeredVelocityGrid m_airVelocityGrid;
-    StaggeredVelocityGrid m_savedFluidVelocityGrid;
     StaggeredVelocityGrid m_savedAirVelocityGrid;
-    Grid2d<float> m_solidSdf;
-    Grid2d<bool> m_knownCenteredParams;
-    Grid2d<float> m_viscosityGrid;
-    Grid2d<int> m_emitterId;
-    Grid2d<int> m_solidId;
     Grid2d<float> m_temperature;
     Grid2d<float> m_smokeConcentration;
-    Grid2d<float> m_divergenceControl;
-    Grid2d<int> m_fluidParticleCounts;
     Grid2d<int> m_airParticleCounts;
-    Grid2d<float> m_fluidSdf;
     Grid2d<float> m_airSdf;
-    Grid2d<float> m_testGrid;
-    std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
-    std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
     int m_validUVelocitySampleCount;
     int m_validVVelocitySampleCount;
     int m_fluidCellCount;
