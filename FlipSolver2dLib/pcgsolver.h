@@ -4,7 +4,6 @@
 #include <unordered_map>
 
 #include "uppertriangularmatrix.h"
-#include "fluidgrid.h"
 
 class PCGSolver
 {

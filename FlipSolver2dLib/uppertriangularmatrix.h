@@ -2,6 +2,7 @@
 #define UPPERTRIANGULARMATRIX_H
 
 #include "dynamicuppertriangularsparsematrix.h"
+#include "linearindexable2d.h"
 
 using StaticRowUnit = std::pair<int, double>;
 
@@ -17,11 +18,11 @@ public:
 
     int rowSize(int rowIndex) const override;
 
-    double Adiag(int i, int j, MACFluidGrid &grid) const;
+    double Adiag(int i, int j, LinearIndexable2d &indexer) const;
 
-    double Ax(int i, int j, MACFluidGrid &grid) const;
+    double Ax(int i, int j, LinearIndexable2d &indexer) const;
 
-    double Ay(int i, int j, MACFluidGrid &grid) const;
+    double Ay(int i, int j, LinearIndexable2d &indexer) const;
 
     std::vector<double> operator*(std::vector<double> &v) const;
 

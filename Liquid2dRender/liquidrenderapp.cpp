@@ -7,6 +7,7 @@
 #include "flipsmokesolver.h"
 #include "flipsolver2d.h"
 #include "globalcallbackhandler.h"
+#include "logger.h"
 #include "multiflipsolver.h"
 #include "simsettings.h"
 

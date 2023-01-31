@@ -9,7 +9,6 @@
 #include "materialgrid.h"
 #include "obstacle.h"
 #include "pcgsolver.h"
-#include "fluidgrid.h"
 #include "sdfgrid.h"
 #include "staggeredvelocitygrid.h"
 #include "uppertriangularmatrix.h"

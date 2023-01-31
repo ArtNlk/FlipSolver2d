@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "liquidrenderapp.h"
+#include "logger.h"
 
 int main()
 {

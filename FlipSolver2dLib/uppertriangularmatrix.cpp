@@ -54,7 +54,7 @@ int UpperTriangularMatrix::rowSize(int rowIndex) const
     throw std::runtime_error("Row size is not supported in non-dynamic matrices");
 }
 
-double UpperTriangularMatrix::Adiag(int i, int j, MACFluidGrid &grid) const
+double UpperTriangularMatrix::Adiag(int i, int j, LinearIndexable2d &indexer) const
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -62,11 +62,11 @@ double UpperTriangularMatrix::Adiag(int i, int j, MACFluidGrid &grid) const
     {
         return 0.0;
     }
-    int index = grid.linearIndex(i,j);
+    int index = indexer.linearIndex(i,j);
     return getValue(index,index);
 }
 
-double UpperTriangularMatrix::Ax(int i, int j, MACFluidGrid &grid) const
+double UpperTriangularMatrix::Ax(int i, int j, LinearIndexable2d &indexer) const
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -74,13 +74,13 @@ double UpperTriangularMatrix::Ax(int i, int j, MACFluidGrid &grid) const
     {
         return 0.0;
     }
-    int rowIndex = grid.linearIndex(i,j);
-    int colIndex = grid.linearIndex(i+1,j);
+    int rowIndex = indexer.linearIndex(i,j);
+    int colIndex = indexer.linearIndex(i+1,j);
 
     return getValue(rowIndex,colIndex);
 }
 
-double UpperTriangularMatrix::Ay(int i, int j, MACFluidGrid &grid) const
+double UpperTriangularMatrix::Ay(int i, int j, LinearIndexable2d &indexer) const
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -88,8 +88,8 @@ double UpperTriangularMatrix::Ay(int i, int j, MACFluidGrid &grid) const
     {
         return 0.0;
     }
-    int rowIndex = grid.linearIndex(i,j);
-    int colIndex = grid.linearIndex(i,j+1);
+    int rowIndex = indexer.linearIndex(i,j);
+    int colIndex = indexer.linearIndex(i,j+1);
 
     return getValue(rowIndex,colIndex);
 }

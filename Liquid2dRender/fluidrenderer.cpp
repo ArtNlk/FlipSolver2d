@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "flipsmokesolver.h"
+#include "logger.h"
 #include "materialgrid.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"

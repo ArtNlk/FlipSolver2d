@@ -172,7 +172,7 @@ void FlipSolver::step()
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
     project();
-    //updateVelocityFromSolids();
+    updateVelocityFromSolids();
     //applyViscosity();
     //project();
     m_fluidVelocityGrid.extrapolate(10);

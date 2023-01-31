@@ -5,7 +5,6 @@
 #include <utility>
 #include <sstream>
 
-#include "fluidgrid.h"
 #include "squarematrix.h"
 
 class Logger;
