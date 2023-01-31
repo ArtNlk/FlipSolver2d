@@ -20,9 +20,9 @@ public:
 
     float &v(int i,int j);
 
-    float getU(int i,int j);
+    float getU(int i,int j) const;
 
-    float getV(int i,int j);
+    float getV(int i,int j) const;
 
     void setU(int i,int j, float u);
 
@@ -38,8 +38,8 @@ public:
 
     void extrapolate(int extrapolationRadius);
 
-    Vertex velocityAt(float i, float j);
-    Vertex velocityAt(Vertex position);
+    Vertex velocityAt(float i, float j) const;
+    Vertex velocityAt(Vertex position) const;
 
 protected:
     Grid2d<float> m_velocityGridU;

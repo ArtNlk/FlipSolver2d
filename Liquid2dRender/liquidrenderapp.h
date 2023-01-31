@@ -50,9 +50,6 @@ protected:
     void updateFluidrenderBuffers();
     void updateFluidrenderQuadVertex(Vertex v, int vertexIndex);
     void render();
-    void resetGrid();
-    void initGridForExtrapolation();
-    void initGridForProjection();
     void resizeFluidrenderQuad();
 
     GLFWwindow* m_window;

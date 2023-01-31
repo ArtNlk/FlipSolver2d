@@ -15,14 +15,6 @@ enum FluidRenderMode : int {RENDER_MATERIAL,
                             RENDER_U,RENDER_V,
                             RENDER_OBSTACLE_SDF,
                             RENDER_FLUID_SDF,
-                            RENDER_AIR_SDF,
-                            RENDER_KNOWN_FLAG_U,
-                            RENDER_KNOWN_FLAG_V,
-                            RENDER_KNOWN_FLAG_CENTERED,
-                            RENDER_VISCOSITY,
-                            RENDER_TEMPERATURE,
-                            RENDER_SMOKE_CONCENTRATION,
-                            RENDER_DIV_CONTROL,
                             GRID_RENDER_ITER_END};
 inline FluidRenderMode& operator++(FluidRenderMode& state, int) {
     const int i = static_cast<int>(state)+1;
@@ -38,7 +30,6 @@ inline FluidRenderMode& operator--(FluidRenderMode& state, int) {
 }
 
 enum VectorRenderMode : int {VECTOR_RENDER_CENTER,
-                             VECTOR_RENDER_CENTER_AIR,
                              VECTOR_RENDER_STAGGERED,
                              VECTOR_RENDER_SOLID_SDF_GRADIENT,
                              VECTOR_RENDER_FLUID_SDF_GRADIENT,
@@ -159,19 +150,10 @@ protected:
     void updateGridFromTestGrid();
     void updateGridFromUComponent();
     void updateGridFromVComponent();
-    void updateGridFromUKnownFlag();
-    void updateGridFromVKnownFlag();
-    void updateGridFromCenteredKnownFlag();
     void updateGridFromObstacleSdf();
     void updateGridFromFluidSdf();
-    void updateGridFromAirSdf();
-    void updateGridFromViscosity();
-    void updateGridFromTemperature();
-    void updateGridFromConcentration();
-    void updateGridFromDivergence();
     void updateVectorsStaggered();
     void updateVectorsCentered();
-    void updateVectorsCenteredAir();
     void updateVectorsSolidSdfGrad();
     void updateVectorsFluidSdfGrad();
     void reloadParticlesSolid();

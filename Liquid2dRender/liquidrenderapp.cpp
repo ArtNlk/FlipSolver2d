@@ -6,8 +6,6 @@
 
 #include "flipsmokesolver.h"
 #include "flipsolver2d.h"
-#include "linearindexable2d.h"
-#include "customassert.h"
 #include "globalcallbackhandler.h"
 #include "multiflipsolver.h"
 #include "simsettings.h"
@@ -36,8 +34,8 @@ void LiquidRenderApp::init()
     GlobalCallbackHandler::instance().init(this,
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
-    loadJson("./scenes/waterfall.json");
-    //loadJson("./scenes/dam_break.json");
+    //loadJson("./scenes/waterfall.json");
+    loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
     //loadJson("./scenes/viscosity_test.json");
     //loadJson("./scenes/smoke_test.json");
@@ -62,7 +60,6 @@ void LiquidRenderApp::init()
     glfwSetFramebufferSizeCallback(m_window,LiquidRenderApp::GLFWCallbackWrapper::ResizeCallback);
     glfwSetKeyCallback(m_window, LiquidRenderApp::GLFWCallbackWrapper::KeyboardCallback);
 
-    m_solver->init();
     m_fluidRenderer.init(m_solver);
     m_textMenuRenderer.init();
 
@@ -235,15 +232,15 @@ void LiquidRenderApp::loadJson(std::string fileName)
         switch(SimSettings::simMethod())
         {
             case SIMULATION_LIQUID:
-                m_solver.reset(new FlipSolver(1,true));
+                m_solver.reset(new FlipSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1,true));
             break;
 
             case SIMULATION_SMOKE:
-                m_solver.reset(new FlipSmokeSolver(1,true));
+                m_solver.reset(new FlipSmokeSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1,true));
             break;
 
             case SIMULATION_MULTFLIP:
-                m_solver.reset(new MultiflipSolver(1, true));
+                m_solver.reset(new MultiflipSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
             break;
         }
 
@@ -265,7 +262,7 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::frameDt() = 1.f / SimSettings::fps();
     SimSettings::maxSubsteps() = tryGetValue(settingsJson,"maxSubsteps",30);
     SimSettings::stepDt() = SimSettings::frameDt() / SimSettings::maxSubsteps();
-    SimSettings::fluidDensity() = tryGetValue(settingsJson,"density",0.1f);
+    SimSettings::fluidDensity() = tryGetValue(settingsJson,"density",1.f);
     SimSettings::airDensity() = tryGetValue(settingsJson,"airDensity",SimSettings::fluidDensity() * 0.001f);
     SimSettings::randomSeed() = tryGetValue(settingsJson,"seed",0);
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
@@ -575,55 +572,6 @@ void LiquidRenderApp::render()
 
     glfwSwapBuffers(m_window);
     m_renderRequested = false;
-}
-
-void LiquidRenderApp::resetGrid()
-{
-    m_solver->grid().fill();
-}
-
-void LiquidRenderApp::initGridForExtrapolation()
-{
-    resetGrid();
-    for(int i = 0; i < 1000; i++)
-    {
-        m_solver->grid().setFluidU(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), static_cast<float>(rand() % 20 - 10)/10,true);
-        m_solver->grid().setFluidV(rand() % (m_solver->grid().sizeI() / 2), rand() % m_solver->grid().sizeJ(), static_cast<float>(rand() % 20 - 10)/10,true);
-    }
-    m_fluidRenderer.updateGrid();
-}
-
-void LiquidRenderApp::initGridForProjection()
-{
-    resetGrid();
-    Index2d fluidTopLeft(15,0);
-    Index2d fluidBottomRight(99,99);
-    static int seed = 0;
-    srand(seed);
-    rand();
-    seed++;
-    //m_solver->grid().fillMaterialRect(FluidCellMaterial::SOLID,0,0,99,99);
-    //m_solver->grid().fillMaterialRect(FluidCellMaterial::FLUID,fluidTopLeft,fluidBottomRight);
-    float u = (static_cast<float>(rand()) / RAND_MAX) - 0.5f;
-    float v = (static_cast<float>(rand()) / RAND_MAX) - 0.5f;
-    for (int i = 0; i < m_solver->grid().sizeI(); i++)
-    {
-        for (int j = 0; j < m_solver->grid().sizeJ(); j++)
-        {
-            //m_solver->grid().setU(i,j,static_cast<float>(rand()) / RAND_MAX);
-            //m_solver->grid().setV(i,j,static_cast<float>(rand()) / RAND_MAX);
-            m_solver->updateSolids();
-            m_solver->grid().setFluidU(i,j,0);
-            m_solver->grid().setFluidV(i,j,10);
-        }
-    }
-    m_solver->grid().fillKnownFlagsU(true);
-    m_solver->grid().fillKnownFlagsV(true);
-    //m_solver->grid().velocityGridU().fillRect(10.f,fluidTopLeft,fluidBottomRight);
-    //m_solver->grid().knownFlagsGridU().fillRect(true,fluidTopLeft,fluidBottomRight);
-    //m_solver->grid().velocityGridV().fillRect(23.f,fluidTopLeft,fluidBottomRight);
-    //m_solver->grid().knownFlagsGridV().fillRect(true,fluidTopLeft,fluidBottomRight);
-    m_fluidRenderer.updateGrid();
 }
 
 void LiquidRenderApp::resizeFluidrenderQuad()

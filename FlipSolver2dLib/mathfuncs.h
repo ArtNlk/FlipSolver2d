@@ -2,10 +2,14 @@
 #define FUNCTIONS_H
 
 #include <functional>
+#include <queue>
 #include <type_traits>
 
-#include "grid2d.h"
 #include "geometry2d.h"
+#include "index2d.h"
+
+template<class T>
+class Grid2d;
 
 namespace simmath
 {
@@ -17,23 +21,24 @@ namespace simmath
     float quadraticBSpline(float x, float y);
     float linearHat(float value);
     float bilinearHat(float x, float y);
-    float lerpUGrid(float i, float j, Grid2d<float> &gridU);
-    float lerpVGrid(float i, float j, Grid2d<float> &gridV);
+    float lerpUGrid(float i, float j, const Grid2d<float> &gridU);
+    float lerpVGrid(float i, float j, const Grid2d<float> &gridV);
 
-    template<typename T,typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    float lerpCenteredGrid(Vertex &position, Grid2d<T> &grid);
+    float lerpCenteredGrid(Vertex &position, Grid2d<float> &grid);
 
-    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    float lerpCenteredGrid(float i, float j, Grid2d<T> &grid);
+    float lerpCenteredGrid(float i, float j, Grid2d<float> &grid);
 
-    Vertex gradCenteredGrid(int i, int j, Grid2d<float> &grid);
+    void breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bool> &flagGrid,
+                                          int extrapRadius, int neighborRadius, bool vonNeumannNeighborMode);
+
+    Vertex gradCenteredGrid(int i, int j, const Grid2d<float> &grid);
 
     void fastSweep(Grid2d<float> &values,
                    Grid2d<bool> &extrapFlags,
                    std::function<float(Grid2d<float>&,Vertex&, void*)> &updateFunc,
                    void* additionalParameters);
 
-    template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+    template<typename T>
     void breadthFirstExtrapolate(Grid2d<T> &extrapolatedGrid, Grid2d<bool> &flagGrid, int extrapRadius,
                                  int neighborRadius, bool vonNeumannNeighborMode);
 

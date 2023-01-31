@@ -27,7 +27,7 @@ bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::v
     //debug() << "mat=" << matrix;
     std::vector<double> residual = vec;
     std::vector<double> aux = vec;
-    applyICPrecond(precond,residual,aux);
+    //applyICPrecond(precond,residual,aux);
     std::vector<double> search = aux;
     double sigma = vsimmath::dot(aux,residual);
     double err = 0.0;
@@ -50,7 +50,7 @@ bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::v
             return true;
         }
         aux = residual;
-        applyICPrecond(precond,residual,aux);
+        //applyICPrecond(precond,residual,aux);
         double newSigma = vsimmath::dot(aux,residual);
         double beta = newSigma/(sigma);
         vsimmath::addMul(search,aux,search,beta);

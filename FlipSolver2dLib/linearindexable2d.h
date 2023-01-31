@@ -28,16 +28,19 @@ public:
 
     inline int linearIndex(int i, int j) const
     {
-        //ASSERT_BETWEEN(i,-1,m_sizeI);
-        //ASSERT_BETWEEN(j,-1,m_sizeJ);
-        if(i < 0 || i >= m_sizeI || j < 0 || j >= m_sizeJ) return -1;
+        ASSERT_BETWEEN(i,-2,m_sizeI);
+        ASSERT_BETWEEN(j,-2,m_sizeJ);
+        if(i < 0 || i >= m_sizeI || j < 0 || j >= m_sizeJ)
+        {
+            return -1;
+        }
         return i * m_sizeJ + j;
     }
 
     inline int linearIndex(Index2d index) const
     {
-        //ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
-        //ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
+        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
         if(index.m_i < 0 || index.m_i >= m_sizeI || index.m_j < 0 || index.m_j >= m_sizeJ) return -1;
         return index.m_i * m_sizeJ + index.m_j;
     }

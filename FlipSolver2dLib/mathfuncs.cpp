@@ -51,7 +51,7 @@ float simmath::quadraticBSpline(float x, float y)
     return simmath::bSpline(x) * simmath::bSpline(y) * simmath::bSpline(0.f);
 }
 
-float simmath::lerpUGrid(float i, float j, Grid2d<float> &gridU)
+float simmath::lerpUGrid(float i, float j, const Grid2d<float> &gridU)
 {
     i = std::clamp(i,0.f,static_cast<float>(gridU.sizeI() - 1));
     j = std::clamp(j,0.f,static_cast<float>(gridU.sizeJ() - 1));
@@ -72,7 +72,7 @@ float simmath::lerpUGrid(float i, float j, Grid2d<float> &gridU)
     return simmath::lerp(v1,v2,jLerpFactor);
 }
 
-float simmath::lerpVGrid(float i, float j, Grid2d<float> &gridV)
+float simmath::lerpVGrid(float i, float j, const Grid2d<float> &gridV)
 {
     i = std::clamp(i,0.f,static_cast<float>(gridV.sizeI() - 1));
     j = std::clamp(j,0.f,static_cast<float>(gridV.sizeJ() - 1));
@@ -93,35 +93,7 @@ float simmath::lerpVGrid(float i, float j, Grid2d<float> &gridV)
     return simmath::lerp(v1,v2,iLerpFactor);
 }
 
-template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type*>
-float simmath::lerpCenteredGrid(Vertex &position, Grid2d<T> &grid)
-{
-    return simmath::lerpCenteredGrid(position.x(), position.y(), grid);
-}
-
-template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type*>
-float simmath::lerpCenteredGrid(float i, float j, Grid2d<T> &grid)
-{
-    i = std::clamp(i,0.f,static_cast<float>(grid.sizeI() - 1));
-    j = std::clamp(j,0.f,static_cast<float>(grid.sizeJ() - 1));
-    Index2d currentCell(simmath::integr(i),simmath::integr(j));
-
-    Index2d cell2(currentCell.m_i,simmath::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
-
-    Index2d cell3(simmath::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1, simmath::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
-
-    Index2d cell4(simmath::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1, currentCell.m_j);
-
-    float iLerpFactor = simmath::frac(i) < 0.5f ? 0.5f - simmath::frac(i) : simmath::frac(i) - 0.5f;
-    float jLerpFactor = simmath::frac(j) < 0.5f ? 0.5f - simmath::frac(j) : simmath::frac(j) - 0.5f;
-
-    float v1 = simmath::lerp(grid.getAt(currentCell),grid.getAt(cell4),iLerpFactor);
-    float v2 = simmath::lerp(grid.getAt(cell2),grid.getAt(cell3),iLerpFactor);
-
-    return simmath::lerp(v1,v2,jLerpFactor);
-}
-
-Vertex simmath::gradCenteredGrid(int i, int j, Grid2d<float> &grid)
+Vertex simmath::gradCenteredGrid(int i, int j, const Grid2d<float> &grid)
 {
     float neighborIp1 = grid.getAt(i+1,j);
     float neighborIm1 = grid.getAt(i-1,j);
@@ -370,9 +342,35 @@ float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid)
     return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value) / SimSettings::dx() * SimSettings::dx();
 }
 
-template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type*>
-void simmath::breadthFirstExtrapolate(Grid2d<T> &extrapolatedGrid, Grid2d<bool> &flagGrid, int extrapRadius,
-                                      int neighborRadius, bool vonNeumannNeighborMode)
+
+float simmath::lerpCenteredGrid(Vertex &position, Grid2d<float> &grid)
+{
+    return lerpCenteredGrid(position.x(), position.y(), grid);
+}
+
+float simmath::lerpCenteredGrid(float i, float j, Grid2d<float> &grid)
+{
+    i = std::clamp(i,0.f,static_cast<float>(grid.sizeI() - 1));
+    j = std::clamp(j,0.f,static_cast<float>(grid.sizeJ() - 1));
+    Index2d currentCell(simmath::integr(i),simmath::integr(j));
+
+    Index2d cell2(currentCell.m_i,simmath::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
+
+    Index2d cell3(simmath::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1, simmath::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
+
+    Index2d cell4(simmath::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1, currentCell.m_j);
+
+    float iLerpFactor = simmath::frac(i) < 0.5f ? 0.5f - simmath::frac(i) : simmath::frac(i) - 0.5f;
+    float jLerpFactor = simmath::frac(j) < 0.5f ? 0.5f - simmath::frac(j) : simmath::frac(j) - 0.5f;
+
+    float v1 = simmath::lerp(grid.getAt(currentCell),grid.getAt(cell4),iLerpFactor);
+    float v2 = simmath::lerp(grid.getAt(cell2),grid.getAt(cell3),iLerpFactor);
+
+    return simmath::lerp(v1,v2,jLerpFactor);
+}
+
+void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bool> &flagGrid,
+                                      int extrapRadius, int neighborRadius, bool vonNeumannNeighborMode)
 {
     int sizeI = extrapolatedGrid.sizeI();
     int sizeJ = extrapolatedGrid.sizeJ();

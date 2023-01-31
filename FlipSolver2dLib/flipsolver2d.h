@@ -11,6 +11,7 @@
 #include "pcgsolver.h"
 #include "fluidgrid.h"
 #include "sdfgrid.h"
+#include "staggeredvelocitygrid.h"
 #include "uppertriangularmatrix.h"
 #include "geometry2d.h"
 #include "emitter.h"
@@ -47,10 +48,7 @@ public:
 
     virtual ~FlipSolver() = default;
 
-    inline void setExrapolationRadius(int radius)
-    {
-        m_extrapolationRadius = radius;
-    }
+    void setExrapolationRadius(int radius);
 
     int particleCount();
 
@@ -92,6 +90,16 @@ public:
 
     std::vector<MarkerParticle> &markerParticles();
 
+    const MaterialGrid &materialGrid() const;
+
+    const StaggeredVelocityGrid &fluidVelocityGrid() const;
+
+    const SdfGrid &fluidSdf() const;
+
+    const SdfGrid &solidSdf() const;
+
+    const Grid2d<float> &testGrid() const;
+
 protected:
 
     friend class ::LiquidRenderApp;
@@ -99,8 +107,6 @@ protected:
     virtual double divergenceAt(int i, int j);
 
     std::vector<int> validSolidNeighborIds(int i, int j);
-
-    void resetGrids();
 
     virtual void project();
 
@@ -144,6 +150,10 @@ protected:
 
     virtual void updateSdf();
 
+    virtual void particleVelocityToGrid();
+
+    virtual void centeredParamsToGrid();
+
     void updateLinearFluidViscosityMapping();
 
     void updateValidULinearMapping();
@@ -156,7 +166,7 @@ protected:
 
     float maxParticleVelocity();
 
-    int m_extrapolationRadius;
+    int m_extrapolationNeighborRadius;
     bool m_useVonNeumannNeighborhood;
     int m_frameNumber;
     int m_validVVelocitySampleCount;

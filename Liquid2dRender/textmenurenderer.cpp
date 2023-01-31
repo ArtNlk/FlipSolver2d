@@ -17,19 +17,10 @@ TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRen
     m_renderModeTexts[FluidRenderMode::RENDER_V] = "Render V component";
     m_renderModeTexts[FluidRenderMode::RENDER_OBSTACLE_SDF] = "Render obstacle SDF";
     m_renderModeTexts[FluidRenderMode::RENDER_FLUID_SDF] = "Render fluid SDF";
-    m_renderModeTexts[FluidRenderMode::RENDER_AIR_SDF] = "Render air SDF";
-    m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_U] = "Render U flag";
-    m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_V] = "Render V flag";
-    m_renderModeTexts[FluidRenderMode::RENDER_KNOWN_FLAG_CENTERED] = "Render centered flag";
-    m_renderModeTexts[FluidRenderMode::RENDER_VISCOSITY] = "Render viscosity";
-    m_renderModeTexts[FluidRenderMode::RENDER_TEMPERATURE] = "Render temperature";
-    m_renderModeTexts[FluidRenderMode::RENDER_DIV_CONTROL] = "Render divergence control";
-    m_renderModeTexts[FluidRenderMode::RENDER_SMOKE_CONCENTRATION] = "Render smoke concentrartion";
 
     m_vectorRenderModeTexts.assign(VectorRenderMode::VECTOR_RENDER_ITER_END + 1,"");
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER] = "Vector center avg velocity";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_STAGGERED] = "Vector staggered velocity";
-    m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_CENTER_AIR] = "Vector center avg air velocity";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_SOLID_SDF_GRADIENT] = "Vector solid SDF gradient";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_FLUID_SDF_GRADIENT] = "Vector fluid SDF gradient";
     m_vectorRenderModeTexts[VectorRenderMode::VECTOR_RENDER_ITER_END] = "Vectors off";

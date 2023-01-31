@@ -43,12 +43,12 @@ float &StaggeredVelocityGrid::v(int i, int j)
     return m_velocityGridV.at(i,j);
 }
 
-float StaggeredVelocityGrid::getU(int i, int j)
+float StaggeredVelocityGrid::getU(int i, int j) const
 {
     return m_velocityGridU.getAt(i,j);
 }
 
-float StaggeredVelocityGrid::getV(int i, int j)
+float StaggeredVelocityGrid::getV(int i, int j) const
 {
     return m_velocityGridV.getAt(i,j);
 }
@@ -80,7 +80,7 @@ void StaggeredVelocityGrid::setUValidity(int i, int j, bool uValidity)
 
 void StaggeredVelocityGrid::setVValidity(int i, int j, bool vValidity)
 {
-    m_uSampleValidity.setAt(i,j, vValidity);
+    m_vSampleValidity.setAt(i,j, vValidity);
 }
 
 void StaggeredVelocityGrid::extrapolate(int extrapolationRadius)
@@ -95,12 +95,12 @@ void StaggeredVelocityGrid::extrapolate(int extrapolationRadius)
                                      false);
 }
 
-Vertex StaggeredVelocityGrid::velocityAt(float i, float j)
+Vertex StaggeredVelocityGrid::velocityAt(float i, float j) const
 {
     return Vertex(simmath::lerpUGrid(i, j, m_velocityGridU),simmath::lerpVGrid(i, j, m_velocityGridV));
 }
 
-Vertex StaggeredVelocityGrid::velocityAt(Vertex position)
+Vertex StaggeredVelocityGrid::velocityAt(Vertex position) const
 {
     return velocityAt(position.x(),position.y());
 }

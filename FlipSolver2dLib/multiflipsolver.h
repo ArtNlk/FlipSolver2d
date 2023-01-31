@@ -2,11 +2,12 @@
 #define MULTIFLIPSOLVER_H
 
 #include "flipsolver2d.h"
+#include "staggeredvelocitygrid.h"
 
 class MultiflipSolver : public FlipSolver
 {
 public:
-    MultiflipSolver(int extrapRadius = 1, bool vonNeumannNeighbors = false);
+    MultiflipSolver(int sizeI, int sizeJ, int extrapRadius = 1, bool vonNeumannNeighbors = false);
 
     void calcPressureRhs(std::vector<double> &rhs) override;
 
@@ -22,7 +23,7 @@ public:
 
     void extrapolateSdf(Grid2d<float>& sdfGrid);
 
-    void particleToGrid() override;
+    void particleVelocityToGrid() override;
 
     void applyBodyForces() override;
 
@@ -41,12 +42,20 @@ public:
     void bumpParticles();
 
 protected:
+    float getFaceFractionUSample(int i, int j);
+    float getFaceFractionVSample(int i, int j);
 
     double getWeightedDensityForUSample(int i, int j);
     double getWeightedDensityForVSample(int i, int j);
 
     double getWeightedVelocityUSample(int i, int j);
     double getWeightedVelocityVSample(int i, int j);
+
+    StaggeredVelocityGrid m_airVelocityGrid;
+    StaggeredVelocityGrid m_savedAirVelocityGrid;
+
+    Grid2d<float> m_airSdf;
+    Grid2d<int> m_airParticleCounts;
 };
 
 #endif // MULTIFLIPSOLVER_H

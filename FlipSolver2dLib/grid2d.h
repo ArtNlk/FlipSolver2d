@@ -6,6 +6,7 @@
 
 #include "geometry2d.h"
 #include "linearindexable2d.h"
+#include "mathfuncs.h"
 
 enum OOBStrategy : char {OOB_EXTEND,
                         OOB_CONST,
@@ -18,42 +19,131 @@ public:
     Grid2d(int sizeI, int sizeJ, T initValue = T(), OOBStrategy oobStrat = OOB_ERROR, T oobVal = T()) :
         LinearIndexable2d(sizeI,sizeJ),
         m_oobStrat(oobStrat),
+        m_data(sizeI*sizeJ),
         m_oobConst(oobVal)
     {
         m_data.assign(sizeI*sizeJ,initValue);
     }
 
-    void swap(Grid2d<T> other);
+    void swap(Grid2d<T> other)
+    {
+        std::swap(m_sizeI,other.m_sizeI);
+        std::swap(m_sizeJ,other.m_sizeJ);
+        m_data.swap(other.m_data);
+    }
 
-    OOBStrategy &oobStrat();
+    OOBStrategy &oobStrat()
+    {
+        return m_oobStrat;
+    }
 
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
-    T interpolateAt(Vertex position);
+    T interpolateAt(Vertex position)
+    {
+        return interpolateAt(position.x(), position.y());
+    }
 
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
-    T interpolateAt(float i, float j);
+    T interpolateAt(float i, float j)
+    {
+        return simmath::lerpCenteredGrid(i,j,*this);
+    }
 
-    typename std::vector<T>::reference at(int i, int j);
+    typename std::vector<T>::reference at(int i, int j)
+    {
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        return m_data[linearIndex(i,j)];
+    }
 
-    typename std::vector<T>::reference at(Index2d index);
+    typename std::vector<T>::reference at(Index2d index)
+    {
+        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
+        return m_data[linearIndex(index)];
+    }
 
-    const typename std::vector<T>::const_reference at(int i, int j) const;
+    const typename std::vector<T>::const_reference at(int i, int j) const
+    {
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        return m_data[linearIndex(i,j)];
+    }
 
-    const typename std::vector<T>::const_reference at(Index2d index) const;
+    const typename std::vector<T>::const_reference at(Index2d index) const
+    {
+        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
+        return m_data[linearIndex(index)];
+    }
 
-    void setAt(int i, int j, T value);
+    void setAt(int i, int j, T value)
+    {
+        ASSERT_BETWEEN(i,-1,m_sizeI);
+        ASSERT_BETWEEN(j,-1,m_sizeJ);
+        m_data[linearIndex(i,j)] = value;
+    }
 
-    T getAt(Index2d index) const;
+    T getAt(Index2d index) const
+    {
+        return getAt(index.m_i, index.m_j);
+    }
 
-    T getAt(int i, int j) const;
+    T getAt(int i, int j) const
+    {
+        switch(m_oobStrat)
+        {
+        case OOB_EXTEND:
+            i = std::clamp(i, 0,m_sizeI-1);
+            j = std::clamp(j,0,m_sizeJ -1);
+            break;
+        case OOB_CONST:
+            if(!inBounds(i,j))
+            {
+                return m_oobConst;
+            }
+            break;
+        case OOB_ERROR:
+            ASSERT_BETWEEN(i,-1,m_sizeI);
+            ASSERT_BETWEEN(j,-1,m_sizeJ);
+            break;
+        }
+        int idx = linearIndex(i,j);
+        return m_data[idx];
+    }
 
-    void fill(T value);
+    void fill(T value)
+    {
+        for(int i = 0; i < m_data.size(); i++)
+        {
+            m_data[i] = value;
+        }
+    }
 
-    std::vector<T> &data();
+    std::vector<T> &data()
+    {
+        return m_data;
+    }
 
-    void fillRect(T value, Index2d topLeft, Index2d bottomRight);
+    void fillRect(T value, Index2d topLeft, Index2d bottomRight)
+    {
+        fillRect(value,topLeft.m_i,topLeft.m_j,bottomRight.m_i,bottomRight.m_j);
+    }
 
-    void fillRect(T value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY);
+    void fillRect(T value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
+    {
+        topLeftX = std::max(0,topLeftX);
+        topLeftY = std::max(0,topLeftY);
+        bottomRightX = std::min(m_sizeI - 1,bottomRightX);
+        bottomRightY = std::min(m_sizeJ - 1,bottomRightY);
+        for(int i = topLeftX; i <= bottomRightX; i++)
+        {
+            for(int j = topLeftY; j <= bottomRightY; j++)
+            {
+                m_data[linearIndex(i,j)] = value;
+            }
+        }
+    }
 
 protected:
     std::vector<T> m_data;
