@@ -173,8 +173,8 @@ void FlipSolver::step()
     applyBodyForces();
     project();
     updateVelocityFromSolids();
-    //applyViscosity();
-    //project();
+    applyViscosity();
+    project();
     m_fluidVelocityGrid.extrapolate(10);
 
     particleUpdate();
@@ -865,13 +865,13 @@ void FlipSolver::calcViscosityRhs(std::vector<double> &rhs)
             int linearIdxV = linearViscosityVelocitySampleIndexV(i,j);
             if(linearIdxU != -1)
             {
-                float u = m_fluidVelocityGrid.u(i,j);
+                float u = m_fluidVelocityGrid.getU(i,j);
                 rhs[linearIdxU] = SimSettings::fluidDensity() * u;
             }
 
             if(linearIdxV != -1)
             {
-                float v = m_fluidVelocityGrid.v(i,j);
+                float v = m_fluidVelocityGrid.getV(i,j);
                 rhs[vBaseIndex + linearIdxV] = SimSettings::fluidDensity() * v;
             }
         }

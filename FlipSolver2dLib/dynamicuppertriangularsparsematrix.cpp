@@ -76,7 +76,9 @@ void DynamicUpperTriangularSparseMatrix::addTo(int i, int j, double value)
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
-    setValue(i,j, getValue(i,j) + value);
+    double temp = getValue(i,j);
+    setValue(i,j, temp + value);
+   // setValue(j,i, temp + value);
 }
 
 void DynamicUpperTriangularSparseMatrix::addToAdiag(int i, int j, double value, LinearIndexable2d &indexer)
@@ -94,7 +96,7 @@ void DynamicUpperTriangularSparseMatrix::addToAx(int i, int j, double value, Lin
     int rowIndex = indexer.linearIndex(i,j);
     int colIndex = indexer.linearIndex(i+1,j);
 
-    return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
+    setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
 }
 
 void DynamicUpperTriangularSparseMatrix::addToAy(int i, int j, double value, LinearIndexable2d &indexer)
@@ -152,10 +154,6 @@ void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex,
 double DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnIndex) const
 {
     const SparseRow &targetRow = m_rows[rowIndex];
-    if(rowIndex > columnIndex)
-    {
-        std::swap(rowIndex, columnIndex);
-    }
     for(const auto & column : targetRow)
     {
         if(column.first == columnIndex)

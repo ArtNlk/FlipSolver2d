@@ -7,7 +7,7 @@
     "fps": 30,
     "maxSubsteps": 10,
     "seed": 0,
-    "fluidDensity": 10,
+    "fluidDensity": 1,
     "particlesPerCell": 4,
     "picRatio": 0.03,
     "cflNumber": 5,

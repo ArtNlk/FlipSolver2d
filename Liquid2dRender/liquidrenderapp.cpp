@@ -36,9 +36,9 @@ void LiquidRenderApp::init()
                                            &m_fluidRenderer,
                                            &m_textMenuRenderer);
     //loadJson("./scenes/waterfall.json");
-    loadJson("./scenes/dam_break.json");
+    //loadJson("./scenes/dam_break.json");
     //loadJson("./scenes/test_scene.json");
-    //loadJson("./scenes/viscosity_test.json");
+    loadJson("./scenes/viscosity_test.json");
     //loadJson("./scenes/smoke_test.json");
     //loadJson("./scenes/smoke_test_empty.json");
     //loadJson("./scenes/glugging_test.json");
