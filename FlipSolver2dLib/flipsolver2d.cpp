@@ -1065,14 +1065,14 @@ void FlipSolver::updateSdf()
             {
                 float diffX = p.position.x() - centerPoint.x();
                 float diffY = p.position.y() - centerPoint.y();
-                float newDistSqrd = diffX*diffX + diffY * diffY - particleRadius;
+                float newDistSqrd = diffX*diffX + diffY * diffY;
                 if(newDistSqrd < distSqrd)
                 {
                     distSqrd = newDistSqrd;
                 }
             }
 
-            m_fluidSdf.at(i,j) = std::sqrt(distSqrd * SimSettings::dx());
+            m_fluidSdf.at(i,j) = std::sqrt(distSqrd * SimSettings::dx()) - particleRadius;
         }
     }
 }
