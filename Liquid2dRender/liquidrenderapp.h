@@ -56,6 +56,7 @@ protected:
     std::shared_ptr<FlipSolver> m_solver;
     FluidRenderer m_fluidRenderer;
     TextMenuRenderer m_textMenuRenderer;
+    static const char* m_configFilePath;
 
     unsigned int m_fluidgrid_vbo;
     unsigned int m_fluidgrid_vao;

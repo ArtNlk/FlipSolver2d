@@ -125,7 +125,14 @@ file(GLOB SCENES
      "scenes/*.json"
 )
 
-add_executable(LiquidRenderApp ${HEADERS} ${SOURCES} ${SCENES})
+set(CONFIG_FILE "./config.json")
+
+add_executable(LiquidRenderApp ${HEADERS} ${SOURCES} ${SCENES} ${CONFIG_FILE})
+
+get_filename_component(filename ${CONFIG_FILE} NAME)
+file(READ "${CONFIG_FILE}" ignored)
+unset(ignored) # Drop the memory
+configure_file(${CONFIG_FILE} ${CMAKE_BINARY_DIR}/Liquid2dRender/${filename} COPYONLY)
 
 foreach(file ${SCENES})
     get_filename_component(filename ${file} NAME)

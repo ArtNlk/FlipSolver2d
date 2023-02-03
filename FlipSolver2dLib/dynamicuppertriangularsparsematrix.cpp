@@ -52,10 +52,12 @@ void DynamicUpperTriangularSparseMatrix::setAdiag(int i, int j, double value, Li
 
 void DynamicUpperTriangularSparseMatrix::setAx(int i, int j, double value, LinearIndexable2d &indexer)
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
     int rowIndex = indexer.linearIndex(i,j);
     int colIndex = indexer.linearIndex(i+1,j);
+    if(colIndex == -1 || rowIndex == -1)
+    {
+        return;
+    }
 
     setValue(rowIndex,colIndex, value);
     setValue(colIndex,rowIndex, value);
@@ -63,10 +65,12 @@ void DynamicUpperTriangularSparseMatrix::setAx(int i, int j, double value, Linea
 
 void DynamicUpperTriangularSparseMatrix::setAy(int i, int j, double value, LinearIndexable2d &indexer)
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
     int rowIndex = indexer.linearIndex(i,j);
     int colIndex = indexer.linearIndex(i,j+1);
+    if(colIndex == -1 || rowIndex == -1)
+    {
+        return;
+    }
 
     setValue(rowIndex,colIndex, value);
     setValue(colIndex,rowIndex, value);
