@@ -5,6 +5,7 @@
     "domainSizeJ": 50,
     "resolution": 100,
     "fps": 30,
+    "scale": 1,
     "maxSubsteps": 10,
     "seed": 0,
     "particlesPerCell": 4,

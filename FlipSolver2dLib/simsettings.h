@@ -135,6 +135,11 @@ public:
         return m_instance.m_surfaceTensionFactor;
     }
 
+    static inline float& sceneScale()
+    {
+        return m_instance.m_sceneScale;
+    }
+
 protected:
     static SimSettings m_instance;
 
@@ -161,6 +166,7 @@ protected:
     float m_particleScale;
     int m_pcgIterLimit;
     float m_surfaceTensionFactor;
+    float m_sceneScale;
     SimulationMethod m_simType;
 };
 

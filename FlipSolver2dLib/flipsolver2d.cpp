@@ -141,9 +141,9 @@ void FlipSolver::particleUpdate()
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-        Vertex oldVelocity(simmath::cubicIterpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),
-                           simmath::cubicIterpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
-        Vertex newVelocity = m_fluidVelocityGrid.velocityAt(p.position) / SimSettings::dx();
+        Vertex oldVelocity(simmath::cubicIterpUGrid(p.position.x(),p.position.y(),prevU),
+                           simmath::cubicIterpVGrid(p.position.x(),p.position.y(),prevV));
+        Vertex newVelocity = m_fluidVelocityGrid.velocityAt(p.position) ;
 //        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
 //        {
 //            p.velocity = newVelocity;
@@ -1110,7 +1110,7 @@ void FlipSolver::particleVelocityToGrid()
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         uWeights.at(iIdx,jIdx) += weightU;
-                        m_fluidVelocityGrid.u(iIdx,jIdx) += weightU * (p.velocity.x() * SimSettings::dx());
+                        m_fluidVelocityGrid.u(iIdx,jIdx) += weightU * (p.velocity.x());
                         m_fluidVelocityGrid.setUValidity(iIdx,jIdx,true);
                     }
                 }
@@ -1120,7 +1120,7 @@ void FlipSolver::particleVelocityToGrid()
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
                         vWeights.at(iIdx,jIdx) += weightV;
-                        m_fluidVelocityGrid.v(iIdx,jIdx) += weightV * (p.velocity.y() * SimSettings::dx());
+                        m_fluidVelocityGrid.v(iIdx,jIdx) += weightV * (p.velocity.y());
                         m_fluidVelocityGrid.setVValidity(iIdx,jIdx,true);
                     }
                 }

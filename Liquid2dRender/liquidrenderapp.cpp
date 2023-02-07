@@ -261,8 +261,10 @@ void LiquidRenderApp::loadJson(std::string fileName)
 
 void LiquidRenderApp::settingsFromJson(json settingsJson)
 {
-    SimSettings::domainSizeI() = settingsJson["domainSizeI"].get<int>();
-    SimSettings::domainSizeJ() = settingsJson["domainSizeJ"].get<int>();
+    SimSettings::sceneScale() = tryGetValue(settingsJson,"scale",1.f);
+    float s = SimSettings::sceneScale();
+    SimSettings::domainSizeI() = std::ceil(s*settingsJson["domainSizeI"].get<int>());
+    SimSettings::domainSizeJ() = std::ceil(s*settingsJson["domainSizeJ"].get<int>());
     SimSettings::resolution() = settingsJson["resolution"].get<int>();
     SimSettings::fps() = settingsJson["fps"].get<int>();
     SimSettings::frameDt() = 1.f / SimSettings::fps();
@@ -336,7 +338,7 @@ Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(Vertex(v.first,v.second));
+        geo.addVertex(SimSettings::sceneScale() * Vertex(v.first,v.second));
     }
 
     return Emitter(viscosity,temp,conc,div,geo);
@@ -350,7 +352,7 @@ Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(Vertex(v.first,v.second));
+        geo.addVertex(SimSettings::sceneScale() * Vertex(v.first,v.second));
     }
 
     return Obstacle(friction,geo);
@@ -364,7 +366,7 @@ Sink LiquidRenderApp::sinkFromJson(json sinkJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(Vertex(v.first,v.second));
+        geo.addVertex(SimSettings::sceneScale() * Vertex(v.first,v.second));
     }
 
     return Sink(div,geo);
