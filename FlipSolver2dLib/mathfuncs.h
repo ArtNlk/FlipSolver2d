@@ -28,6 +28,12 @@ namespace simmath
 
     float lerpCenteredGrid(float i, float j, Grid2d<float> &grid);
 
+    float cubicIterpGrid(float i, float j, const Grid2d<float> &grid, Vertex gridOffset);
+
+    float cubicIterpUGrid(float i, float j, const Grid2d<float> &grid);
+
+    float cubicIterpVGrid(float i, float j, const Grid2d<float> &grid);
+
     void breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bool> &flagGrid,
                                           int extrapRadius, int neighborRadius, bool vonNeumannNeighborMode);
 

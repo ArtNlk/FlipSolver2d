@@ -1,5 +1,6 @@
 #include "mathfuncs.h"
 
+#include <array>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -434,4 +435,55 @@ void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bo
 
         wavefront.pop();
     }
+}
+
+float simmath::cubicIterpUGrid(float i, float j, const Grid2d<float> &grid)
+{
+    return simmath::cubicIterpGrid(i,j,grid,Vertex(0.f,-0.5f));
+}
+
+float simmath::cubicIterpVGrid(float i, float j, const Grid2d<float> &grid)
+{
+    return simmath::cubicIterpGrid(i,j,grid,Vertex(-0.5f,0.f));
+}
+
+float simmath::cubicIterpGrid(float i, float j, const Grid2d<float> &grid, Vertex gridOffset)
+{
+    i+= gridOffset.x();
+    j+= gridOffset.y();
+    float iFactor = simmath::frac(i);
+    float jFactor = simmath::frac(j);
+    float iInt = simmath::integr(i);
+    float jInt = simmath::integr(j);
+
+    auto calcWeights = [](float f)
+    {
+        float fSqrd = f*f;
+        float fCubed = fSqrd*f;
+        std::array<float,4> out = {0.f};
+        out[0] = -(1.f/3.f)*f + (1.f/2.f)*fSqrd - (1.f/6.f)*fCubed;
+        out[1] = 1.f - fSqrd + (1.f/2.f)*(fCubed-f);
+        out[2] = f + (1.f/2.f)*(fSqrd - fCubed);
+        out[3] = (1.f/6.f)*(fCubed - f);
+        return out;
+    };
+
+    std::array<float,4> iWeights = calcWeights(iFactor);
+    std::array<float,4> jWeights = calcWeights(jFactor);
+    std::array<float,4> temp = {0.f};
+
+    for(int index = 0; index < 4; index++)
+    {
+        int j = jInt + index - 1;
+        temp[index] = iWeights[0]*grid.getAt(i-1,j)
+                    + iWeights[1]*grid.getAt(i,j)
+                    + iWeights[2]*grid.getAt(i+1,j)
+                    + iWeights[3]*grid.getAt(i+2,j);
+    }
+
+    float output = jWeights[0]*temp[0]
+                 + jWeights[1]*temp[1]
+                 + jWeights[2]*temp[2]
+                 + jWeights[3]*temp[3];
+    return output;
 }

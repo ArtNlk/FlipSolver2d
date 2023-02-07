@@ -141,7 +141,8 @@ void FlipSolver::particleUpdate()
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-        Vertex oldVelocity(simmath::lerpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),simmath::lerpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
+        Vertex oldVelocity(simmath::cubicIterpUGrid(p.position.x(),p.position.y(),prevU) / SimSettings::dx(),
+                           simmath::cubicIterpVGrid(p.position.x(),p.position.y(),prevV) / SimSettings::dx());
         Vertex newVelocity = m_fluidVelocityGrid.velocityAt(p.position) / SimSettings::dx();
 //        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
 //        {
