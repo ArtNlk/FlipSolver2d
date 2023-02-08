@@ -3,6 +3,7 @@
 #include "flipsolver2d.h"
 #include "mathfuncs.h"
 #include "simsettings.h"
+#include <cmath>
 
 FlipSmokeSolver::FlipSmokeSolver(int sizeI, int sizeJ, int extrapNeighborRadius, bool vonNeumannNeighbors):
     FlipSolver(sizeI, sizeJ, extrapNeighborRadius, vonNeumannNeighbors),
@@ -130,6 +131,19 @@ void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
                 }
             }
         }
+    }
+}
+
+void FlipSmokeSolver::particleUpdate()
+{
+    FlipSolver::particleUpdate();
+    for(int i = m_markerParticles.size() - 1; i >= 0; i--)
+    {
+        MarkerParticle &p = m_markerParticles[i];
+        p.temperature = SimSettings::ambientTemp() +
+                (p.temperature - SimSettings::ambientTemp()) *
+                std::exp(-SimSettings::tempDecayRate() * SimSettings::stepDt());
+        p.smokeConcentrartion *= std::exp(-SimSettings::concentrartionDecayRate() * SimSettings::stepDt());
     }
 }
 

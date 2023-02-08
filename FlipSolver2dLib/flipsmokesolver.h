@@ -15,6 +15,8 @@ public:
 
     void calcPressureRhs(std::vector<double> &rhs) override;
 
+    void particleUpdate() override;
+
     void applyPressuresToVelocityField(std::vector<double> &pressures) override;
 
     DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix() override;

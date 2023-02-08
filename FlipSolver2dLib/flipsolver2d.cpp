@@ -381,7 +381,8 @@ void FlipSolver::reseedParticles()
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    //Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    Vertex velocity = Vertex();
                     int emitterId = m_emitterId.at(i,j);
                     float viscosity = m_sources[emitterId].viscosity();
                     float conc = m_sources[emitterId].concentrartion();

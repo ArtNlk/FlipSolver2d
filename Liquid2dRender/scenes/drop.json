@@ -1,0 +1,85 @@
+{
+  "settings": {
+    "simType": "flip",
+    "domainSizeI": 50,
+    "domainSizeJ": 50,
+    "resolution": 100,
+    "fps": 30,
+    "density": 1000,
+    "airDensity": 300,
+    "maxSubsteps": 1,
+    "pcgIterLimit": 5000,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "particleScale": 0.8,
+    "picRatio": 1,
+    "cflNumber": 5,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "solid",
+        "enabled": true,
+        "verts": [
+          [47,0],
+          [47,50],
+          [50,50],
+          [50,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "enabled": true,
+        "verts": [
+          [0,0],
+          [0,3],
+          [50,3],
+          [50,0]
+        ]
+      },
+          {
+        "type": "solid",
+        "enabled": true,
+        "verts": [
+          [0,0],
+          [0,50],
+          [3,50],
+          [3,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "enabled": true,
+        "verts": [
+          [0,47],
+          [0,50],
+          [50,50],
+          [50,47]
+        ]
+      },
+      {
+        "type": "fluid",
+        "viscosity": 0,
+        "enabled": true,
+        "verts": [
+          [40,3],
+          [40,47],
+          [47,47],
+          [47,3]
+        ]
+      },
+      {
+        "type": "fluid",
+        "viscosity": 0,
+        "enabled": true,
+        "verts": [
+          [10,20],
+          [10,30],
+          [20,30],
+          [20,20]
+        ]
+      }
+    ]
+  }
+}
