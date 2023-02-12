@@ -6,7 +6,7 @@
 class Emitter
 {
 public:
-    Emitter(float viscosity, float temperature, float concentration, float divergence, Geometry2d& geo);
+    Emitter(Geometry2d& geo);
 
     void setViscosity(float viscosity);
 
@@ -25,11 +25,15 @@ public:
     float divergence() const;
     void setDivergence(float newDivergence);
 
+    Vertex velocity() const;
+    void setVelocity(Vertex newVelocity);
+
 protected:
     float m_viscosity;
     float m_temperature;
     float m_concentrartion;
     float m_divergence;
+    Vertex m_velocity;
     Geometry2d m_geometry;
 };
 

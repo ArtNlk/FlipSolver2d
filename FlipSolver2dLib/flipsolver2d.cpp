@@ -160,6 +160,25 @@ void FlipSolver::particleUpdate()
     }
 }
 
+void FlipSolver::updateFromSources()
+{
+    for (int i = 0; i < m_sizeI; i++)
+    {
+        for (int j = 0; j < m_sizeJ; j++)
+        {
+            if(m_materialGrid.isSource(i,j))
+            {
+                int emitterId = m_emitterId.at(i,j);
+                m_viscosityGrid.at(i,j) = m_sources[emitterId].viscosity();
+                m_fluidVelocityGrid.setU(i,j,m_sources[emitterId].velocity().x() / SimSettings::dx());
+                m_fluidVelocityGrid.setV(i,j,m_sources[emitterId].velocity().y() / SimSettings::dx());
+                m_fluidVelocityGrid.setUValidity(i,j,true);
+                m_fluidVelocityGrid.setVValidity(i,j,true);
+            }
+        }
+    }
+}
+
 void FlipSolver::step()
 {
     updateSdf();
@@ -168,6 +187,7 @@ void FlipSolver::step()
     reseedParticles();
     updateMaterials();
     particleToGrid();
+    updateFromSources();
     m_fluidVelocityGrid.extrapolate(10);
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;

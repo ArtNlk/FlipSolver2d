@@ -8,12 +8,9 @@
 class Vertex
 {
 public:
-    Vertex(float x = 0.0f, float y = 0.0f, float z = 0.0f) :
-        m_x(x),
-        m_y(y),
-        m_z(z)
-    {
-    }
+    Vertex(float x = 0.0f, float y = 0.0f, float z = 0.0f);
+
+    Vertex(std::pair<float,float> &p);
 
     inline float &x() {return m_x;}
     inline float &y() {return m_y;}

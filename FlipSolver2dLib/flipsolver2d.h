@@ -115,6 +115,8 @@ protected:
 
     virtual void particleUpdate();
 
+    virtual void updateFromSources();
+
     virtual void step();
 
     virtual void calcPressureRhs(std::vector<double> &rhs);

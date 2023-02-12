@@ -9,6 +9,11 @@ class FlipSmokeSolver : public FlipSolver
 public:
     FlipSmokeSolver(int sizeI, int sizeJ, int extrapRadius = 1, bool vonNeumannNeighbors = false);
 
+    const Grid2d<float> smokeConcentration() const;
+
+    const Grid2d<float> temperature() const;
+
+protected:
     void applyBodyForces() override;
 
     void centeredParamsToGrid() override;
@@ -17,13 +22,13 @@ public:
 
     void particleUpdate() override;
 
+    void updateFromSources() override;
+
+    void reseedParticles() override;
+
     void applyPressuresToVelocityField(std::vector<double> &pressures) override;
 
     DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix() override;
-
-    const Grid2d<float> smokeConcentration() const;
-
-    const Grid2d<float> temperature() const;
 
 protected:
     Grid2d<float> m_temperature;

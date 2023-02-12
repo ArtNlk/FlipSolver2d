@@ -15,7 +15,6 @@ public:
     {
     }
 
-public:
     inline int sizeI() const
     {
         return m_sizeI;

@@ -329,19 +329,28 @@ void LiquidRenderApp::solverFromJson(json solverJson)
 
 Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
 {
-    float viscosity = tryGetValue(emitterJson,"viscosity",0.f);
     std::vector<std::pair<float,float>> verts = emitterJson["verts"]
                                                 .get<std::vector<std::pair<float,float>>>();
     float temp = tryGetValue(emitterJson,"temperature",273.f);
     float conc = tryGetValue(emitterJson,"concentrartion",1.f);
+    float viscosity = tryGetValue(emitterJson,"viscosity",0.f);
     float div = tryGetValue(emitterJson,"divergence",0.f);
+    std::pair<float,float> velocity = tryGetValue(emitterJson,"velocity",std::pair<float,float>(0.f, 0.f));
     Geometry2d geo;
     for(auto v : verts)
     {
         geo.addVertex(SimSettings::sceneScale() * Vertex(v.first,v.second));
     }
 
-    return Emitter(viscosity,temp,conc,div,geo);
+    Emitter output(geo);
+
+    output.setTemperature(temp);
+    output.setConcentrartion(conc);
+    output.setViscosity(viscosity);
+    output.setDivergence(div);
+    output.setVelocity(velocity);
+
+    return output;
 }
 
 Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)

@@ -10,8 +10,8 @@
     "particlesPerCell": 4,
     "picRatio": 0.03,
     "cflNumber": 1,
-    "temperatureDecayRate": 0.1,
-    "concentrationDecayRate": 0.05,
+    "temperatureDecayRate": 0.3,
+    "concentrationDecayRate": 0.2,
     "globalAcceleration": [9.8,0]
   },
   "solver": {

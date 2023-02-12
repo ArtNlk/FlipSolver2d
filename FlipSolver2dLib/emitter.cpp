@@ -1,10 +1,6 @@
 #include "emitter.h"
 
-Emitter::Emitter(float viscosity, float temperature, float concentration, float divergence, Geometry2d& geo):
-    m_viscosity(viscosity),
-    m_temperature(temperature),
-    m_concentrartion(concentration),
-    m_divergence(divergence),
+Emitter::Emitter(Geometry2d& geo):
     m_geometry(geo)
 {
 
@@ -58,4 +54,14 @@ float Emitter::divergence() const
 void Emitter::setDivergence(float newDivergence)
 {
     m_divergence = newDivergence;
+}
+
+Vertex Emitter::velocity() const
+{
+    return m_velocity;
+}
+
+void Emitter::setVelocity(Vertex newVelocity)
+{
+    m_velocity = newVelocity;
 }

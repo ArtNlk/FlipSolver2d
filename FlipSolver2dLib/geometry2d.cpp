@@ -76,3 +76,18 @@ float Geometry2d::signedDistance(float x, float y)
 {
     return signedDistance(Vertex(x,y));
 }
+
+Vertex::Vertex(float x, float y, float z) :
+    m_x(x),
+    m_y(y),
+    m_z(z)
+{
+}
+
+Vertex::Vertex(std::pair<float, float> &p) :
+    m_x(p.first),
+    m_y(p.second),
+    m_z(0.f)
+{
+
+}

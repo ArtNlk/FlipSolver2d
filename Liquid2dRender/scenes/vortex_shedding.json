@@ -1,0 +1,64 @@
+{
+  "settings": {
+    "simType": "smoke",
+    "domainSizeI": 100,
+    "domainSizeJ": 50,
+    "resolution": 100,
+    "fps": 30,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "cflNumber": 5,
+    "concentrationDecayRate": 0.01,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "source",
+        "viscosity": 0,
+        "temperature": 253,
+        "concentration": 1,
+        "velocity": [30,0],
+        "verts": [
+          [0,3],
+          [0,47],
+          [3,47],
+          [3,3]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [0,0],
+          [0,3],
+          [100,3],
+          [100,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [0,47],
+          [0,50],
+          [100,50],
+          [100,47]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [28.5,21.5],
+          [25,20],
+          [21.5,21.5],
+          [20,25],
+          [21.5,28.5],
+          [25,30],
+          [28.5,28.5],
+          [30,25]
+        ]
+      }
+    ]
+  }
+}
