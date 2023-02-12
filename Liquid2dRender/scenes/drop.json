@@ -70,10 +70,9 @@
         ]
       },
       {
-        "type": "source",
+        "type": "fluid",
         "viscosity": 0,
         "enabled": true,
-        "velocity": [-10,0],
         "verts": [
           [10,20],
           [10,30],
