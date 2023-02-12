@@ -552,9 +552,12 @@ void FluidRenderer::updateGridFromVelocity()
         {
             //float r = (m_solver->fluidVelocityGrid().getU(i,j) - min) / diff;
             //float g = (m_solver->fluidVelocityGrid().getV(i,j) - min) / diff;
-            float r = (std::abs(m_solver->fluidVelocityGrid().getU(i,j))) / m_velocityComponentRangeMax;
-            float g = (std::abs(m_solver->fluidVelocityGrid().getV(i,j))) / m_velocityComponentRangeMax;
-            setCellColor(i,j,Color(r,g,0.0));
+            //float r = (std::abs(m_solver->fluidVelocityGrid().getU(i,j))) / m_velocityComponentRangeMax;
+            //float g = (std::abs(m_solver->fluidVelocityGrid().getV(i,j))) / m_velocityComponentRangeMax;
+            Vertex velocity = m_solver->fluidVelocityGrid().velocityAt(static_cast<float>(i)+0.5f,
+                                                                       static_cast<float>(j)+0.5f);
+            Color c = hueColorRamp(velocity.distFromZero() / m_velocityRangeMax * SimSettings::dx());
+            setCellColor(i,j,c);
         }
     }
 }
