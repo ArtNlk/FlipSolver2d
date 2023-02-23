@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 
+#include "flipfiresolver.h"
 #include "flipsmokesolver.h"
 #include "flipsolver2d.h"
 #include "globalcallbackhandler.h"
@@ -245,6 +246,10 @@ void LiquidRenderApp::loadJson(std::string fileName)
                 m_solver.reset(new FlipSmokeSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1,true));
             break;
 
+            case SIMULATION_FIRE:
+                m_solver.reset(new FlipFireSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
+            break;
+
             case SIMULATION_MULTFLIP:
                 m_solver.reset(new MultiflipSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
             break;
@@ -271,6 +276,11 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::maxSubsteps() = tryGetValue(settingsJson,"maxSubsteps",30);
     SimSettings::stepDt() = SimSettings::frameDt() / SimSettings::maxSubsteps();
     SimSettings::fluidDensity() = tryGetValue(settingsJson,"density",1.f);
+    SimSettings::burnRate() = tryGetValue(settingsJson,"burnRate",0.05f);
+    SimSettings::ignitionTemp() = tryGetValue(settingsJson,"ignitionTemp",250.f);
+    SimSettings::smokeProportion() = tryGetValue(settingsJson,"smokeEmission",1.f);
+    SimSettings::heatProportion() = tryGetValue(settingsJson,"heatEmission",1.f);
+    SimSettings::divergenceProportion() = tryGetValue(settingsJson,"billowing",0.1f);
     SimSettings::airDensity() = tryGetValue(settingsJson,"airDensity",SimSettings::fluidDensity() * 0.001f);
     SimSettings::randomSeed() = tryGetValue(settingsJson,"seed",0);
     SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
@@ -293,6 +303,10 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     else if(simTypeName == "smoke")
     {
         SimSettings::simMethod() = SimulationMethod::SIMULATION_SMOKE;
+    }
+    else if(simTypeName == "fire")
+    {
+        SimSettings::simMethod() = SimulationMethod::SIMULATION_FIRE;
     }
     else if(simTypeName == "multiflip")
     {
@@ -332,9 +346,11 @@ Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
     std::vector<std::pair<float,float>> verts = emitterJson["verts"]
                                                 .get<std::vector<std::pair<float,float>>>();
     float temp = tryGetValue(emitterJson,"temperature",273.f);
-    float conc = tryGetValue(emitterJson,"concentrartion",1.f);
+    float conc = tryGetValue(emitterJson,"concentration",1.f);
     float viscosity = tryGetValue(emitterJson,"viscosity",0.f);
+    float fuel = tryGetValue(emitterJson,"fuel",1.f);
     float div = tryGetValue(emitterJson,"divergence",0.f);
+    bool transfersVelocity = tryGetValue(emitterJson,"transferVelocity",false);
     std::pair<float,float> velocity = tryGetValue(emitterJson,"velocity",std::pair<float,float>(0.f, 0.f));
     Geometry2d geo;
     for(auto v : verts)
@@ -347,8 +363,10 @@ Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
     output.setTemperature(temp);
     output.setConcentrartion(conc);
     output.setViscosity(viscosity);
+    output.setFuel(fuel);
     output.setDivergence(div);
     output.setVelocity(velocity);
+    output.setVelocityTransfer(transfersVelocity);
 
     return output;
 }

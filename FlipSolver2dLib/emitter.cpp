@@ -56,6 +56,16 @@ void Emitter::setDivergence(float newDivergence)
     m_divergence = newDivergence;
 }
 
+float Emitter::fuel() const
+{
+    return m_fuel;
+}
+
+void Emitter::setFuel(float newFuel)
+{
+    m_fuel = newFuel;
+}
+
 Vertex Emitter::velocity() const
 {
     return m_velocity;
@@ -64,4 +74,14 @@ Vertex Emitter::velocity() const
 void Emitter::setVelocity(Vertex newVelocity)
 {
     m_velocity = newVelocity;
+}
+
+bool Emitter::velocityTransfer() const
+{
+    return m_transferVelocity;
+}
+
+void Emitter::setVelocityTransfer(bool velocityTransfer)
+{
+    m_transferVelocity = velocityTransfer;
 }

@@ -114,10 +114,7 @@ public:
 
     void fill(T value)
     {
-        for(int i = 0; i < m_data.size(); i++)
-        {
-            m_data[i] = value;
-        }
+        m_data.assign(m_data.size(),value);
     }
 
     std::vector<T> &data()

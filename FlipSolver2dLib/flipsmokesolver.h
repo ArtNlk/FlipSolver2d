@@ -22,7 +22,7 @@ protected:
 
     void particleUpdate() override;
 
-    void updateFromSources() override;
+    void afterTransfer() override;
 
     void reseedParticles() override;
 

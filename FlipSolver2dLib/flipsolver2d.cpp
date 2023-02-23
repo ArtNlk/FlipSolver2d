@@ -160,7 +160,7 @@ void FlipSolver::particleUpdate()
     }
 }
 
-void FlipSolver::updateFromSources()
+void FlipSolver::afterTransfer()
 {
     for (int i = 0; i < m_sizeI; i++)
     {
@@ -170,10 +170,13 @@ void FlipSolver::updateFromSources()
             {
                 int emitterId = m_emitterId.at(i,j);
                 m_viscosityGrid.at(i,j) = m_sources[emitterId].viscosity();
-                m_fluidVelocityGrid.setU(i,j,m_sources[emitterId].velocity().x() / SimSettings::dx());
-                m_fluidVelocityGrid.setV(i,j,m_sources[emitterId].velocity().y() / SimSettings::dx());
-                m_fluidVelocityGrid.setUValidity(i,j,true);
-                m_fluidVelocityGrid.setVValidity(i,j,true);
+                if(m_sources[emitterId].velocityTransfer())
+                {
+                    m_fluidVelocityGrid.setU(i,j,m_sources[emitterId].velocity().x() / SimSettings::dx());
+                    m_fluidVelocityGrid.setV(i,j,m_sources[emitterId].velocity().y() / SimSettings::dx());
+                    m_fluidVelocityGrid.setUValidity(i,j,true);
+                    m_fluidVelocityGrid.setVValidity(i,j,true);
+                }
             }
         }
     }
@@ -187,7 +190,7 @@ void FlipSolver::step()
     reseedParticles();
     updateMaterials();
     particleToGrid();
-    updateFromSources();
+    afterTransfer();
     m_fluidVelocityGrid.extrapolate(10);
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
@@ -1170,6 +1173,7 @@ void FlipSolver::centeredParamsToGrid()
     Grid2d<float> centeredWeights(m_sizeI,m_sizeJ,1e-10f);
 
     m_viscosityGrid.fill(0.f);
+    m_divergenceControl.fill(0.f);
     m_knownCenteredParams.fill(false);
 
     for(MarkerParticle &p : m_markerParticles)

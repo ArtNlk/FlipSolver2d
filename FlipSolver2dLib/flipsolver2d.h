@@ -25,6 +25,7 @@ struct MarkerParticle
     float viscosity;
     float temperature;
     float smokeConcentrartion;
+    float fuel;
     FluidMaterial material = FluidMaterial::FLUID;
     float testValue = 0.f;
 };
@@ -115,7 +116,7 @@ protected:
 
     virtual void particleUpdate();
 
-    virtual void updateFromSources();
+    virtual void afterTransfer();
 
     virtual void step();
 

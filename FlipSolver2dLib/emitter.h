@@ -3,7 +3,7 @@
 
 #include "geometry2d.h"
 
-class Emitter
+class  Emitter
 {
 public:
     Emitter(Geometry2d& geo);
@@ -25,14 +25,22 @@ public:
     float divergence() const;
     void setDivergence(float newDivergence);
 
+    float fuel() const;
+    void setFuel(float newFuel);
+
     Vertex velocity() const;
     void setVelocity(Vertex newVelocity);
+
+    bool velocityTransfer() const;
+    void setVelocityTransfer(bool velocityTransfer);
 
 protected:
     float m_viscosity;
     float m_temperature;
     float m_concentrartion;
     float m_divergence;
+    float m_fuel;
+    bool m_transferVelocity;
     Vertex m_velocity;
     Geometry2d m_geometry;
 };

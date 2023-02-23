@@ -155,9 +155,10 @@ void FlipSmokeSolver::particleUpdate()
     }
 }
 
-void FlipSmokeSolver::updateFromSources()
+void FlipSmokeSolver::afterTransfer()
 {
-    FlipSolver::updateFromSources();
+    FlipSolver::afterTransfer();
+    m_divergenceControl.fill(0.f);
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -168,7 +169,7 @@ void FlipSmokeSolver::updateFromSources()
                 m_smokeConcentration.at(i,j) = m_sources[emitterId].concentrartion();
                 m_temperature.at(i,j) = m_sources[emitterId].temperature();
             }
-            m_testGrid.at(i,j) = m_temperature.at(i,j) / 1000.f;
+            //m_testGrid.at(i,j) = m_temperature.at(i,j) / 1000.f;
         }
     }
 }

@@ -1,6 +1,6 @@
 {
   "settings": {
-    "simType": "smoke",
+    "simType": "fire",
     "domainSizeI": 50,
     "domainSizeJ": 50,
     "resolution": 50,
@@ -10,8 +10,13 @@
     "particlesPerCell": 4,
     "picRatio": 0.03,
     "cflNumber": 1,
-    "temperatureDecayRate": 0.3,
+    "temperatureDecayRate": 1,
     "concentrationDecayRate": 0.2,
+    "burnRate": 2,
+    "ignitionTemp": 250,
+    "smokeEmission": 1,
+    "heatEmission": 1000,
+    "billowing": 0.4,
     "globalAcceleration": [9.8,0]
   },
   "solver": {
@@ -75,7 +80,8 @@
         "viscosity": 0,
         "divergence": 0,
         "temperature": 1273,
-        "concentration": 1,
+        "fuel": 1,
+        "concentration": 0,
         "transferVelocity": false,
         "verts": [
           [40,20],

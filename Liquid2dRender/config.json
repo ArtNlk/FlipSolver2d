@@ -6,6 +6,8 @@
   "-scene": "./scenes/smoke_test.json",
   "-scene": "./scenes/smoke_test_empty.json",
   "-scene": "./scenes/glugging_test.json",
-  "scene": "./scenes/drop.json",
-  "-scene": "./scenes/vortex_shedding.json"
+  "-scene": "./scenes/drop.json",
+  "-scene": "./scenes/vortex_shedding.json",
+  "-scene": "./scenes/fire_test.json",
+  "scene": "./scenes/point_fire.json"
 }

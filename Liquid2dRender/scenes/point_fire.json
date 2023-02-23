@@ -1,0 +1,41 @@
+{
+  "settings": {
+    "simType": "fire",
+    "domainSizeI": 150,
+    "domainSizeJ": 50,
+    "resolution": 150,
+    "fps": 30,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "cflNumber": 1,
+    "temperatureDecayRate": 1,
+    "concentrationDecayRate": 0.2,
+    "burnRate": 2,
+    "ignitionTemp": 250,
+    "smokeEmission": 1,
+    "heatEmission": 200,
+    "billowing": 0.4,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "source",
+        "viscosity": 0,
+        "divergence": 0,
+        "temperature": 1273,
+        "fuel": 1,
+        "concentration": 0,
+        "transferVelocity": false,
+        "verts": [
+          [140,20],
+          [140,30],
+          [150,30],
+          [150,20]
+        ]
+      }
+    ]
+  }
+}

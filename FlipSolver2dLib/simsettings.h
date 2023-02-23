@@ -3,7 +3,7 @@
 
 #include "geometry2d.h"
 
-enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_MULTFLIP};
+enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_FIRE, SIMULATION_MULTFLIP};
 
 class SimSettings
 {
@@ -140,6 +140,31 @@ public:
         return m_instance.m_sceneScale;
     }
 
+    static inline float& ignitionTemp()
+    {
+        return m_instance.m_ignitionTemperature;
+    }
+
+    static inline float& burnRate()
+    {
+        return m_instance.m_burnRate;
+    }
+
+    static inline float& smokeProportion()
+    {
+        return m_instance.m_smokeProportion;
+    }
+
+    static inline float& heatProportion()
+    {
+        return m_instance.m_heatProportion;
+    }
+
+    static inline float& divergenceProportion()
+    {
+        return m_instance.m_divergenceProportion;
+    }
+
 protected:
     static SimSettings m_instance;
 
@@ -167,6 +192,11 @@ protected:
     int m_pcgIterLimit;
     float m_surfaceTensionFactor;
     float m_sceneScale;
+    float m_ignitionTemperature;
+    float m_burnRate;
+    float m_smokeProportion;
+    float m_heatProportion;
+    float m_divergenceProportion;
     SimulationMethod m_simType;
 };
 
