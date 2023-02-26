@@ -16,11 +16,14 @@ template<class T>
 class Grid2d : public LinearIndexable2d
 {
 public:
-    Grid2d(int sizeI, int sizeJ, T initValue = T(), OOBStrategy oobStrat = OOB_ERROR, T oobVal = T()) :
+    Grid2d(int sizeI, int sizeJ,
+           T initValue = T(), OOBStrategy oobStrat = OOB_ERROR,
+           T oobVal = T(), Vertex gridOffset = Vertex(0.5f,0.5f)) :
         LinearIndexable2d(sizeI,sizeJ),
         m_oobStrat(oobStrat),
         m_data(sizeI*sizeJ),
-        m_oobConst(oobVal)
+        m_oobConst(oobVal),
+        m_gridOffset(gridOffset)
     {
         m_data.assign(sizeI*sizeJ,initValue);
     }
@@ -46,7 +49,7 @@ public:
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
     T interpolateAt(float i, float j)
     {
-        return simmath::lerpCenteredGrid(i,j,*this);
+        return simmath::lerpCenteredGrid(i + m_gridOffset.x(), j + m_gridOffset.y(), *this);
     }
 
     typename std::vector<T>::reference at(int i, int j)
@@ -145,6 +148,7 @@ public:
 protected:
     std::vector<T> m_data;
     OOBStrategy m_oobStrat;
+    Vertex m_gridOffset;
     T m_oobConst;
 };
 

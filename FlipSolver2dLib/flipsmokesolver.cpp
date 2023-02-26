@@ -22,18 +22,18 @@ void FlipSmokeSolver::applyBodyForces()
         {
             if(m_fluidVelocityGrid.velocityGridU().inBounds(i,j))
             {
-                float tempAt = m_temperature.interpolateAt(i,static_cast<float>(j) + 0.5f);
+                float tempAt = m_temperature.interpolateAt(static_cast<float>(i)-0.5f,j);
                 float tempDiff = tempAt - SimSettings::ambientTemp();
-                float concentration = m_smokeConcentration.interpolateAt(i,static_cast<float>(j) + 0.5f);
+                float concentration = m_smokeConcentration.interpolateAt(static_cast<float>(i)-0.5f,j);
                 float accelerationU = (alpha * concentration - beta * tempDiff) *
                                         SimSettings::globalAcceleration().x() * SimSettings::stepDt();
                 m_fluidVelocityGrid.u(i,j) += accelerationU;
             }
             if(m_fluidVelocityGrid.velocityGridV().inBounds(i,j))
             {
-                float tempAt = m_temperature.interpolateAt(static_cast<float>(i) + 0.5f,j);
+                float tempAt = m_temperature.interpolateAt(i,static_cast<float>(j)-0.5f);
                 float tempDiff = tempAt - SimSettings::ambientTemp();
-                float concentration = m_smokeConcentration.interpolateAt(static_cast<float>(i) + 0.5f,j);
+                float concentration = m_smokeConcentration.interpolateAt(i,static_cast<float>(j)-0.5f);
                 float accelerationV = (alpha * concentration - beta * tempDiff) *
                                         SimSettings::globalAcceleration().y() * SimSettings::stepDt();
                 m_fluidVelocityGrid.v(i,j) += accelerationV;

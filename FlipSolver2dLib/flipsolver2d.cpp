@@ -285,7 +285,7 @@ void FlipSolver::updateSources()
             for(int emitterIdx = 0; emitterIdx < m_sources.size(); emitterIdx++)
             {
                 Emitter& e = m_sources[emitterIdx];
-                if(e.geometry().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                if(e.geometry().signedDistance(i*dx,j*dx) <= 0.f)
                 {
                     m_materialGrid.at(i,j) = FluidMaterial::SOURCE;
                     m_emitterId.at(i,j) = emitterIdx;
