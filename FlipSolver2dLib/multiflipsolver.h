@@ -54,7 +54,7 @@ protected:
     StaggeredVelocityGrid m_airVelocityGrid;
     StaggeredVelocityGrid m_savedAirVelocityGrid;
 
-    Grid2d<float> m_airSdf;
+    SdfGrid m_airSdf;
     Grid2d<int> m_airParticleCounts;
 };
 

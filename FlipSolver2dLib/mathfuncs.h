@@ -44,10 +44,6 @@ namespace simmath
                    std::function<float(Grid2d<float>&,Vertex&, void*)> &updateFunc,
                    void* additionalParameters);
 
-    template<typename T>
-    void breadthFirstExtrapolate(Grid2d<T> &extrapolatedGrid, Grid2d<bool> &flagGrid, int extrapRadius,
-                                 int neighborRadius, bool vonNeumannNeighborMode);
-
     float normalDerivLinearExapolationUpdate(Grid2d<float> &grid, Vertex& pos, void*);
     float sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex& pos, void* normalDerivGrid);
     Grid2d<float> calculateCenteredGridCurvature(Grid2d<float>& grid);

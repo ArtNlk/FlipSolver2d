@@ -39,7 +39,7 @@ void FlipFireSolver::combustionUpdate()
             if(m_temperature.at(i,j) > igninitonTemp && m_fuel.at(i,j) > 0.f)
             {
                 float burntFuel = std::min(SimSettings::stepDt() * burnRate,m_fuel.at(i,j));
-                m_testGrid.at(i,j) = m_fuel.at(i,j);
+                //m_testGrid.at(i,j) = m_fuel.at(i,j);
                 m_fuel.at(i,j) -= burntFuel;
                 m_smokeConcentration.at(i,j) += SimSettings::smokeProportion() * burntFuel;
                 m_temperature.at(i,j) += SimSettings::heatProportion() * burntFuel;

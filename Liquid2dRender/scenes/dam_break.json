@@ -1,12 +1,13 @@
 {
   "settings": {
-    "simType": "flip",
+    "simType": "multiflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 100,
+    "resolution": 50,
     "fps": 30,
-    "density": 1000,
-    "airDensity": 300,
+    "density": 1,
+    "airDensity": 0.001,
+    "surfaceTensionFactor": 0.01,
     "maxSubsteps": 1,
     "pcgIterLimit": 5000,
     "seed": 0,
@@ -40,7 +41,7 @@
       },
           {
         "type": "solid",
-        "enabled": false,
+        "enabled": true,
         "verts": [
           [0,0],
           [0,50],

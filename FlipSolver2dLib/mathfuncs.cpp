@@ -132,7 +132,7 @@ float simmath::avg(float a, float b)
 
 void simmath::fastSweep(Grid2d<float> &values, Grid2d<bool> &extrapFlags, std::function<float (Grid2d<float> &, Vertex &, void *)> &updateFunc, void *additionalParameters)
 {
-    int maxIter = 10;
+    int maxIter = 100;
     float err = 0.0;
     float maxError = 1e-4f;
     for(int i = 0; i < values.sizeI(); i++)
