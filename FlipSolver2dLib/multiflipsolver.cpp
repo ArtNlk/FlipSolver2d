@@ -33,44 +33,44 @@ void MultiflipSolver::calcPressureRhs(std::vector<double> &rhs)
             if (!m_materialGrid.isSolid(i,j))
             {
                 int linearIdx = linearIndex(i,j);
-                float weightedUCurrent = getWeightedVelocityUSample(i,j);
-                float weightedVCurrent = getWeightedVelocityVSample(i,j);
-                float weightedUIp1 = getWeightedVelocityUSample(i+1,j);
-                float weightedVJp1 = getWeightedVelocityVSample(i,j+1);
 
-                rhs[linearIdx] = -scale * (weightedUIp1-weightedUCurrent
-                                        +weightedVJp1-weightedVCurrent);
+                rhs[linearIdx] = -scale * divergenceAt(i,j);
                 double surfaceTensionScale = SimSettings::stepDt() / (SimSettings::dx() * SimSettings::dx());
-                double surfaceTensionFactor = SimSettings::surfaceTensionFactor() * curvatureGrid.at(i,j);
+                Vertex uSamplePos(0.5f + i, j);
+                Vertex vSamplePos(i, 0.5f + j);
+                double surfaceTensionFactorU = SimSettings::surfaceTensionFactor()
+                                                * curvatureGrid.interpolateAt(uSamplePos);
+                double surfaceTensionFactorV = SimSettings::surfaceTensionFactor()
+                                                * curvatureGrid.interpolateAt(vSamplePos);
 
-                if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i-1,j) < 0.f)
+                if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i-1,j) < 0.f ||
+                    m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i,j-1) < 0.f)
                 {
-                    rhs[linearIdx] += surfaceTensionFactor * surfaceTensionScale * (1.f/getWeightedDensityForUSample(i,j));
-                }
-                if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i,j-1) < 0.f)
-                {
-                    rhs[linearIdx] += surfaceTensionFactor * surfaceTensionScale * (1.f/getWeightedDensityForVSample(i,j));
+                    rhs[linearIdx] += surfaceTensionFactorU * surfaceTensionScale * (1.f/getWeightedDensityForUSample(i,j));
+                    //m_testGrid.at(i,j) = 1.f;
+                    rhs[linearIdx] += surfaceTensionFactorV * surfaceTensionScale * (1.f/getWeightedDensityForVSample(i,j));
+                    //m_testGrid.at(i,j) = 1.f;
                 }
 
                 if(m_materialGrid.isSolid(i-1,j))
                 {
-                    rhs[linearIdx] -= scale * static_cast<double>(getWeightedVelocityUSample(i,j) - 0);
+                    rhs[linearIdx] -= scale * static_cast<double>(getWeightedVelocityUSample(i,j) - 0.);
                 }
                 if(m_materialGrid.isSolid(i+1,j))
                 {
-                    rhs[linearIdx] += scale * static_cast<double>(getWeightedVelocityUSample(i+1,j) - 0);
+                    rhs[linearIdx] += scale * static_cast<double>(getWeightedVelocityUSample(i+1,j) - 0.);
                 }
 
                 if(m_materialGrid.isSolid(i,j-1))
                 {
-                    rhs[linearIdx] -= scale * static_cast<double>(getWeightedVelocityVSample(i,j) - 0);
+                    rhs[linearIdx] -= scale * static_cast<double>(getWeightedVelocityVSample(i,j) - 0.);
                 }
                 if(m_materialGrid.isSolid(i,j+1))
                 {
-                    rhs[linearIdx] += scale * static_cast<double>(getWeightedVelocityVSample(i,j+1) - 0);
+                    rhs[linearIdx] += scale * static_cast<double>(getWeightedVelocityVSample(i,j+1) - 0.);
                 }
 
-                m_testGrid.at(i,j) = rhs[linearIdx];
+                //m_testGrid.at(i,j) = rhs[linearIdx];
                 if(std::isnan(rhs[linearIdx]) || std::isinf(rhs[linearIdx]))
                 {
                     std::cout << "Nan or inf in multiflip pressure RHS!\n";
@@ -174,20 +174,20 @@ void MultiflipSolver::step()
     bumpParticles();
     updateMaterials();
     particleToGrid();
-    m_fluidVelocityGrid.extrapolate(10);
-    m_airVelocityGrid.extrapolate(10);
+    m_fluidVelocityGrid.extrapolate(100);
+    m_airVelocityGrid.extrapolate(100);
 
-    for(int i = 0; i < m_sizeI; i++)
-    {
-        for(int j = 0; j < m_sizeJ; j++)
-        {
-            if(m_materialGrid.isFluid(i,j))
-            {
-                m_airVelocityGrid.u(i,j) = m_fluidVelocityGrid.u(i,j);
-                m_airVelocityGrid.v(i,j) = m_fluidVelocityGrid.v(i,j);
-            }
-        }
-    }
+//    for(int i = 0; i < m_sizeI; i++)
+//    {
+//        for(int j = 0; j < m_sizeJ; j++)
+//        {
+//            if(m_materialGrid.isFluid(i,j))
+//            {
+//                m_airVelocityGrid.u(i,j) = m_fluidVelocityGrid.u(i,j);
+//                m_airVelocityGrid.v(i,j) = m_fluidVelocityGrid.v(i,j);
+//            }
+//        }
+//    }
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     m_savedAirVelocityGrid = m_airVelocityGrid;
@@ -206,17 +206,17 @@ void MultiflipSolver::step()
     //return;
     m_fluidVelocityGrid.extrapolate(10);
     m_airVelocityGrid.extrapolate(10);
-    for(int i = 0; i < m_sizeI; i++)
-    {
-        for(int j = 0; j < m_sizeJ; j++)
-        {
-            if(m_materialGrid.isFluid(i,j))
-            {
-                m_airVelocityGrid.u(i,j) = m_fluidVelocityGrid.u(i,j);
-                m_airVelocityGrid.v(i,j) = m_fluidVelocityGrid.v(i,j);
-            }
-        }
-    }
+//    for(int i = 0; i < m_sizeI; i++)
+//    {
+//        for(int j = 0; j < m_sizeJ; j++)
+//        {
+//            if(m_materialGrid.isFluid(i,j))
+//            {
+//                m_airVelocityGrid.u(i,j) = m_fluidVelocityGrid.u(i,j);
+//                m_airVelocityGrid.v(i,j) = m_fluidVelocityGrid.v(i,j);
+//            }
+//        }
+//    }
     particleUpdate();
     advect();
 }
@@ -630,8 +630,8 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
 
     Grid2d<float> curvatureGrid = simmath::calculateCenteredGridCurvature(m_fluidSdf);
 
-    float minFluidFraction = 0.001;
-    float maxFluidFraction = 0.999;
+    float minFluidFraction = 0.01;
+    float maxFluidFraction = 0.09;
 
     for (int i = m_sizeI - 1; i >= 0; i--)
     {
@@ -640,7 +640,12 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
             int currentIdx = linearIndex(i,j);
             int im1Idx = linearIndex(i-1,j);
             int jm1Idx = linearIndex(i,j-1);
-            double surfaceTensionFactor = SimSettings::surfaceTensionFactor() * curvatureGrid.at(i,j);
+            Vertex uSamplePos(0.5f + i, j);
+            Vertex vSamplePos(i, 0.5f + j);
+            double surfaceTensionFactorU = SimSettings::surfaceTensionFactor()
+                                            * curvatureGrid.interpolateAt(uSamplePos);
+            double surfaceTensionFactorV = SimSettings::surfaceTensionFactor()
+                                            * curvatureGrid.interpolateAt(vSamplePos);
             //m_testGrid.at(i,j) = pressures[currentIdx]/100.f;
             //U part
             //m_testGrid.at(i,j) = getWeightedDensityForUSample(i,j);
@@ -660,6 +665,7 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
                     float pressureGrad = pressures[currentIdx]
                                         - (im1Idx != -1? pressures[im1Idx] : 0.f);
                     //m_testGrid.at(i,j) = pressures[currentIdx] / 100000.f;
+                    //m_testGrid.at(i,j) = pressureGrad;
                     if(fluidFaceFraction > minFluidFraction)
                     {
                         if(fluidFaceFraction < maxFluidFraction)
@@ -668,8 +674,9 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
                             m_airVelocityGrid.u(i,j) -= preScale * invWeightedDensity * pressureGrad;
                             if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i-1,j) < 0.f)
                             {
-                                m_fluidVelocityGrid.u(i,j) += preScale * invWeightedDensity * surfaceTensionFactor;
-                                m_airVelocityGrid.u(i,j) += preScale * invWeightedDensity * surfaceTensionFactor;
+                                m_fluidVelocityGrid.u(i,j) += preScale * invWeightedDensity * surfaceTensionFactorU;
+                                m_airVelocityGrid.u(i,j) += preScale * invWeightedDensity * surfaceTensionFactorU;
+                                m_testGrid.at(i,j) = 1.f;
                             }
                             m_fluidVelocityGrid.setUValidity(i,j,true);
                             m_airVelocityGrid.setUValidity(i,j,true);
@@ -679,7 +686,7 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
                             m_fluidVelocityGrid.u(i,j) -= preScale * invWeightedDensity * pressureGrad;
                             if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i-1,j) < 0.f)
                             {
-                                m_fluidVelocityGrid.u(i,j) += preScale * invWeightedDensity * surfaceTensionFactor;
+                                m_fluidVelocityGrid.u(i,j) += preScale * invWeightedDensity * surfaceTensionFactorU;
                             }
                             m_fluidVelocityGrid.setUValidity(i,j,true);
                             m_airVelocityGrid.setUValidity(i,j,false);
@@ -690,7 +697,7 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
                         m_airVelocityGrid.u(i,j) -= preScale * invWeightedDensity * pressureGrad;
                         if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i-1,j) < 0.f)
                         {
-                            m_airVelocityGrid.u(i,j) += preScale * invWeightedDensity * surfaceTensionFactor;
+                            m_airVelocityGrid.u(i,j) += preScale * invWeightedDensity * surfaceTensionFactorU;
                         }
                         m_fluidVelocityGrid.setUValidity(i,j,false);
                         m_airVelocityGrid.setUValidity(i,j,true);
@@ -727,8 +734,8 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
                             m_airVelocityGrid.v(i,j) -= preScale * invWeightedDensity * pressureGrad;
                             if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i,j-1) < 0.f)
                             {
-                                m_fluidVelocityGrid.v(i,j) += preScale * invWeightedDensity * surfaceTensionFactor;
-                                m_airVelocityGrid.v(i,j) += preScale * invWeightedDensity * surfaceTensionFactor;
+                                m_fluidVelocityGrid.v(i,j) += preScale * invWeightedDensity * surfaceTensionFactorV;
+                                m_airVelocityGrid.v(i,j) += preScale * invWeightedDensity * surfaceTensionFactorV;
                             }
                             m_fluidVelocityGrid.setVValidity(i,j,true);
                             m_airVelocityGrid.setVValidity(i,j,true);
@@ -738,7 +745,7 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
                             m_fluidVelocityGrid.v(i,j) -= preScale * invWeightedDensity * pressureGrad;
                             if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i,j-1) < 0.f)
                             {
-                                m_fluidVelocityGrid.v(i,j) += preScale * invWeightedDensity * surfaceTensionFactor;
+                                m_fluidVelocityGrid.v(i,j) += preScale * invWeightedDensity * surfaceTensionFactorV;
                             }
                             m_fluidVelocityGrid.setVValidity(i,j,true);
                             m_airVelocityGrid.setVValidity(i,j,false);
@@ -749,7 +756,7 @@ void MultiflipSolver::applyPressuresToVelocityField(std::vector<double> &pressur
                         m_airVelocityGrid.v(i,j) -= preScale * invWeightedDensity * pressureGrad;
                         if(m_fluidSdf.getAt(i,j) * m_fluidSdf.getAt(i,j-1) < 0.f)
                         {
-                            m_airVelocityGrid.v(i,j) += preScale * invWeightedDensity * surfaceTensionFactor;
+                            m_airVelocityGrid.v(i,j) += preScale * invWeightedDensity * surfaceTensionFactorV;
                         }
                         m_fluidVelocityGrid.setVValidity(i,j,false);
                         m_airVelocityGrid.setVValidity(i,j,true);
@@ -797,9 +804,9 @@ void MultiflipSolver::particleUpdate()
         MarkerParticle &p = m_markerParticles[i];
         if(p.material == FluidMaterial::FLUID)
         {
-            Vertex oldFluidVelocity(simmath::lerpUGrid(p.position.x(),p.position.y(),prevFluidU)
+            Vertex oldFluidVelocity(simmath::cubicIterpUGrid(p.position.x(),p.position.y(),prevFluidU)
                                     / SimSettings::dx(),
-                               simmath::lerpVGrid(p.position.x(),p.position.y(),prevFluidV)
+                               simmath::cubicIterpVGrid(p.position.x(),p.position.y(),prevFluidV)
                                     / SimSettings::dx());
             Vertex newFluidVelocity = m_fluidVelocityGrid.velocityAt(p.position) / SimSettings::dx();
             p.velocity = SimSettings::picRatio() * newFluidVelocity +
@@ -807,9 +814,9 @@ void MultiflipSolver::particleUpdate()
         }
         else
         {
-            Vertex oldAirVelocity(simmath::lerpUGrid(p.position.x(),p.position.y(),prevAirU)
+            Vertex oldAirVelocity(simmath::cubicIterpUGrid(p.position.x(),p.position.y(),prevAirU)
                                   / SimSettings::dx(),
-                               simmath::lerpVGrid(p.position.x(),p.position.y(),prevAirV)
+                               simmath::cubicIterpVGrid(p.position.x(),p.position.y(),prevAirV)
                                   / SimSettings::dx());
             Vertex newAirVelocity = m_airVelocityGrid.velocityAt(p.position) / SimSettings::dx();
             p.velocity = SimSettings::picRatio() * newAirVelocity +
@@ -870,6 +877,17 @@ void MultiflipSolver::bumpParticles()
             }
         }
     }
+}
+
+double MultiflipSolver::divergenceAt(int i, int j)
+{
+    double weightedUCurrent = getWeightedVelocityUSample(i,j);
+    double weightedVCurrent = getWeightedVelocityVSample(i,j);
+    double weightedUIp1 = getWeightedVelocityUSample(i+1,j);
+    double weightedVJp1 = getWeightedVelocityVSample(i,j+1);
+
+    return (weightedUIp1-weightedUCurrent
+            +weightedVJp1-weightedVCurrent);
 }
 
 float MultiflipSolver::getFaceFractionUSample(int i, int j)

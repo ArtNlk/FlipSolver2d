@@ -42,6 +42,9 @@ public:
     void bumpParticles();
 
 protected:
+
+    double divergenceAt(int i, int j) override;
+
     float getFaceFractionUSample(int i, int j);
     float getFaceFractionVSample(int i, int j);
 

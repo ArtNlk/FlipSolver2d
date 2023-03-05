@@ -195,7 +195,9 @@ void FlipSolver::step()
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
+    std::vector<double> rhs(cellCount(),0.0);
     project();
+    calcPressureRhs(rhs);
     updateVelocityFromSolids();
     applyViscosity();
     project();
