@@ -1,6 +1,6 @@
 {
   "settings": {
-    "simType": "multiflip",
+    "simType": "flip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
     "resolution": 50,

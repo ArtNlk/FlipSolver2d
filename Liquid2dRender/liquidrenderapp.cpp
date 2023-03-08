@@ -9,7 +9,6 @@
 #include "flipsolver2d.h"
 #include "globalcallbackhandler.h"
 #include "logger.h"
-#include "multiflipsolver.h"
 #include "simsettings.h"
 
 LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
@@ -249,10 +248,6 @@ void LiquidRenderApp::loadJson(std::string fileName)
             case SIMULATION_FIRE:
                 m_solver.reset(new FlipFireSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
             break;
-
-            case SIMULATION_MULTFLIP:
-                m_solver.reset(new MultiflipSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
-            break;
         }
 
         solverFromJson(sceneJson["solver"]);
@@ -307,10 +302,6 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     else if(simTypeName == "fire")
     {
         SimSettings::simMethod() = SimulationMethod::SIMULATION_FIRE;
-    }
-    else if(simTypeName == "multiflip")
-    {
-        SimSettings::simMethod() = SimulationMethod::SIMULATION_MULTFLIP;
     }
 
     if(SimSettings::domainSizeI() > SimSettings::domainSizeJ())

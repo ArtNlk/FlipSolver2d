@@ -1,11 +1,10 @@
 {
   "-scene": "./scenes/waterfall.json",
-  "--scene": "./scenes/dam_break.json",
+  "scene": "./scenes/dam_break.json",
   "-scene": "./scenes/test_scene.json",
   "-scene": "./scenes/viscosity_test.json",
   "-scene": "./scenes/smoke_test.json",
   "-scene": "./scenes/smoke_test_empty.json",
-  "scene": "./scenes/glugging_test.json",
   "-scene": "./scenes/drop.json",
   "-scene": "./scenes/vortex_shedding.json",
   "-scene": "./scenes/fire_test.json",

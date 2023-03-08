@@ -3,7 +3,7 @@
 
 #include "geometry2d.h"
 
-enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_FIRE, SIMULATION_MULTFLIP};
+enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_FIRE};
 
 class SimSettings
 {

@@ -499,8 +499,7 @@ void FluidRenderer::updateGridFromMaterial()
                 break;
 
                 case FluidMaterial::FLUID:
-                    if(SimSettings::simMethod() == SimulationMethod::SIMULATION_LIQUID ||
-                            SimSettings::simMethod() == SimulationMethod::SIMULATION_MULTFLIP)
+                    if(SimSettings::simMethod() == SimulationMethod::SIMULATION_LIQUID)
                     {
                         setCellColor(i,j,m_fluidLiquidColor);
                     }
