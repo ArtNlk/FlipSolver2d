@@ -499,7 +499,8 @@ void FluidRenderer::updateGridFromMaterial()
                 break;
 
                 case FluidMaterial::FLUID:
-                    if(SimSettings::simMethod() == SimulationMethod::SIMULATION_LIQUID)
+                    if(SimSettings::simMethod() == SimulationMethod::SIMULATION_LIQUID
+                    || SimSettings::simMethod() == SimulationMethod::SIMULATION_NBFLIP)
                     {
                         setCellColor(i,j,m_fluidLiquidColor);
                     }
@@ -667,12 +668,12 @@ void FluidRenderer::updateGridFromFluidSdf()
             {
                 std::cout << "bad fluid sdf " << dist << " at " << i << ' ' << j << '\n';
             }
-//            if (std::abs(dist - 10.f) < 1e-0f)
+//            if(dist < -1.f)
 //            {
 //                setCellColor(i,j,Color(255,255,255));
 //                continue;
 //            }
-            if (std::abs(dist / SimSettings::dx()) < 1.f)
+            if (std::abs(dist) < 1.f)
             {
                 if(dist <= 0.f)
                 {

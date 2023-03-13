@@ -5,6 +5,7 @@
 #include <queue>
 
 #include "linearindexable2d.h"
+#include "materialgrid.h"
 #include "simsettings.h"
 #include "dynamicuppertriangularsparsematrix.h"
 #include "logger.h"
@@ -184,35 +185,31 @@ void FlipSolver::afterTransfer()
 
 void FlipSolver::step()
 {
+    advect();
+    particleToGrid();
     updateSdf();
     updateLinearFluidViscosityMapping();
-    countParticles();
-    reseedParticles();
     updateMaterials();
-    particleToGrid();
     afterTransfer();
     m_fluidVelocityGrid.extrapolate(10);
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
-    std::vector<double> rhs(cellCount(),0.0);
     project();
-    calcPressureRhs(rhs);
     updateVelocityFromSolids();
     applyViscosity();
     project();
     m_fluidVelocityGrid.extrapolate(10);
-
     particleUpdate();
-    advect();
+    countParticles();
+    reseedParticles();
 }
 
 void FlipSolver::stepFrame()
 {
     if(m_frameNumber == 0)
     {
-        updateInitialFluid();
-        seedInitialFluid();
+        firstFrameInit();
     }
     m_testGrid.fill(0.f);
     float substepTime = 0.f;
@@ -523,6 +520,12 @@ std::vector<int> FlipSolver::validSolidNeighborIds(int i, int j)
     }
 
     return output;
+}
+
+void FlipSolver::firstFrameInit()
+{
+    updateInitialFluid();
+    seedInitialFluid();
 }
 
 void FlipSolver::extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps)
@@ -935,7 +938,7 @@ void FlipSolver::updateMaterials()
     {
         for (int j = 0; j < m_sizeJ; j++)
         {
-            if(m_fluidParticleCounts.at(i,j) != 0)
+            if(m_fluidSdf.at(i,j) < 0.f)
             {
                 if(m_materialGrid.isEmpty(i,j))
                 {
@@ -944,7 +947,7 @@ void FlipSolver::updateMaterials()
             }
             else
             {
-                if(m_materialGrid.isFluid(i,j))
+                if(m_materialGrid.isStrictFluid(i,j))
                 {
                     m_materialGrid.at(i,j) = FluidMaterial::EMPTY;
                 }
@@ -1099,7 +1102,7 @@ void FlipSolver::updateSdf()
                 }
             }
 
-            m_fluidSdf.at(i,j) = std::sqrt(distSqrd * SimSettings::dx()) - particleRadius;
+            m_fluidSdf.at(i,j) = std::sqrt(distSqrd) - particleRadius;
         }
     }
 }
@@ -1126,11 +1129,11 @@ void FlipSolver::particleVelocityToGrid()
             {
                 int iIdx = i+iOffset;
                 int jIdx = j+jOffset;
-                float weightU = simmath::quadraticBSpline(p.position.x() - (iIdx),
+                float weightU = simmath::quadraticBSpline(p.position.x() - static_cast<float>(iIdx),
                                                      p.position.y() - (static_cast<float>(jIdx) + 0.5f));
 
                 float weightV = simmath::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
-                                                     p.position.y() - (jIdx));
+                                                     p.position.y() - static_cast<float>(jIdx));
                 if(uWeights.inBounds(iIdx,jIdx))
                 {
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)

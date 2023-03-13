@@ -169,7 +169,6 @@ void FlipSmokeSolver::afterTransfer()
                 m_smokeConcentration.at(i,j) = m_sources[emitterId].concentrartion();
                 m_temperature.at(i,j) = m_sources[emitterId].temperature();
             }
-            //m_testGrid.at(i,j) = m_temperature.at(i,j) / 1000.f;
         }
     }
 }

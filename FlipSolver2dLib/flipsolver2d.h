@@ -108,6 +108,8 @@ protected:
 
     std::vector<int> validSolidNeighborIds(int i, int j);
 
+    virtual void firstFrameInit();
+
     virtual void project();
 
     void applyViscosity();

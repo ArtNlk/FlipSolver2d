@@ -377,7 +377,6 @@ void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bo
     int sizeJ = extrapolatedGrid.sizeJ();
     Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
     std::queue<Index2d> wavefront;
-    //Extrapolate U
     for(int i = 0; i < sizeI; i++)
     {
         for(int j = 0; j < sizeJ; j++)

@@ -7,6 +7,7 @@
 #include "flipfiresolver.h"
 #include "flipsmokesolver.h"
 #include "flipsolver2d.h"
+#include "nbflipsolver.h"
 #include "globalcallbackhandler.h"
 #include "logger.h"
 #include "simsettings.h"
@@ -248,6 +249,10 @@ void LiquidRenderApp::loadJson(std::string fileName)
             case SIMULATION_FIRE:
                 m_solver.reset(new FlipFireSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
             break;
+
+            case SIMULATION_NBFLIP:
+                m_solver.reset(new NBFlipSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
+            break;
         }
 
         solverFromJson(sceneJson["solver"]);
@@ -302,6 +307,10 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     else if(simTypeName == "fire")
     {
         SimSettings::simMethod() = SimulationMethod::SIMULATION_FIRE;
+    }
+    else if(simTypeName == "nbflip")
+    {
+        SimSettings::simMethod() = SimulationMethod::SIMULATION_NBFLIP;
     }
 
     if(SimSettings::domainSizeI() > SimSettings::domainSizeJ())

@@ -1,9 +1,9 @@
 {
   "settings": {
-    "simType": "flip",
+    "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 50,
+    "resolution": 100,
     "fps": 30,
     "density": 1,
     "airDensity": 0.001,
