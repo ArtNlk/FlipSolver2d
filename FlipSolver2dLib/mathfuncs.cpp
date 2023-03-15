@@ -344,13 +344,16 @@ float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid)
 }
 
 
-float simmath::lerpCenteredGrid(Vertex &position, Grid2d<float> &grid)
+float simmath::lerpCenteredGrid(Vertex &position, const Grid2d<float> &grid, Vertex gridOffset)
 {
-    return lerpCenteredGrid(position.x(), position.y(), grid);
+    return lerpCenteredGrid(position.x(), position.y(), grid, gridOffset);
 }
 
-float simmath::lerpCenteredGrid(float i, float j, Grid2d<float> &grid)
+float simmath::lerpCenteredGrid(float i, float j, const Grid2d<float> &grid, Vertex gridOffset)
 {
+    i+= gridOffset.x();
+    j+= gridOffset.y();
+
     i = std::clamp(i,0.f,static_cast<float>(grid.sizeI() - 1));
     j = std::clamp(j,0.f,static_cast<float>(grid.sizeJ() - 1));
     Index2d currentCell(simmath::integr(i),simmath::integr(j));
@@ -438,22 +441,25 @@ void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bo
 
 float simmath::cubicIterpUGrid(float i, float j, const Grid2d<float> &grid)
 {
-    return simmath::cubicIterpGrid(i,j,grid,Vertex(0.f,-0.5f));
+    return simmath::cubicIterpGrid(i,j,grid,Vertex(0.f,0.5f));
 }
 
 float simmath::cubicIterpVGrid(float i, float j, const Grid2d<float> &grid)
 {
-    return simmath::cubicIterpGrid(i,j,grid,Vertex(-0.5f,0.f));
+    return simmath::cubicIterpGrid(i,j,grid,Vertex(0.5f,0.f));
 }
 
 float simmath::cubicIterpGrid(float i, float j, const Grid2d<float> &grid, Vertex gridOffset)
 {
     i+= gridOffset.x();
     j+= gridOffset.y();
+
+    i -= 0.5f;
+    j -= 0.5f;
     float iFactor = simmath::frac(i);
     float jFactor = simmath::frac(j);
-    float iInt = simmath::integr(i);
-    float jInt = simmath::integr(j);
+    int iInt = simmath::integr(i);
+    int jInt = simmath::integr(j);
 
     auto calcWeights = [](float f)
     {
@@ -473,11 +479,11 @@ float simmath::cubicIterpGrid(float i, float j, const Grid2d<float> &grid, Verte
 
     for(int index = 0; index < 4; index++)
     {
-        int j = jInt + index - 1;
-        temp[index] = iWeights[0]*grid.getAt(i-1,j)
-                    + iWeights[1]*grid.getAt(i,j)
-                    + iWeights[2]*grid.getAt(i+1,j)
-                    + iWeights[3]*grid.getAt(i+2,j);
+        int jCoord = jInt + index - 1;
+        temp[index] = iWeights[0]*grid.getAt(i-1,jCoord)
+                    + iWeights[1]*grid.getAt(i,jCoord)
+                    + iWeights[2]*grid.getAt(i+1,jCoord)
+                    + iWeights[3]*grid.getAt(i+2,jCoord);
     }
 
     float output = jWeights[0]*temp[0]

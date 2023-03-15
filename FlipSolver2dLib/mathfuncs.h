@@ -24,9 +24,9 @@ namespace simmath
     float lerpUGrid(float i, float j, const Grid2d<float> &gridU);
     float lerpVGrid(float i, float j, const Grid2d<float> &gridV);
 
-    float lerpCenteredGrid(Vertex &position, Grid2d<float> &grid);
+    float lerpCenteredGrid(Vertex &position, const Grid2d<float> &grid, Vertex gridOffset = Vertex(0.f,0.f,0.f));
 
-    float lerpCenteredGrid(float i, float j, Grid2d<float> &grid);
+    float lerpCenteredGrid(float i, float j, const Grid2d<float> &grid, Vertex gridOffset = Vertex(0.f,0.f,0.f));
 
     float cubicIterpGrid(float i, float j, const Grid2d<float> &grid, Vertex gridOffset);
 

@@ -97,8 +97,8 @@ void StaggeredVelocityGrid::extrapolate(int extrapolationRadius)
 
 Vertex StaggeredVelocityGrid::velocityAt(float i, float j) const
 {
-    return Vertex(simmath::cubicIterpUGrid(i, j, m_velocityGridU),
-                  simmath::cubicIterpVGrid(i, j, m_velocityGridV));
+    return Vertex(m_velocityGridU.interpolateAt(i,j),
+                  m_velocityGridV.interpolateAt(i,j));
 }
 
 Vertex StaggeredVelocityGrid::velocityAt(Vertex position) const
