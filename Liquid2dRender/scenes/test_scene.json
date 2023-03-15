@@ -1,6 +1,6 @@
 {
   "settings": {
-    "simType": "fluid",
+    "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
     "resolution": 100,

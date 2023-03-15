@@ -1,9 +1,9 @@
 {
   "settings": {
-    "simType": "fluid",
+    "simType": "nbflip",
     "domainSizeI": 75,
     "domainSizeJ": 50,
-    "resolution": 100,
+    "resolution": 75,
     "fps": 30,
     "scale": 1,
     "maxSubsteps": 10,

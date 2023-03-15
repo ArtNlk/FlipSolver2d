@@ -27,6 +27,8 @@ protected:
 
     void fluidSdfFromInitialFluid();
 
+    void updateSdfFromSources();
+
     void combineAdvectedGrids();
 
     void combineLevelset();

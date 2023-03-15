@@ -49,8 +49,8 @@ public:
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
     T interpolateAt(float i, float j) const
     {
-        return simmath::lerpCenteredGrid(i, j, *this, m_gridOffset);
-        //return simmath::cubicIterpGrid(i, j, *this, m_gridOffset);
+        //return simmath::lerpCenteredGrid(i, j, *this, m_gridOffset);
+        return simmath::cubicIterpGrid(i, j, *this, m_gridOffset);
     }
 
     typename std::vector<T>::reference at(int i, int j)

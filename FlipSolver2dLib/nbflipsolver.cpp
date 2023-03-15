@@ -82,6 +82,7 @@ void NBFlipSolver::advect()
 void NBFlipSolver::afterTransfer()
 {
     //FlipSolver::afterTransfer();
+    updateSdfFromSources();
     combineLevelset();
     combineVelocityGrid();
 }
@@ -179,7 +180,7 @@ void NBFlipSolver::reseedParticles()
         for (int j = 0; j < m_sizeJ; j++)
         {
             //if(m_fluidSdf.at(i,j) < 0.f)
-            if(m_fluidSdf.at(i,j) < -1.f && m_fluidSdf.at(i,j) > -3.f)
+            if((m_materialGrid.isSource(i,j) || m_fluidSdf.at(i,j) < -1.f) && m_fluidSdf.at(i,j) > -3.f)
             {
                 int particleCount = m_fluidParticleCounts.at(i,j);
                 if(particleCount > 20)
@@ -194,11 +195,12 @@ void NBFlipSolver::reseedParticles()
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
-//                    float newSdf = m_fluidSdf.interpolateAt(pos);
-//                    if(newSdf > -1.f || newSdf < -3.f)
-//                    {
-//                        continue;
-//                    }
+                    float newSdf = m_fluidSdf.interpolateAt(pos);
+                    if((!m_materialGrid.isSource(i,j) && m_fluidSdf.at(i,j) > -1.f)
+                        || newSdf < -3.f)
+                    {
+                        continue;
+                    }
                     Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
                     float viscosity = m_viscosityGrid.interpolateAt(pos);
                     addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
@@ -259,6 +261,7 @@ void NBFlipSolver::fluidSdfFromInitialFluid()
         {
             float dx = SimSettings::dx();
             float dist = std::numeric_limits<float>::max();
+            int fluidId = -1;
             for(int fluidIdx = 0; fluidIdx < m_initialFluid.size(); fluidIdx++)
             {
                 float sdf = m_initialFluid[fluidIdx].geometry().signedDistance(
@@ -267,12 +270,50 @@ void NBFlipSolver::fluidSdfFromInitialFluid()
                 if(sdf < dist)
                 {
                     dist = sdf;
+                    fluidId = fluidIdx;
                 }
             }
             m_fluidSdf.at(i,j) = dist;
             if(dist < 0)
             {
                 m_materialGrid.at(i,j) = FluidMaterial::FLUID;
+                if(fluidId != -1)
+                {
+                    m_viscosityGrid.at(i,j) = m_initialFluid[fluidId].viscosity();
+                }
+            }
+        }
+    }
+}
+
+void NBFlipSolver::updateSdfFromSources()
+{
+    for (int i = 0; i < m_sizeI; i++)
+    {
+        for (int j = 0; j < m_sizeJ; j++)
+        {
+            float dx = SimSettings::dx();
+            float dist = std::numeric_limits<float>::max();
+            int sourceId = -1;
+            for(int sourceIdx = 0; sourceIdx < m_sources.size(); sourceIdx++)
+            {
+                float sdf = m_sources[sourceIdx].geometry().signedDistance(
+                            (static_cast<float>(i)+0.5)*dx,
+                            (static_cast<float>(j)+0.5)*dx) / dx;
+                if(sdf < dist)
+                {
+                    dist = sdf;
+                    sourceId = sourceIdx;
+                }
+            }
+            m_fluidSdf.at(i,j) = std::min(dist,m_fluidSdf.at(i,j));
+            if(dist < 0)
+            {
+                m_materialGrid.at(i,j) = FluidMaterial::FLUID;
+                if(sourceId != -1)
+                {
+                    m_viscosityGrid.at(i,j) = m_sources[sourceId].viscosity();
+                }
             }
         }
     }

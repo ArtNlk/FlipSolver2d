@@ -61,7 +61,7 @@
       },
       {
         "type": "fluid",
-        "viscosity": 0,
+        "viscosity": 100,
         "enabled": true,
         "verts": [
           [25,3],

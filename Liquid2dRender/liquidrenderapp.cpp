@@ -296,7 +296,7 @@ void LiquidRenderApp::settingsFromJson(json settingsJson)
     SimSettings::pcgIterLimit() = tryGetValue(settingsJson,"pcgIterLimit",200);
 
     std::string simTypeName = settingsJson["simType"].get<std::string>();
-    if(simTypeName == "fluid")
+    if(simTypeName == "fluid" || simTypeName == "flip")
     {
         SimSettings::simMethod() = SimulationMethod::SIMULATION_LIQUID;
     }
