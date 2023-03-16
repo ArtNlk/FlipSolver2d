@@ -158,6 +158,8 @@ protected:
 
     virtual void centeredParamsToGrid();
 
+    void extrapolateLevelsetInside(SdfGrid& grid);
+
     void updateLinearFluidViscosityMapping();
 
     void updateValidULinearMapping();

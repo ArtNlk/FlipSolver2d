@@ -35,8 +35,6 @@ protected:
 
     void combineVelocityGrid();
 
-    void extrapolateLevelsetInside(SdfGrid& grid);
-
     Vertex inverseRk3Integrate(Vertex newPosition, StaggeredVelocityGrid& grid);
 
 protected:

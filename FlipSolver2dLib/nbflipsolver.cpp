@@ -376,67 +376,6 @@ void NBFlipSolver::combineVelocityGrid()
     }
 }
 
-void NBFlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
-{
-    int sizeI = grid.sizeI();
-    int sizeJ = grid.sizeJ();
-    Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
-    std::queue<Index2d> wavefront;
-    for(int i = 0; i < sizeI; i++)
-    {
-        for(int j = 0; j < sizeJ; j++)
-        {
-            if(grid.at(i,j) > 0.f)
-            {
-                markers.at(i,j) = 0;
-            }
-        }
-    }
-
-    for(int i = 0; i < sizeI; i++)
-    {
-        for(int j = 0; j < sizeJ; j++)
-        {
-            if(markers.at(i,j) != 0)
-            {
-                for(Index2d& neighborIndex : grid.getNeighborhood(i,j,1,false))
-                {
-                    if(markers.at(neighborIndex) == 0)
-                    {
-                        markers.at(i,j) = 1;
-                        wavefront.push(Index2d(i,j));
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    while(!wavefront.empty())
-    {
-        Index2d index = wavefront.front();
-        std::vector<Index2d> neighbors = grid.getNeighborhood(index,1,false);
-        double avg = 0;
-        int count = 0;
-        for(Index2d& neighborIndex : neighbors)
-        {
-            if(markers.at(neighborIndex) < markers.at(index))
-            {
-                avg += grid.at(neighborIndex);
-                count++;
-            }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= 1e6)
-            {
-                markers.at(neighborIndex) = markers.at(index) + 1;
-                wavefront.push(neighborIndex);
-            }
-        }
-        grid.at(index) = avg / count - 1.f;
-
-        wavefront.pop();
-    }
-}
-
 Vertex NBFlipSolver::inverseRk3Integrate(Vertex newPosition, StaggeredVelocityGrid &grid)
 {
     float dt = SimSettings::stepDt();
