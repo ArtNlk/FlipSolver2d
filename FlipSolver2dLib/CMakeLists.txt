@@ -5,7 +5,6 @@ set(HEADERS
     customassert.h
     materialgrid.h
     sdfgrid.h
-    simsettings.h
     pcgsolver.h
     vmath.h
     uppertriangularmatrix.h
@@ -29,7 +28,6 @@ set(SOURCES
     grid2d.cpp
     materialgrid.cpp
     sdfgrid.cpp
-    simsettings.cpp
     pcgsolver.cpp
     vmath.cpp
     uppertriangularmatrix.cpp

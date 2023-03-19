@@ -10,7 +10,7 @@
 #include "nbflipsolver.h"
 #include "globalcallbackhandler.h"
 #include "logger.h"
-#include "simsettings.h"
+
 
 LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 const char* LiquidRenderApp::m_configFilePath = "./config.json";
@@ -166,12 +166,12 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     bool run = true;
                     for(int second = 0; second < 30; second++)
                     {
-                        for(int i = 0; i < SimSettings::fps(); i++)
+                        for(int i = 0; i < m_solver->fps(); i++)
                         {
                             m_solver->stepFrame();
                             m_fluidRenderer.update();
                             render();
-                            m_fluidRenderer.dumpToPng(std::to_string(SimSettings::fps()) + "fps_" + std::to_string(m_solver->frameNumber()) + ".png");
+                            m_fluidRenderer.dumpToPng(std::to_string(m_solver->fps()) + "fps_" + std::to_string(m_solver->frameNumber()) + ".png");
                             frame++;
                             glfwPollEvents();
                             if(glfwWindowShouldClose(m_window))
@@ -201,7 +201,7 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     else
                     {
                         bool run = true;
-                        for(int i = 0; i < SimSettings::fps(); i++)
+                        for(int i = 0; i < m_solver->fps(); i++)
                         {
                             m_solver->stepFrame();
                             m_fluidRenderer.update();
@@ -234,24 +234,47 @@ void LiquidRenderApp::loadJson(std::string fileName)
         }
         json sceneJson;
         sceneFile >> sceneJson;
-        settingsFromJson(sceneJson["settings"]);
+        json settingsJson = sceneJson["settings"];
 
-        switch(SimSettings::simMethod())
+        std::string simTypeName = settingsJson["simType"].get<std::string>();
+        SimulationMethod simMethod = simMethodFromName(simTypeName);
+
+
+        switch(simMethod)
         {
             case SIMULATION_LIQUID:
-                m_solver.reset(new FlipSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1,true));
+            {
+                FlipSolverParameters p;
+                populateFlipSolverParamsFromJson(&p, settingsJson);
+                m_solver.reset(new FlipSolver(&p));
+            }
             break;
 
             case SIMULATION_SMOKE:
-                m_solver.reset(new FlipSmokeSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1,true));
+            {
+                SmokeSolverParameters p;
+                populateFlipSolverParamsFromJson(&p, settingsJson);
+                populateSmokeSolverParamsFromJson(&p, settingsJson);
+                m_solver.reset(new FlipSmokeSolver(&p));
+            }
             break;
 
             case SIMULATION_FIRE:
-                m_solver.reset(new FlipFireSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
+            {
+                FireSolverParameters p;
+                populateFlipSolverParamsFromJson(&p, settingsJson);
+                populateFireSolverParamsFromJson(&p, settingsJson);
+                m_solver.reset(new FlipFireSolver(&p));
+            }
             break;
 
             case SIMULATION_NBFLIP:
-                m_solver.reset(new NBFlipSolver(SimSettings::gridSizeI(),SimSettings::gridSizeJ(),1, true));
+            {
+                NBFlipParameters p;
+                populateFlipSolverParamsFromJson(&p, settingsJson);
+                populateNBFlipSolverParamsFromJson(&p, settingsJson);
+                m_solver.reset(new NBFlipSolver(&p));
+            }
             break;
         }
 
@@ -264,72 +287,92 @@ void LiquidRenderApp::loadJson(std::string fileName)
     }
 }
 
-void LiquidRenderApp::settingsFromJson(json settingsJson)
+void LiquidRenderApp::populateFlipSolverParamsFromJson(FlipSolverParameters *p, json settingsJson)
 {
-    SimSettings::sceneScale() = tryGetValue(settingsJson,"scale",1.f);
-    float s = SimSettings::sceneScale();
-    SimSettings::domainSizeI() = std::ceil(s*settingsJson["domainSizeI"].get<int>());
-    SimSettings::domainSizeJ() = std::ceil(s*settingsJson["domainSizeJ"].get<int>());
-    SimSettings::resolution() = settingsJson["resolution"].get<int>();
-    SimSettings::fps() = settingsJson["fps"].get<int>();
-    SimSettings::frameDt() = 1.f / SimSettings::fps();
-    SimSettings::maxSubsteps() = tryGetValue(settingsJson,"maxSubsteps",30);
-    SimSettings::stepDt() = SimSettings::frameDt() / SimSettings::maxSubsteps();
-    SimSettings::fluidDensity() = tryGetValue(settingsJson,"density",1.f);
-    SimSettings::burnRate() = tryGetValue(settingsJson,"burnRate",0.05f);
-    SimSettings::ignitionTemp() = tryGetValue(settingsJson,"ignitionTemp",250.f);
-    SimSettings::smokeProportion() = tryGetValue(settingsJson,"smokeEmission",1.f);
-    SimSettings::heatProportion() = tryGetValue(settingsJson,"heatEmission",1.f);
-    SimSettings::divergenceProportion() = tryGetValue(settingsJson,"billowing",0.1f);
-    SimSettings::airDensity() = tryGetValue(settingsJson,"airDensity",SimSettings::fluidDensity() * 0.001f);
-    SimSettings::randomSeed() = tryGetValue(settingsJson,"seed",0);
-    SimSettings::particlesPerCell() = settingsJson["particlesPerCell"].get<int>();
-    SimSettings::cflNumber() = tryGetValue(settingsJson,"cflNumber",10.f);
-    SimSettings::picRatio() = tryGetValue(settingsJson,"picRatio",0.03);
-    SimSettings::ambientTemp() = tryGetValue(settingsJson,"ambientTemperature",273.0f);
+    float s = tryGetValue(settingsJson,"scale",1.f);
+    p->fluidDensity = tryGetValue(settingsJson,"density",1.f);
+    p->seed = tryGetValue(settingsJson,"seed",0);
+    p->dx =
+    p->particlesPerCell = settingsJson["particlesPerCell"].get<int>();
     std::pair<float,float> v = tryGetValue(settingsJson,"globalAcceleration",std::pair(9.8,0.f));
-    SimSettings::globalAcceleration() = Vertex(v.first,v.second);
-    SimSettings::tempDecayRate() = tryGetValue(settingsJson,"temperatureDecayRate",0.0);
-    SimSettings::concentrartionDecayRate() = tryGetValue(settingsJson,"concentrationDecayRate",0.0);
-    SimSettings::particleScale() = tryGetValue(settingsJson,"particleScale",0.8);
-    SimSettings::surfaceTensionFactor() = tryGetValue(settingsJson,"surfaceTensionFactor",0.0);
-    SimSettings::pcgIterLimit() = tryGetValue(settingsJson,"pcgIterLimit",200);
+    p->globalAcceleration = v;
+    p->resolution = settingsJson["resolution"].get<int>();
+    p->fps = settingsJson["fps"].get<int>();
+    p->maxSubsteps = tryGetValue(settingsJson,"maxSubsteps",30);
+    p->picRatio = tryGetValue(settingsJson,"picRatio",0.03);
+    p->cflNumber = tryGetValue(settingsJson,"cflNumber",10.f);
+    p->particleScale = tryGetValue(settingsJson,"particleScale",0.8);
+    p->pcgIterLimit = tryGetValue(settingsJson,"pcgIterLimit",200);
+    p->domainSizeI = settingsJson["domainSizeI"].get<float>();
+    p->domainSizeJ = settingsJson["domainSizeJ"].get<float>();
+    p->sceneScale = s;
 
-    std::string simTypeName = settingsJson["simType"].get<std::string>();
-    if(simTypeName == "fluid" || simTypeName == "flip")
+    if(p->domainSizeI > p->domainSizeJ)
     {
-        SimSettings::simMethod() = SimulationMethod::SIMULATION_LIQUID;
-    }
-    else if(simTypeName == "smoke")
-    {
-        SimSettings::simMethod() = SimulationMethod::SIMULATION_SMOKE;
-    }
-    else if(simTypeName == "fire")
-    {
-        SimSettings::simMethod() = SimulationMethod::SIMULATION_FIRE;
-    }
-    else if(simTypeName == "nbflip")
-    {
-        SimSettings::simMethod() = SimulationMethod::SIMULATION_NBFLIP;
-    }
-
-    if(SimSettings::domainSizeI() > SimSettings::domainSizeJ())
-    {
-        SimSettings::dx() = static_cast<float>(SimSettings::domainSizeI()) /
-                                                SimSettings::resolution();
-        SimSettings::gridSizeI() = SimSettings::resolution();
-        SimSettings::gridSizeJ() = (static_cast<float>(SimSettings::domainSizeJ()) /
-                    static_cast<float>(SimSettings::domainSizeI())) * SimSettings::resolution();
+        p->dx = static_cast<float>(p->domainSizeI) /
+                                                p->resolution;
+        p->gridSizeI = p->resolution;
+        p->gridSizeJ = (static_cast<float>(p->domainSizeJ) /
+                    static_cast<float>(p->domainSizeI)) * p->resolution;
     }
     else
     {
-        SimSettings::dx() = static_cast<float>(SimSettings::domainSizeJ()) /
-                                                SimSettings::resolution();
-        SimSettings::gridSizeJ() = SimSettings::resolution();
-        SimSettings::gridSizeI() = (static_cast<float>(SimSettings::domainSizeI()) /
-                    static_cast<float>(SimSettings::domainSizeJ())) * SimSettings::resolution();
+        p->dx = static_cast<float>(p->domainSizeJ) /
+                                                p->resolution;
+        p->gridSizeJ = p->resolution;
+        p->gridSizeI = (static_cast<float>(p->domainSizeI) /
+                    static_cast<float>(p->domainSizeJ)) * p->resolution;
     }
+    std::string simTypeName = settingsJson["simType"].get<std::string>();
+    p->simulationMethod = simMethodFromName(simTypeName);
 }
+
+void LiquidRenderApp::populateNBFlipSolverParamsFromJson(NBFlipParameters *p, json settingsJson)
+{
+    return;
+}
+
+void LiquidRenderApp::populateSmokeSolverParamsFromJson(SmokeSolverParameters *p, json settingsJson)
+{
+    p->ambientTemperature = tryGetValue(settingsJson,"ambientTemperature",273.0f);;
+    p->temperatureDecayRate = tryGetValue(settingsJson,"temperatureDecayRate",0.0);;
+    p->concentrationDecayRate = tryGetValue(settingsJson,"concentrationDecayRate",0.0);;
+}
+
+void LiquidRenderApp::populateFireSolverParamsFromJson(FireSolverParameters *p, json settingsJson)
+{
+    populateSmokeSolverParamsFromJson(p,settingsJson);
+    p->ignitionTemperature = tryGetValue(settingsJson,"ignitionTemp",250.f);
+    p->burnRate = tryGetValue(settingsJson,"burnRate",0.05f);
+    p->smokeProportion = tryGetValue(settingsJson,"smokeEmission",1.f);
+    p->heatProportion = tryGetValue(settingsJson,"heatEmission",1.f);
+    p->divergenceProportion = tryGetValue(settingsJson,"billowing",0.1f);
+}
+
+SimulationMethod LiquidRenderApp::simMethodFromName(const std::string &name)
+{
+    if(name == "fluid" || name == "flip")
+    {
+        return SimulationMethod::SIMULATION_LIQUID;
+    }
+    else if(name == "smoke")
+    {
+        return SimulationMethod::SIMULATION_SMOKE;
+    }
+    else if(name == "fire")
+    {
+        return SimulationMethod::SIMULATION_FIRE;
+    }
+    else if(name == "nbflip")
+    {
+        return SimulationMethod::SIMULATION_NBFLIP;
+    }
+
+    return SimulationMethod::SIMULATION_LIQUID;
+}
+
+//    SimSettings::airDensity() = tryGetValue(settingsJson,"airDensity",SimSettings::fluidDensity() * 0.001f);
+//    SimSettings::surfaceTensionFactor() = tryGetValue(settingsJson,"surfaceTensionFactor",0.0);
 
 void LiquidRenderApp::solverFromJson(json solverJson)
 {
@@ -355,7 +398,7 @@ Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(SimSettings::sceneScale() * Vertex(v.first,v.second));
+        geo.addVertex(m_solver->sceneScale() * Vertex(v.first,v.second));
     }
 
     Emitter output(geo);
@@ -379,7 +422,7 @@ Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(SimSettings::sceneScale() * Vertex(v.first,v.second));
+        geo.addVertex(m_solver->sceneScale() * Vertex(v.first,v.second));
     }
 
     return Obstacle(friction,geo);
@@ -393,7 +436,7 @@ Sink LiquidRenderApp::sinkFromJson(json sinkJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(SimSettings::sceneScale() * Vertex(v.first,v.second));
+        geo.addVertex(m_solver->sceneScale() * Vertex(v.first,v.second));
     }
 
     return Sink(div,geo);

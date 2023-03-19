@@ -9,7 +9,7 @@
 #include "dynamicuppertriangularsparsematrix.h"
 #include "vmath.h"
 #include "cmath"
-#include "simsettings.h"
+
 #include "logger.h"
 
 const double PCGSolver::m_tol = 1.0e-14;

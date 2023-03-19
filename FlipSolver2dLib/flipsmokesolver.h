@@ -4,10 +4,17 @@
 #include "dynamicuppertriangularsparsematrix.h"
 #include "flipsolver2d.h"
 
+struct SmokeSolverParameters : FlipSolverParameters
+{
+    float ambientTemperature;
+    float temperatureDecayRate;
+    float concentrationDecayRate;
+};
+
 class FlipSmokeSolver : public FlipSolver
 {
 public:
-    FlipSmokeSolver(int sizeI, int sizeJ, int extrapRadius = 1, bool vonNeumannNeighbors = false);
+    FlipSmokeSolver(const SmokeSolverParameters* p);
 
     const Grid2d<float> smokeConcentration() const;
 
@@ -33,6 +40,10 @@ protected:
 protected:
     Grid2d<float> m_temperature;
     Grid2d<float> m_smokeConcentration;
+
+    float m_ambientTemperature;
+    float m_temperatureDecayRate;
+    float m_concentrationDecayRate;
 };
 
 #endif // FLIPSMOKESOLVER_H

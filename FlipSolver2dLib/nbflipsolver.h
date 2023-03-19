@@ -5,10 +5,15 @@
 #include "sdfgrid.h"
 #include "staggeredvelocitygrid.h"
 
+struct NBFlipParameters : FlipSolverParameters
+{
+
+};
+
 class NBFlipSolver : public FlipSolver
 {
 public:
-    NBFlipSolver(int sizeI, int sizeJ, int extrapRadius = 1, bool vonNeumannNeighbors = false);
+    NBFlipSolver(const NBFlipParameters* p);
 
 protected:
     void step() override;

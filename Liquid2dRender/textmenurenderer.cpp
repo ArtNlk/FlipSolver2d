@@ -1,5 +1,5 @@
 #include "textmenurenderer.h"
-#include "simsettings.h"
+
 
 TextMenuRenderer::TextMenuRenderer(int x, int y, int width, int height, FluidRenderer &fluidRenderer) :
     m_fluidRenderer(fluidRenderer),
@@ -37,7 +37,7 @@ void TextMenuRenderer::init()
 #if defined(_WIN32)
     const char* font = "/Consola.ttf";
 #elif defined(__linux__)
-    const char* font = "/open-sans/OpenSans-Regular.ttf";
+    const char* font = "/freefont/FreeMono.ttf";
 #endif
     m_textRenderer.load(font,16);
     m_textRenderer.init();
@@ -65,7 +65,9 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Domain size (IxJ): " + std::to_string(SimSettings::domainSizeI()) + " x " + std::to_string(SimSettings::domainSizeJ());
+    temp = "Domain size (IxJ): " + std::to_string(static_cast<int>(m_fluidRenderer.solver()->domainSizeI()))
+                                + " x "
+                                + std::to_string(static_cast<int>(m_fluidRenderer.solver()->domainSizeJ()));
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -73,7 +75,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Grid size (IxJ): " + std::to_string(SimSettings::gridSizeI()) + " x " + std::to_string(SimSettings::gridSizeJ());
+    temp = "Grid size (IxJ): " + std::to_string(m_fluidRenderer.solver()->gridSizeI()) + " x " + std::to_string(m_fluidRenderer.solver()->gridSizeJ());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -81,7 +83,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "dX: " + std::to_string(SimSettings::dx());
+    temp = "dX: " + std::to_string(m_fluidRenderer.solver()->dx());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -89,7 +91,23 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Fluid density: " + std::to_string(SimSettings::fluidDensity());
+    temp = "Fluid density: " + std::to_string(m_fluidRenderer.solver()->fluidDensity());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+//    currentTextPos += m_nextLineOffset;
+//    temp = "Air density: " + std::to_string(m_fluidRenderer.solver()->airDensity());
+//    m_textRenderer.renderText(temp,
+//                              currentTextPos.x + widthBaseline,
+//                              m_height - currentTextPos.y,
+//                              1.0f,
+//                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Particles per cell: " + std::to_string(m_fluidRenderer.solver()->particlesPerCell());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -97,7 +115,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Air density: " + std::to_string(SimSettings::airDensity());
+    temp = "PIC ratio: " + std::to_string(m_fluidRenderer.solver()->picRatio());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -105,7 +123,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Particles per cell: " + std::to_string(SimSettings::particlesPerCell());
+    temp = "CFL: " + std::to_string(m_fluidRenderer.solver()->cflNumber());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -113,7 +131,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "PIC ratio: " + std::to_string(SimSettings::picRatio());
+    temp = "Max substeps: " + std::to_string(m_fluidRenderer.solver()->maxSubsteps());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -121,7 +139,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "CFL: " + std::to_string(SimSettings::cflNumber());
+    temp = "dX: " + std::to_string(m_fluidRenderer.solver()->dx());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -129,7 +147,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Max substeps: " + std::to_string(SimSettings::maxSubsteps());
+    temp = "Step dT: " + std::to_string(m_fluidRenderer.solver()->stepDt());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -137,7 +155,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "dX: " + std::to_string(SimSettings::dx());
+    temp = "Frame dT: " + std::to_string(m_fluidRenderer.solver()->frameDt());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -145,7 +163,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Step dT: " + std::to_string(SimSettings::stepDt());
+    temp = "Substeps: " + std::to_string(m_fluidRenderer.solver()->maxSubsteps());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -153,23 +171,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Frame dT: " + std::to_string(SimSettings::frameDt());
-    m_textRenderer.renderText(temp,
-                              currentTextPos.x + widthBaseline,
-                              m_height - currentTextPos.y,
-                              1.0f,
-                              Color(255,255,255));
-
-    currentTextPos += m_nextLineOffset;
-    temp = "Substeps: " + std::to_string(SimSettings::maxSubsteps());
-    m_textRenderer.renderText(temp,
-                              currentTextPos.x + widthBaseline,
-                              m_height - currentTextPos.y,
-                              1.0f,
-                              Color(255,255,255));
-
-    currentTextPos += m_nextLineOffset;
-    temp = "Target FPS: " + std::to_string(SimSettings::fps());
+    temp = "Target FPS: " + std::to_string(m_fluidRenderer.solver()->fps());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -185,7 +187,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "          I: " + std::to_string(SimSettings::globalAcceleration().x());
+    temp = "          I: " + std::to_string(m_fluidRenderer.solver()->globalAcceleration().x());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,
@@ -193,7 +195,7 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "          J: " + std::to_string(SimSettings::globalAcceleration().y());
+    temp = "          J: " + std::to_string(m_fluidRenderer.solver()->globalAcceleration().y());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,

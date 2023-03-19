@@ -16,7 +16,7 @@
 #include "emitter.h"
 #include "sink.h"
 
-class LiquidRenderApp;
+enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_FIRE, SIMULATION_NBFLIP};
 
 struct MarkerParticle
 {
@@ -28,6 +28,28 @@ struct MarkerParticle
     float fuel;
     FluidMaterial material = FluidMaterial::FLUID;
     float testValue = 0.f;
+};
+
+struct FlipSolverParameters
+{
+    double fluidDensity;
+    unsigned int seed;
+    double dx;
+    int particlesPerCell;
+    Vertex globalAcceleration;
+    float resolution;
+    int fps;
+    int maxSubsteps;
+    float picRatio;
+    float cflNumber;
+    float particleScale;
+    int pcgIterLimit;
+    float domainSizeI;
+    float domainSizeJ;
+    float gridSizeI;
+    float gridSizeJ;
+    float sceneScale;
+    SimulationMethod simulationMethod;
 };
 
 struct PairHash {
@@ -44,11 +66,9 @@ public:
 class FlipSolver : public LinearIndexable2d
 {
 public:
-    FlipSolver(int sizeI, int sizeJ, int extrapRadius = 1, bool vonNeumannNeighbors = false);
+    FlipSolver(const FlipSolverParameters *p);
 
     virtual ~FlipSolver() = default;
-
-    void setExrapolationRadius(int radius);
 
     int particleCount();
 
@@ -100,9 +120,35 @@ public:
 
     const Grid2d<float> &testGrid() const;
 
-protected:
+    float stepDt() const;
 
-    friend class ::LiquidRenderApp;
+    double dx() const;
+
+    SimulationMethod simulationMethod() const;
+
+    float domainSizeI() const;
+
+    float domainSizeJ() const;
+
+    double fluidDensity() const;
+
+    int particlesPerCell() const;
+
+    float picRatio() const;
+
+    float cflNumber() const;
+
+    int maxSubsteps() const;
+
+    int fps() const;
+
+    float frameDt() const;
+
+    Vertex globalAcceleration() const;
+
+    float sceneScale() const;
+
+protected:
 
     virtual double divergenceAt(int i, int j);
 
@@ -172,8 +218,6 @@ protected:
 
     float maxParticleVelocity();
 
-    int m_extrapolationNeighborRadius;
-    bool m_useVonNeumannNeighborhood;
     int m_frameNumber;
     int m_validVVelocitySampleCount;
     int m_validUVelocitySampleCount;
@@ -197,6 +241,25 @@ protected:
     Grid2d<int> m_fluidParticleCounts;
     Grid2d<float> m_divergenceControl;
     Grid2d<float> m_testGrid;
+
+    float m_stepDt;
+    float m_frameDt;
+    double m_dx;
+    double m_fluidDensity;
+    unsigned int m_seed;
+    int m_particlesPerCell;
+    Vertex m_globalAcceleration;
+    float m_resolution;
+    int m_fps;
+    int m_maxSubsteps;
+    float m_picRatio;
+    float m_cflNumber;
+    float m_particleScale;
+    int m_pcgIterLimit;
+    float m_domainSizeI;
+    float m_domainSizeJ;
+    float m_sceneScale;
+    SimulationMethod m_simulationMethod;
 
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;

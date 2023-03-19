@@ -2,20 +2,26 @@
 
 #include "flipsolver2d.h"
 #include "mathfuncs.h"
-#include "simsettings.h"
+
 #include <cmath>
 
-FlipSmokeSolver::FlipSmokeSolver(int sizeI, int sizeJ, int extrapNeighborRadius, bool vonNeumannNeighbors):
-    FlipSolver(sizeI, sizeJ, extrapNeighborRadius, vonNeumannNeighbors),
-    m_temperature(sizeI, sizeJ, SimSettings::ambientTemp(), OOBStrategy::OOB_CONST, SimSettings::ambientTemp()),
-    m_smokeConcentration(sizeI, sizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f)
+FlipSmokeSolver::FlipSmokeSolver(const SmokeSolverParameters* p):
+    FlipSolver(p),
+    m_temperature(p->gridSizeI, p->gridSizeJ, p->ambientTemperature, OOBStrategy::OOB_CONST, p->ambientTemperature),
+    m_smokeConcentration(p->gridSizeI, p->gridSizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
+    m_ambientTemperature(p->ambientTemperature),
+    m_temperatureDecayRate(p->temperatureDecayRate),
+    m_concentrationDecayRate(p->concentrationDecayRate)
 {
+
+
+
 }
 
 void FlipSmokeSolver::applyBodyForces()
 {
     float alpha = 0.01f;
-    float beta = 1.f/SimSettings::ambientTemp();
+    float beta = 1.f/m_ambientTemperature;
     for (int i = 0; i < m_sizeI + 1; i++)
     {
         for (int j = 0; j < m_sizeJ + 1; j++)
@@ -23,19 +29,19 @@ void FlipSmokeSolver::applyBodyForces()
             if(m_fluidVelocityGrid.velocityGridU().inBounds(i,j))
             {
                 float tempAt = m_temperature.interpolateAt(static_cast<float>(i)-0.5f,j);
-                float tempDiff = tempAt - SimSettings::ambientTemp();
+                float tempDiff = tempAt - m_ambientTemperature;
                 float concentration = m_smokeConcentration.interpolateAt(static_cast<float>(i)-0.5f,j);
                 float accelerationU = (alpha * concentration - beta * tempDiff) *
-                                        SimSettings::globalAcceleration().x() * SimSettings::stepDt();
+                                        m_globalAcceleration.x() * m_stepDt;
                 m_fluidVelocityGrid.u(i,j) += accelerationU;
             }
             if(m_fluidVelocityGrid.velocityGridV().inBounds(i,j))
             {
                 float tempAt = m_temperature.interpolateAt(i,static_cast<float>(j)-0.5f);
-                float tempDiff = tempAt - SimSettings::ambientTemp();
+                float tempDiff = tempAt - m_ambientTemperature;
                 float concentration = m_smokeConcentration.interpolateAt(i,static_cast<float>(j)-0.5f);
                 float accelerationV = (alpha * concentration - beta * tempDiff) *
-                                        SimSettings::globalAcceleration().y() * SimSettings::stepDt();
+                                        m_globalAcceleration.y() * m_stepDt;
                 m_fluidVelocityGrid.v(i,j) += accelerationV;
             }
         }
@@ -89,16 +95,16 @@ void FlipSmokeSolver::centeredParamsToGrid()
                 {
                     m_viscosityGrid.at(i,j) /= centeredWeights.at(i,j);
                     m_temperature.at(i,j) /= centeredWeights.at(i,j);
-                    m_temperature.at(i,j) = SimSettings::ambientTemp() +
-                                    (m_temperature.at(i,j) - SimSettings::ambientTemp()) *
-                                    std::exp(-SimSettings::tempDecayRate() * SimSettings::stepDt());
+                    m_temperature.at(i,j) = m_ambientTemperature +
+                                    (m_temperature.at(i,j) - m_ambientTemperature) *
+                                    std::exp(-m_temperatureDecayRate * m_stepDt);
                     m_smokeConcentration.at(i,j) /= centeredWeights.at(i,j);
-                    m_smokeConcentration.at(i,j) *= std::exp(-SimSettings::concentrartionDecayRate()
-                                                                   * SimSettings::stepDt());
+                    m_smokeConcentration.at(i,j) *= std::exp(-m_concentrationDecayRate
+                                                                   * m_stepDt);
                 }
                 else
                 {
-                    m_temperature.at(i,j) = SimSettings::ambientTemp();
+                    m_temperature.at(i,j) = m_ambientTemperature;
                 }
             }
         }
@@ -107,7 +113,7 @@ void FlipSmokeSolver::centeredParamsToGrid()
 
 void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
 {
-    double scale = 1/SimSettings::dx();
+    double scale = 1/m_dx;
 
     for (int i = 0; i < m_sizeI; i++)
     {
@@ -146,11 +152,11 @@ void FlipSmokeSolver::particleUpdate()
     {
         MarkerParticle &p = m_markerParticles[i];
         p.temperature = m_temperature.interpolateAt(p.position);
-//        p.temperature = SimSettings::ambientTemp() +
-//                (p.temperature - SimSettings::ambientTemp()) *
-//                std::exp(-SimSettings::tempDecayRate() * SimSettings::stepDt());
+//        p.temperature = m_ambientTemperature +
+//                (p.temperature - m_ambientTemperature) *
+//                std::exp(-m_temperatureDecayRate * m_stepDt);
         p.smokeConcentrartion = m_smokeConcentration.interpolateAt(p.position);
-//        p.smokeConcentrartion *= std::exp(-SimSettings::concentrartionDecayRate() * SimSettings::stepDt());
+//        p.smokeConcentrartion *= std::exp(-m_concentrationDecayRate * m_stepDt);
         p.testValue = p.smokeConcentrartion;
     }
 }
@@ -185,7 +191,7 @@ void FlipSmokeSolver::reseedParticles()
                 std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
             }
             //std::cout << particleCount << " at " << i << " , " << j << std::endl;
-            int additionalParticles = SimSettings::particlesPerCell() - particleCount;
+            int additionalParticles = m_particlesPerCell - particleCount;
             if(additionalParticles <= 0)
             {
                 continue;
@@ -210,7 +216,7 @@ void FlipSmokeSolver::reseedParticles()
 
 void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 {
-    double scale = SimSettings::stepDt() / (SimSettings::fluidDensity() * SimSettings::dx());
+    double scale = m_stepDt / (m_fluidDensity * m_dx);
 
     for (int i = m_sizeI - 1; i >= 0; i--)
     {
@@ -273,7 +279,7 @@ DynamicUpperTriangularSparseMatrix FlipSmokeSolver::getPressureProjectionMatrix(
 {
     DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(cellCount(),7);
 
-    double scale = SimSettings::stepDt() / (SimSettings::fluidDensity() * SimSettings::dx() * SimSettings::dx());
+    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 

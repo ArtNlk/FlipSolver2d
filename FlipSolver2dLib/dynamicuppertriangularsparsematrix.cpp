@@ -5,7 +5,6 @@
 
 #include "linearindexable2d.h"
 #include "mathfuncs.h"
-#include "simsettings.h"
 
 DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size, int avgRowLength) :
     SquareMatrix(size),

@@ -6,37 +6,46 @@
 
 #include "linearindexable2d.h"
 #include "materialgrid.h"
-#include "simsettings.h"
+
 #include "dynamicuppertriangularsparsematrix.h"
 #include "logger.h"
 #include "mathfuncs.h"
 
-FlipSolver::FlipSolver(int sizeI, int sizeJ, int extrapNeighborRadius, bool vonNeumannNeighbors) :
-    LinearIndexable2d(sizeI, sizeJ),
-    m_extrapolationNeighborRadius(extrapNeighborRadius),
-    m_useVonNeumannNeighborhood(vonNeumannNeighbors),
+FlipSolver::FlipSolver(const FlipSolverParameters *p) :
+    LinearIndexable2d(p->gridSizeI, p->gridSizeJ),
     m_frameNumber(0),
     m_validVVelocitySampleCount(0),
     m_validUVelocitySampleCount(0),
-    m_fluidVelocityGrid(sizeI, sizeJ),
-    m_savedFluidVelocityGrid(sizeI, sizeJ),
-    m_materialGrid(sizeI,sizeJ, FluidMaterial::SINK),
-    m_solidSdf(sizeI,sizeJ),
-    m_fluidSdf(sizeI, sizeJ),
-    m_knownCenteredParams(sizeI,sizeJ, false, OOBStrategy::OOB_CONST, true),
-    m_viscosityGrid(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND),
-    m_emitterId(sizeI, sizeJ, -1),
-    m_solidId(sizeI, sizeJ,-1),
-    m_fluidParticleCounts(sizeI, sizeJ),
-    m_divergenceControl(sizeI,sizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
-    m_testGrid(sizeI, sizeJ)
+    m_fluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
+    m_savedFluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
+    m_materialGrid(p->gridSizeI,p->gridSizeJ, FluidMaterial::SINK),
+    m_solidSdf(p->gridSizeI,p->gridSizeJ),
+    m_fluidSdf(p->gridSizeI, p->gridSizeJ),
+    m_knownCenteredParams(p->gridSizeI,p->gridSizeJ, false, OOBStrategy::OOB_CONST, true),
+    m_viscosityGrid(p->gridSizeI,p->gridSizeJ,0.f,OOBStrategy::OOB_EXTEND),
+    m_emitterId(p->gridSizeI, p->gridSizeJ, -1),
+    m_solidId(p->gridSizeI, p->gridSizeJ,-1),
+    m_fluidParticleCounts(p->gridSizeI, p->gridSizeJ),
+    m_divergenceControl(p->gridSizeI,p->gridSizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
+    m_testGrid(p->gridSizeI,p->gridSizeJ),
+    m_stepDt(1.f / p->fps), m_frameDt(1.f / p->fps),
+    m_dx(p->dx), m_fluidDensity(p->fluidDensity),
+    m_seed(p->seed),
+    m_particlesPerCell(p->particlesPerCell),
+    m_globalAcceleration(p->globalAcceleration),
+    m_resolution(p->resolution),
+    m_fps(p->fps),
+    m_maxSubsteps(p->maxSubsteps),
+    m_picRatio(p->picRatio),
+    m_cflNumber(p->cflNumber),
+    m_particleScale(p->particleScale),
+    m_pcgIterLimit(p->pcgIterLimit),
+    m_domainSizeI(p->domainSizeI),
+    m_domainSizeJ(p->domainSizeJ),
+    m_sceneScale(p->sceneScale),
+    m_simulationMethod(p->simulationMethod)
 {
-    m_randEngine = std::mt19937(SimSettings::randomSeed());
-}
-
-void FlipSolver::setExrapolationRadius(int radius)
-{
-    m_extrapolationNeighborRadius = radius;
+    m_randEngine = std::mt19937(p->seed);
 }
 
 void FlipSolver::project()
@@ -46,7 +55,7 @@ void FlipSolver::project()
     calcPressureRhs(rhs);
     //debug() << "Calculated rhs: " << rhs;
     DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,pressures,rhs,SimSettings::pcgIterLimit()))
+    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
@@ -118,7 +127,7 @@ void FlipSolver::advect()
     {
         MarkerParticle &p = m_markerParticles[i];
         int substepCount = 0;
-        p.position = rk3Integrate(p.position,SimSettings::stepDt(), m_fluidVelocityGrid);
+        p.position = rk3Integrate(p.position,m_stepDt, m_fluidVelocityGrid);
         if(m_solidSdf.interpolateAt(p.position.x(),p.position.y()) < 0.f)
         {
             p.position = m_solidSdf.closestSurfacePoint(p.position);
@@ -145,18 +154,18 @@ void FlipSolver::particleUpdate()
         Vertex oldVelocity(prevU.interpolateAt(p.position.x(),p.position.y()),
                            prevV.interpolateAt(p.position.x(),p.position.y()));
         Vertex newVelocity = m_fluidVelocityGrid.velocityAt(p.position) ;
-//        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / SimSettings::stepDt()))
+//        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / m_stepDt))
 //        {
 //            p.velocity = newVelocity;
 //        }
 //        else
 //        {
-            p.velocity = SimSettings::picRatio() * newVelocity +
-                    (1.f-SimSettings::picRatio()) * (p.velocity + newVelocity - oldVelocity);
+            p.velocity = m_picRatio * newVelocity +
+                    (1.f-m_picRatio) * (p.velocity + newVelocity - oldVelocity);
 //            p.temperature = SimSettings::ambientTemp() +
 //                    (p.temperature - SimSettings::ambientTemp()) *
-//                    std::exp(-SimSettings::tempDecayRate() * SimSettings::stepDt());
-//            p.smokeConcentrartion *= std::exp(-SimSettings::concentrartionDecayRate() * SimSettings::stepDt());
+//                    std::exp(-SimSettings::tempDecayRate() * m_stepDt);
+//            p.smokeConcentrartion *= std::exp(-SimSettings::concentrartionDecayRate() * m_stepDt);
 //        }
     }
 }
@@ -173,8 +182,8 @@ void FlipSolver::afterTransfer()
                 m_viscosityGrid.at(i,j) = m_sources[emitterId].viscosity();
                 if(m_sources[emitterId].velocityTransfer())
                 {
-                    m_fluidVelocityGrid.setU(i,j,m_sources[emitterId].velocity().x() / SimSettings::dx());
-                    m_fluidVelocityGrid.setV(i,j,m_sources[emitterId].velocity().y() / SimSettings::dx());
+                    m_fluidVelocityGrid.setU(i,j,m_sources[emitterId].velocity().x() / m_dx);
+                    m_fluidVelocityGrid.setV(i,j,m_sources[emitterId].velocity().y() / m_dx);
                     m_fluidVelocityGrid.setUValidity(i,j,true);
                     m_fluidVelocityGrid.setVValidity(i,j,true);
                 }
@@ -223,19 +232,19 @@ void FlipSolver::stepFrame()
     while(!finished)
     {
         float vel = maxParticleVelocity();
-        float maxSubstepSize = SimSettings::cflNumber()/(vel + 1e-15f);
-        if(substepTime + maxSubstepSize >= SimSettings::frameDt() ||
-                substepCount == (SimSettings::maxSubsteps() - 1))
+        float maxSubstepSize = m_cflNumber/(vel + 1e-15f);
+        if(substepTime + maxSubstepSize >= m_frameDt ||
+                substepCount == (m_maxSubsteps - 1))
         {
-            maxSubstepSize = SimSettings::frameDt() - substepTime;
+            maxSubstepSize = m_frameDt - substepTime;
             finished = true;
         }
-        else if(substepTime + 2.f*maxSubstepSize >= SimSettings::frameDt())
+        else if(substepTime + 2.f*maxSubstepSize >= m_frameDt)
         {
-            maxSubstepSize = 0.5f*(SimSettings::frameDt() - substepTime);
+            maxSubstepSize = 0.5f*(m_frameDt - substepTime);
         }
-        SimSettings::stepDt() = maxSubstepSize;
-        std::cout << "Substep " << substepCount << " substep dt: " << SimSettings::stepDt() << " vel " << vel << std::endl;
+        m_stepDt = maxSubstepSize;
+        std::cout << "Substep " << substepCount << " substep dt: " << m_stepDt << " vel " << vel << std::endl;
         step();
         substepTime += maxSubstepSize;
         substepCount++;
@@ -251,7 +260,7 @@ void FlipSolver::updateSolids()
     {
         for (int j = 0; j < m_sizeJ; j++)
         {
-            float dx = SimSettings::dx();
+            float dx = m_dx;
             float dist = std::numeric_limits<float>::max();
             int minIdx = 0;
             for(int solidIdx = 0; solidIdx < m_obstacles.size(); solidIdx++)
@@ -277,7 +286,7 @@ void FlipSolver::updateSolids()
 
 void FlipSolver::updateSources()
 {
-    float dx = SimSettings::dx();
+    float dx = m_dx;
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -298,7 +307,7 @@ void FlipSolver::updateSources()
 
 void FlipSolver::updateSinks()
 {
-    float dx = SimSettings::dx();
+    float dx = m_dx;
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -317,7 +326,7 @@ void FlipSolver::updateSinks()
 
 void FlipSolver::updateInitialFluid()
 {
-    float dx = SimSettings::dx();
+    float dx = m_dx;
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -394,7 +403,7 @@ void FlipSolver::reseedParticles()
                 std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
             }
             //std::cout << particleCount << " at " << i << " , " << j << std::endl;
-            int additionalParticles = SimSettings::particlesPerCell() - particleCount;
+            int additionalParticles = m_particlesPerCell - particleCount;
             if(additionalParticles <= 0)
             {
                 continue;
@@ -435,7 +444,7 @@ void FlipSolver::seedInitialFluid()
         {
             if(m_materialGrid.isStrictFluid(i,j))
             {
-                for(int p = 0; p < SimSettings::particlesPerCell(); p++)
+                for(int p = 0; p < m_particlesPerCell; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
                     Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
@@ -549,7 +558,7 @@ void FlipSolver::extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool
         {
             if(markers.at(i,j) != 0)
             {
-                for(Index2d& neighborIndex : getNeighborhood(i,j,m_extrapolationNeighborRadius,m_useVonNeumannNeighborhood))
+                for(Index2d& neighborIndex : getNeighborhood(i,j,1,false))
                 {
                     if(markers.at(neighborIndex) == 0)
                     {
@@ -565,7 +574,7 @@ void FlipSolver::extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool
     while(!wavefront.empty())
     {
         Index2d index = wavefront.front();
-        std::vector<Index2d> neighbors = getNeighborhood(index,m_extrapolationNeighborRadius,m_useVonNeumannNeighborhood);
+        std::vector<Index2d> neighbors = getNeighborhood(index,1,false);
         double avg = 0;
         int count = 0;
         for(Index2d& neighborIndex : neighbors)
@@ -592,7 +601,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
 {
     DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(cellCount(),7);
 
-    double scale = SimSettings::stepDt() / (SimSettings::fluidDensity() * SimSettings::dx() * SimSettings::dx());
+    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 
@@ -650,8 +659,8 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
     int validVSamples = m_validVVelocitySampleCount;
     DynamicUpperTriangularSparseMatrix output(validUSamples + validVSamples,7);
 
-    float scaleTwoDt = 2*SimSettings::stepDt() / (SimSettings::dx() * SimSettings::dx());
-    float scaleTwoDx = SimSettings::stepDt() / (2 * SimSettings::dx() * SimSettings::dx());
+    float scaleTwoDt = 2*m_stepDt / (m_dx * m_dx);
+    float scaleTwoDx = m_stepDt / (2 * m_dx * m_dx);
 
     for(int i = 0; i < m_sizeI; i++)
     {
@@ -665,7 +674,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
                 float fj = static_cast<float>(j);
                 int vBaseIndex = validUSamples;
                 //U component
-                output.addTo(currLinearIdxU,currLinearIdxU,SimSettings::fluidDensity());
+                output.addTo(currLinearIdxU,currLinearIdxU,m_fluidDensity);
 
                 int uImOneLinearIdx = linearViscosityVelocitySampleIndexU(i-1,j);
 
@@ -749,7 +758,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
                 float fi = static_cast<float>(i);
                 float fj = static_cast<float>(j);
                 int vBaseIndex = validUSamples;
-                output.addTo(vBaseIndex + currLinearIdxV,vBaseIndex + currLinearIdxV,SimSettings::fluidDensity());
+                output.addTo(vBaseIndex + currLinearIdxV,vBaseIndex + currLinearIdxV,m_fluidDensity);
 
                 int vJmOneLinearIdx = linearViscosityVelocitySampleIndexV(i,j-1);
 
@@ -851,7 +860,7 @@ int FlipSolver::cellCount()
 
 void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
 {
-    double scale = 1.f/SimSettings::dx();
+    double scale = 1.f/m_dx;
 
     for (int i = 0; i < m_sizeI; i++)
     {
@@ -895,13 +904,13 @@ void FlipSolver::calcViscosityRhs(std::vector<double> &rhs)
             if(linearIdxU != -1)
             {
                 float u = m_fluidVelocityGrid.getU(i,j);
-                rhs[linearIdxU] = SimSettings::fluidDensity() * u;
+                rhs[linearIdxU] = m_fluidDensity * u;
             }
 
             if(linearIdxV != -1)
             {
                 float v = m_fluidVelocityGrid.getV(i,j);
-                rhs[vBaseIndex + linearIdxV] = SimSettings::fluidDensity() * v;
+                rhs[vBaseIndex + linearIdxV] = m_fluidDensity * v;
             }
         }
     }
@@ -986,7 +995,7 @@ void FlipSolver::updateVelocityFromSolids()
 
 void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 {
-    double scale = SimSettings::stepDt() / (SimSettings::fluidDensity() * SimSettings::dx());
+    double scale = m_stepDt / (m_fluidDensity * m_dx);
 
     for (int i = m_sizeI - 1; i >= 0; i--)
     {
@@ -1069,12 +1078,12 @@ void FlipSolver::applyBodyForces()
             if(m_fluidVelocityGrid.velocityGridU().inBounds(i,j))
             {
                 m_fluidVelocityGrid.u(i,j) +=
-                        SimSettings::stepDt() * SimSettings::globalAcceleration().x();
+                        m_stepDt * m_globalAcceleration.x();
             }
             if(m_fluidVelocityGrid.velocityGridV().inBounds(i,j))
             {
                 m_fluidVelocityGrid.v(i,j) +=
-                        SimSettings::stepDt() * SimSettings::globalAcceleration().y();
+                        m_stepDt * m_globalAcceleration.y();
             }
         }
     }
@@ -1082,7 +1091,7 @@ void FlipSolver::applyBodyForces()
 
 void FlipSolver::updateSdf()
 {
-    float particleRadius = SimSettings::particleScale();
+    float particleRadius = m_particleScale;
     for(int i = 0; i < m_sizeI; i++)
     {
         for(int j = 0; j < m_sizeJ; j++)
@@ -1362,4 +1371,74 @@ float FlipSolver::maxParticleVelocity()
     }
 
     return std::sqrt(maxVelocitySqr);
+}
+
+float FlipSolver::sceneScale() const
+{
+    return m_sceneScale;
+}
+
+Vertex FlipSolver::globalAcceleration() const
+{
+    return m_globalAcceleration;
+}
+
+float FlipSolver::frameDt() const
+{
+    return m_frameDt;
+}
+
+int FlipSolver::fps() const
+{
+    return m_fps;
+}
+
+int FlipSolver::maxSubsteps() const
+{
+    return m_maxSubsteps;
+}
+
+float FlipSolver::cflNumber() const
+{
+    return m_cflNumber;
+}
+
+float FlipSolver::picRatio() const
+{
+    return m_picRatio;
+}
+
+int FlipSolver::particlesPerCell() const
+{
+    return m_particlesPerCell;
+}
+
+double FlipSolver::fluidDensity() const
+{
+    return m_fluidDensity;
+}
+
+float FlipSolver::domainSizeJ() const
+{
+    return m_domainSizeJ;
+}
+
+float FlipSolver::domainSizeI() const
+{
+    return m_domainSizeI;
+}
+
+SimulationMethod FlipSolver::simulationMethod() const
+{
+    return m_simulationMethod;
+}
+
+double FlipSolver::dx() const
+{
+    return m_dx;
+}
+
+float FlipSolver::stepDt() const
+{
+    return m_stepDt;
 }

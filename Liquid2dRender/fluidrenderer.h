@@ -230,6 +230,7 @@ protected:
     bool m_vectorsEnabled;
     bool m_geometryEnabled;
     bool m_particlesEnabled;
+    SimulationMethod m_simMethod;
 
     std::shared_ptr<FlipSolver> m_solver;
 };

@@ -1,7 +1,6 @@
 #ifndef LIQUIDRENDERAPP_H
 #define LIQUIDRENDERAPP_H
 
-#include "flipsolver2d.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <ft2build.h>
@@ -10,7 +9,11 @@
 
 #include "nlohmann/json.hpp"
 
+#include "flipsolver2d.h"
+#include "nbflipsolver.h"
 #include "flipsmokesolver.h"
+#include "flipfiresolver.h"
+
 #include "fluidrenderer.h"
 #include "geometry2d.h"
 #include "textmenurenderer.h"
@@ -33,10 +36,17 @@ protected:
 
     void loadJson(std::string fileName);
 
+    void populateFlipSolverParamsFromJson(FlipSolverParameters* p, json settingsJson);
+    void populateNBFlipSolverParamsFromJson(NBFlipParameters* p, json settingsJson);
+    void populateSmokeSolverParamsFromJson(SmokeSolverParameters* p, json settingsJson);
+    void populateFireSolverParamsFromJson(FireSolverParameters* p, json settingsJson);
+
+    SimulationMethod simMethodFromName(const std::string& name);
+
+
     template<class T>
     T tryGetValue(json input, std::string key, T defaultValue);
 
-    void settingsFromJson(json settingsJson);
     void solverFromJson(json solverJson);
     Emitter emitterFromJson(json emitterJson);
     Obstacle obstacleFromJson(json obstacleJson);

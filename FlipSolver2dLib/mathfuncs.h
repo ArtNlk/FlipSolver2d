@@ -47,8 +47,8 @@ namespace simmath
     float normalDerivLinearExapolationUpdate(Grid2d<float> &grid, Vertex& pos, void*);
     float sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex& pos, void* normalDerivGrid);
     Grid2d<float> calculateCenteredGridCurvature(Grid2d<float>& grid);
-    Vertex secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid);
-    float secondPartialDerivIj(int i, int j, Grid2d<float> &grid);
+    Vertex secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid, float dx);
+    float secondPartialDerivIj(int i, int j, Grid2d<float> &grid, float dx);
 }
 
 #endif // FUNCTIONS_H

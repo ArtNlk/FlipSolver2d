@@ -1,14 +1,18 @@
 #include "flipfiresolver.h"
 #include "flipsmokesolver.h"
 #include "grid2d.h"
-#include "simsettings.h"
 
-FlipFireSolver::FlipFireSolver(int sizeI, int sizeJ, int extrapRadius, bool vonNeumannNeighbors):
-    FlipSmokeSolver(sizeI,sizeJ,extrapRadius,vonNeumannNeighbors),
-    m_fuel(sizeI, sizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
-    m_oxidizer(sizeI, sizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f)
+
+FlipFireSolver::FlipFireSolver(const FireSolverParameters *p):
+    FlipSmokeSolver(p),
+    m_fuel(p->gridSizeI, p->gridSizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
+    m_oxidizer(p->gridSizeI, p->gridSizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
+    m_ignitionTemperature(p->ignitionTemperature),
+    m_burnRate(p->burnRate),
+    m_smokeProportion(p->smokeProportion),
+    m_heatProportion(p->heatProportion),
+    m_divergenceProportion(p->divergenceProportion)
 {
-
 }
 
 void FlipFireSolver::afterTransfer()
@@ -30,19 +34,19 @@ void FlipFireSolver::afterTransfer()
 
 void FlipFireSolver::combustionUpdate()
 {
-    float burnRate = SimSettings::burnRate();
-    float igninitonTemp = SimSettings::ignitionTemp();
+    float burnRate = m_burnRate;
+    float igninitonTemp = m_ignitionTemperature;
     for(int i = 0; i < m_sizeI; i++)
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
             if(m_temperature.at(i,j) > igninitonTemp && m_fuel.at(i,j) > 0.f)
             {
-                float burntFuel = std::min(SimSettings::stepDt() * burnRate,m_fuel.at(i,j));
+                float burntFuel = std::min(m_stepDt * burnRate,m_fuel.at(i,j));
                 m_fuel.at(i,j) -= burntFuel;
-                m_smokeConcentration.at(i,j) += SimSettings::smokeProportion() * burntFuel;
-                m_temperature.at(i,j) += SimSettings::heatProportion() * burntFuel;
-                m_divergenceControl.at(i,j) -= SimSettings::divergenceProportion() * burntFuel;
+                m_smokeConcentration.at(i,j) += m_smokeProportion * burntFuel;
+                m_temperature.at(i,j) += m_heatProportion * burntFuel;
+                m_divergenceControl.at(i,j) -= m_divergenceProportion * burntFuel;
             }
         }
     }
@@ -109,7 +113,7 @@ void FlipFireSolver::reseedParticles()
                 std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
             }
             //std::cout << particleCount << " at " << i << " , " << j << std::endl;
-            int additionalParticles = SimSettings::particlesPerCell() - particleCount;
+            int additionalParticles = m_particlesPerCell - particleCount;
             if(additionalParticles <= 0)
             {
                 continue;

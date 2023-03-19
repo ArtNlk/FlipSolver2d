@@ -1,20 +1,19 @@
 #include "nbflipsolver.h"
 #include "flipsolver2d.h"
 #include "sdfgrid.h"
-#include "simsettings.h"
+
 #include "staggeredvelocitygrid.h"
 #include <algorithm>
 
-NBFlipSolver::NBFlipSolver(int sizeI, int sizeJ, int extrapRadius, bool vonNeumannNeighbors):
-    FlipSolver(sizeI, sizeJ, extrapRadius, vonNeumannNeighbors),
-    m_advectedVelocity(sizeI, sizeJ),
-    m_advectedSdf(sizeI, sizeJ),
+NBFlipSolver::NBFlipSolver(const NBFlipParameters *p):
+    FlipSolver(p),
+    m_advectedVelocity(p->gridSizeI, p->gridSizeJ),
+    m_advectedSdf(p->gridSizeI, p->gridSizeJ),
     m_uWeights(m_fluidVelocityGrid.velocityGridU().sizeI(),
             m_fluidVelocityGrid.velocityGridU().sizeJ(),1e-10f),
     m_vWeights(m_fluidVelocityGrid.velocityGridV().sizeI(),
             m_fluidVelocityGrid.velocityGridV().sizeJ(),1e-10f)
 {
-
 }
 
 void NBFlipSolver::step()
@@ -166,7 +165,7 @@ void NBFlipSolver::reseedParticles()
             continue;
         }
 
-        if(sdf < -1.f && m_fluidParticleCounts.at(i,j) > 2*SimSettings::particlesPerCell())
+        if(sdf < -1.f && m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
         {
             m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
             m_fluidParticleCounts.at(i,j) -= 1;
@@ -187,7 +186,7 @@ void NBFlipSolver::reseedParticles()
                 {
                     std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
                 }
-                int additionalParticles = SimSettings::particlesPerCell() - particleCount;
+                int additionalParticles = m_particlesPerCell - particleCount;
                 if(additionalParticles <= 0)
                 {
                     continue;
@@ -231,7 +230,7 @@ void NBFlipSolver::initialFluidSeed()
                 {
                     std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
                 }
-                int additionalParticles = SimSettings::particlesPerCell() - particleCount;
+                int additionalParticles = m_particlesPerCell - particleCount;
                 if(additionalParticles <= 0)
                 {
                     continue;
@@ -259,7 +258,7 @@ void NBFlipSolver::fluidSdfFromInitialFluid()
     {
         for (int j = 0; j < m_sizeJ; j++)
         {
-            float dx = SimSettings::dx();
+            float dx = m_dx;
             float dist = std::numeric_limits<float>::max();
             int fluidId = -1;
             for(int fluidIdx = 0; fluidIdx < m_initialFluid.size(); fluidIdx++)
@@ -292,7 +291,7 @@ void NBFlipSolver::updateSdfFromSources()
     {
         for (int j = 0; j < m_sizeJ; j++)
         {
-            float dx = SimSettings::dx();
+            float dx = m_dx;
             float dist = std::numeric_limits<float>::max();
             int sourceId = -1;
             for(int sourceIdx = 0; sourceIdx < m_sources.size(); sourceIdx++)
@@ -378,7 +377,7 @@ void NBFlipSolver::combineVelocityGrid()
 
 Vertex NBFlipSolver::inverseRk3Integrate(Vertex newPosition, StaggeredVelocityGrid &grid)
 {
-    float dt = SimSettings::stepDt();
+    float dt = m_stepDt;
     Vertex k1 = grid.velocityAt(newPosition);
     Vertex k2 = grid.velocityAt(newPosition - 1.f/2.f * dt * k1);
     Vertex k3 = grid.velocityAt(newPosition - 3.f/4.f * dt * k2);

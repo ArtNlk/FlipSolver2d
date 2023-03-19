@@ -11,7 +11,7 @@
 #include "grid2d.h"
 #include "index2d.h"
 #include "logger.h"
-#include "simsettings.h"
+
 
 
 float simmath::frac(float v)
@@ -318,7 +318,7 @@ Grid2d<float> simmath::calculateCenteredGridCurvature(Grid2d<float> &grid)
     return output;
 }
 
-Vertex simmath::secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid)
+Vertex simmath::secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid, float dx)
 {
     float currentValue = grid.at(i,j);
     float ip1Value = grid.getAt(i+1,j);
@@ -328,19 +328,19 @@ Vertex simmath::secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid)
 
     float derivI = ip1Value - 2*currentValue + im1Value;
     float derivJ = jp1Value - 2*currentValue + jm1Value;
-    float norm = SimSettings::dx() * SimSettings::dx();
+    float norm = dx*dx;
 
     return Vertex(derivI/norm, derivJ/norm);
 }
 
-float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid)
+float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid, float dx)
 {
     float ip1jp1Value = grid.getAt(i+1,j+1);
     float im1jp1Value = grid.getAt(i-1,j+1);
     float ip1jm1Value = grid.getAt(i+1,j-1);
     float im1jm1Value = grid.getAt(i-1,j-1);
 
-    return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value) / SimSettings::dx() * SimSettings::dx();
+    return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value) / (dx*dx);
 }
 
 
