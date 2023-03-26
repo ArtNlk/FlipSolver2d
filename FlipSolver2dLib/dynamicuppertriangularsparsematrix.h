@@ -19,8 +19,6 @@ public:
 
     DynamicUpperTriangularSparseMatrix(int size, int avgRowLength = 7);
 
-    DynamicUpperTriangularSparseMatrix(DynamicUpperTriangularSparseMatrix &m) = default;
-
     DynamicUpperTriangularSparseMatrix(const DynamicUpperTriangularSparseMatrix &m) = default;
 
     DynamicUpperTriangularSparseMatrix(DynamicUpperTriangularSparseMatrix &&m) = default;
