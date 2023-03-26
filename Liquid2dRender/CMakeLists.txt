@@ -147,6 +147,7 @@ target_link_libraries(LiquidRenderApp glfw)
 target_link_libraries(LiquidRenderApp freetype)
 target_link_libraries(LiquidRenderApp libpng16.a)
 target_link_libraries(LiquidRenderApp zlib)
+target_link_libraries(LiquidRenderApp glm)
 target_link_libraries(LiquidRenderApp nlohmann_json::nlohmann_json)
 
 if(UNIX)

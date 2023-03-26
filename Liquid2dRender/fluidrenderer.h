@@ -2,7 +2,7 @@
 #define FLUIDRENDERER_H
 #include "flipsolver2d.h"
 #include "glad/glad.h"
-#include <glm/glm.hpp>
+#include "glm/glm.hpp"
 
 #include <memory>
 
