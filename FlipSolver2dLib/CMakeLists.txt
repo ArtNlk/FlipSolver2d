@@ -1,3 +1,5 @@
+add_subdirectory("./threading")
+
 set(HEADERS
     linearindexable2d.h
     index2d.h
@@ -50,3 +52,5 @@ add_library(FlipSolver2d STATIC
   ${HEADERS}
   ${SOURCES}
 )
+target_include_directories(FlipSolver2d PUBLIC "./threading/")
+target_link_libraries(FlipSolver2d SimThreadTools)

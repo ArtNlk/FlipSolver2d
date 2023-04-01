@@ -11,6 +11,7 @@
 #include "pcgsolver.h"
 #include "sdfgrid.h"
 #include "staggeredvelocitygrid.h"
+#include "threadpool.h"
 #include "uppertriangularmatrix.h"
 #include "geometry2d.h"
 #include "emitter.h"
@@ -192,6 +193,10 @@ protected:
 
     virtual void applyPressuresToVelocityField(std::vector<double> &pressures);
 
+    void applyPressureThreadU(Range range, const std::vector<double>* pressures);
+
+    void applyPressureThreadV(Range range,const std::vector<double>* pressures);
+
     Vertex rk3Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid);
 
     virtual void particleToGrid();
@@ -260,6 +265,8 @@ protected:
     float m_domainSizeJ;
     float m_sceneScale;
     SimulationMethod m_simulationMethod;
+
+    ThreadPool m_pool;
 
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;

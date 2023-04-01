@@ -36,6 +36,18 @@ class MaterialGrid : public Grid2d<FluidMaterial>
 public:
     MaterialGrid(int sizeI, int sizeJ, FluidMaterial oobMaterial);
 
+    bool isFluid(Index2d idx);
+
+    bool isStrictFluid(Index2d idx);
+
+    bool isSolid(Index2d idx);
+
+    bool isEmpty(Index2d idx);
+
+    bool isSource(Index2d idx);
+
+    bool isSink(Index2d idx);
+
     bool isFluid(int i, int j);
 
     bool isStrictFluid(int i, int j);

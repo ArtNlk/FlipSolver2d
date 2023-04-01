@@ -6,6 +6,36 @@ MaterialGrid::MaterialGrid(int sizeI, int sizeJ, FluidMaterial oobMaterial) :
 {
 }
 
+bool MaterialGrid::isFluid(Index2d idx)
+{
+    return isFluid(idx.m_i, idx.m_j);
+}
+
+bool MaterialGrid::isStrictFluid(Index2d idx)
+{
+    return isStrictFluid(idx.m_i, idx.m_j);
+}
+
+bool MaterialGrid::isSolid(Index2d idx)
+{
+    return isSolid(idx.m_i, idx.m_j);
+}
+
+bool MaterialGrid::isEmpty(Index2d idx)
+{
+    return isEmpty(idx.m_i, idx.m_j);
+}
+
+bool MaterialGrid::isSource(Index2d idx)
+{
+    return isSource(idx.m_i, idx.m_j);
+}
+
+bool MaterialGrid::isSink(Index2d idx)
+{
+    return isSink(idx.m_i, idx.m_j);
+}
+
 bool MaterialGrid::isFluid(int i, int j)
 {
     return fluidTest(getAt(i,j));

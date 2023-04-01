@@ -81,6 +81,11 @@ public:
         return m_data[linearIndex(index)];
     }
 
+    void setAt(Index2d idx, T value)
+    {
+        setAt(idx, value);
+    }
+
     void setAt(int i, int j, T value)
     {
         ASSERT_BETWEEN(i,-1,m_sizeI);

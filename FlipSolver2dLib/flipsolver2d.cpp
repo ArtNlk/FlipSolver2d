@@ -2,7 +2,9 @@
 
 #include <cmath>
 #include <limits>
+#include <ostream>
 #include <queue>
+#include <thread>
 
 #include "linearindexable2d.h"
 #include "materialgrid.h"
@@ -43,7 +45,8 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_domainSizeI(p->domainSizeI),
     m_domainSizeJ(p->domainSizeJ),
     m_sceneScale(p->sceneScale),
-    m_simulationMethod(p->simulationMethod)
+    m_simulationMethod(p->simulationMethod),
+    m_pool()
 {
     m_randEngine = std::mt19937(p->seed);
 }
@@ -995,53 +998,13 @@ void FlipSolver::updateVelocityFromSolids()
 
 void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 {
-    double scale = m_stepDt / (m_fluidDensity * m_dx);
-
-    for (int i = m_sizeI - 1; i >= 0; i--)
+    std::vector<Range> ranges = m_pool.splitRange(pressures.size());
+    for(Range& range : ranges)
     {
-        for (int j = m_sizeJ - 1; j >= 0; j--)
-        {
-            int fluidIndex = linearIndex(i,j);
-            int fluidIndexIM1 = linearIndex(i-1,j);
-            int fluidIndexJM1 = linearIndex(i,j-1);
-            double pCurrent = fluidIndex == -1 ? 0.0 : pressures[fluidIndex];
-            //U part
-            if(m_materialGrid.isFluid(i-1,j) || m_materialGrid.isFluid(i,j))
-            {
-                if(m_materialGrid.isSolid(i-1,j) || m_materialGrid.isSolid(i,j))
-                {
-                    m_fluidVelocityGrid.setU(i,j,0);//Solids are stationary
-                }
-                else
-                {
-                    double pIm1 = fluidIndexIM1 == -1 ? 0.0 : pressures[fluidIndexIM1];
-                    m_fluidVelocityGrid.u(i,j) -= scale * (pCurrent - pIm1);
-                }
-            }
-            else
-            {
-                m_fluidVelocityGrid.setUValidity(i,j,false);
-            }
-
-            //V part
-            if(m_materialGrid.isFluid(i,j-1) || m_materialGrid.isFluid(i,j))
-            {
-                if(m_materialGrid.isSolid(i,j-1) || m_materialGrid.isSolid(i,j))
-                {
-                    m_fluidVelocityGrid.setV(i,j,0);//Solids are stationary
-                }
-                else
-                {
-                    double pJm1 = fluidIndexJM1 == -1 ? 0.0 : pressures[fluidIndexJM1];
-                    m_fluidVelocityGrid.v(i,j) -= scale * (pCurrent - pJm1);
-                }
-            }
-            else
-            {
-                m_fluidVelocityGrid.setVValidity(i,j,false);
-            }
-        }
+        m_pool.enqueue(&FlipSolver::applyPressureThreadU,this,range,&pressures);
+        m_pool.enqueue(&FlipSolver::applyPressureThreadV,this,range,&pressures);
     }
+    m_pool.wait();
 
     if(anyNanInf(m_fluidVelocityGrid.velocityGridU().data()))
     {
@@ -1051,6 +1014,68 @@ void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
     if(anyNanInf(m_fluidVelocityGrid.velocityGridV().data()))
     {
         std::cout << "NaN or inf in V vector!\n" << std::flush;
+    }
+}
+
+void FlipSolver::applyPressureThreadU(Range range, const std::vector<double>* pressures)
+{
+    double scale = m_stepDt / (m_fluidDensity * m_dx);
+
+    for (unsigned int pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
+    {
+        Index2d i2d = index2d(pressureIdx);
+        Index2d i2dim1 = Index2d(i2d.m_i - 1,   i2d.m_j);
+        //Index2d i2djm1 = Index2d(i2d.m_i,       i2d.m_j - 1);
+        int pressureIndexIm1 = linearIndex(i2dim1);
+        double pCurrent = (*pressures)[pressureIdx];
+        double pIm1 = pressureIndexIm1 == -1 ? 0.0 : (*pressures)[pressureIndexIm1];
+        //U part
+        if(m_materialGrid.isFluid(i2dim1) || m_materialGrid.isFluid(i2d))
+        {
+            if(m_materialGrid.isSolid(i2dim1) || m_materialGrid.isSolid(i2d))
+            {
+                m_fluidVelocityGrid.setU(i2d,0.f);//Solids are stationary
+            }
+            else
+            {
+                m_fluidVelocityGrid.u(i2d) -= scale * (pCurrent - pIm1);
+            }
+        }
+        else
+        {
+            m_fluidVelocityGrid.setUValidity(i2d,false);
+        }
+    }
+}
+
+void FlipSolver::applyPressureThreadV(Range range, const std::vector<double>* pressures)
+{
+    double scale = m_stepDt / (m_fluidDensity * m_dx);
+
+    for (unsigned int pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
+    {
+        Index2d i2d = index2d(pressureIdx);
+        Index2d i2djm1 = Index2d(i2d.m_i,   i2d.m_j - 1);
+        //Index2d i2djm1 = Index2d(i2d.m_i,       i2d.m_j - 1);
+        int pressureIndexJm1 = linearIndex(i2djm1);
+        double pCurrent = (*pressures)[pressureIdx];
+        double pJm1 = pressureIndexJm1 == -1 ? 0.0 : (*pressures)[pressureIndexJm1];
+        //U part
+        if(m_materialGrid.isFluid(i2djm1) || m_materialGrid.isFluid(i2d))
+        {
+            if(m_materialGrid.isSolid(i2djm1) || m_materialGrid.isSolid(i2d))
+            {
+                m_fluidVelocityGrid.setV(i2d,0.f);//Solids are stationary
+            }
+            else
+            {
+                m_fluidVelocityGrid.v(i2d) -= scale * (pCurrent - pJm1);
+            }
+        }
+        else
+        {
+            m_fluidVelocityGrid.setVValidity(i2d,false);
+        }
     }
 }
 

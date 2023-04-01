@@ -36,6 +36,26 @@ public:
 
     void setVValidity(int i,int j, bool vValidity);
 
+    float &u(Index2d idx);
+
+    float &v(Index2d idx);
+
+    float getU(Index2d idx) const;
+
+    float getV(Index2d idx) const;
+
+    void setU(Index2d idx, float u);
+
+    void setV(Index2d idx, float v);
+
+    bool getUValidity(Index2d idx);
+
+    bool getVValidity(Index2d idx);
+
+    void setUValidity(Index2d idx, bool uValidity);
+
+    void setVValidity(Index2d idx, bool vValidity);
+
     void extrapolate(int extrapolationRadius);
 
     Vertex velocityAt(float i, float j) const;
