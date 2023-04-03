@@ -8,7 +8,7 @@
 #include "linearindexable2d.h"
 #include "materialgrid.h"
 #include "obstacle.h"
-#include "pcgsolver.h"
+#include "linearsolver.h"
 #include "sdfgrid.h"
 #include "staggeredvelocitygrid.h"
 #include "threadpool.h"
@@ -47,8 +47,8 @@ struct FlipSolverParameters
     int pcgIterLimit;
     float domainSizeI;
     float domainSizeJ;
-    float gridSizeI;
-    float gridSizeJ;
+    int gridSizeI;
+    int gridSizeJ;
     float sceneScale;
     SimulationMethod simulationMethod;
 };
@@ -69,7 +69,7 @@ class FlipSolver : public LinearIndexable2d
 public:
     FlipSolver(const FlipSolverParameters *p);
 
-    virtual ~FlipSolver() = default;
+    virtual ~FlipSolver();
 
     int particleCount();
 
@@ -159,6 +159,8 @@ protected:
 
     virtual void project();
 
+    LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(int i);
+
     void applyViscosity();
 
     virtual void advect();
@@ -193,9 +195,9 @@ protected:
 
     virtual void applyPressuresToVelocityField(std::vector<double> &pressures);
 
-    void applyPressureThreadU(Range range, const std::vector<double>* pressures);
+    void applyPressureThreadU(Range range, const std::vector<double> &pressures);
 
-    void applyPressureThreadV(Range range,const std::vector<double>* pressures);
+    void applyPressureThreadV(Range range,const std::vector<double> &pressures);
 
     Vertex rk3Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid);
 
@@ -227,7 +229,7 @@ protected:
     int m_validVVelocitySampleCount;
     int m_validUVelocitySampleCount;
     std::vector<MarkerParticle> m_markerParticles;
-    PCGSolver m_pcgSolver;
+    LinearSolver m_pcgSolver;
     std::mt19937 m_randEngine;
     std::vector<Obstacle> m_obstacles;
     std::vector<Emitter> m_sources;

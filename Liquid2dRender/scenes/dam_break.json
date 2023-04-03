@@ -9,7 +9,7 @@
     "airDensity": 0.001,
     "surfaceTensionFactor": 0.01,
     "maxSubsteps": 10,
-    "pcgIterLimit": 5000,
+    "pcgIterLimit": 300,
     "seed": 0,
     "particlesPerCell": 4,
     "particleScale": 0.8,

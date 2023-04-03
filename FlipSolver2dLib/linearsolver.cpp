@@ -1,4 +1,4 @@
-#include "pcgsolver.h"
+#include "linearsolver.h"
 
 #include <algorithm>
 
@@ -8,13 +8,12 @@
 
 #include "dynamicuppertriangularsparsematrix.h"
 #include "vmath.h"
-#include "cmath"
 
 #include "logger.h"
 
-const double PCGSolver::m_tol = 1.0e-14;
+const double LinearSolver::m_tol = 1.0e-14;
 
-bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
+bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
 {
     result.assign(result.size(),0);
     if (vsimmath::isZero(vec))
@@ -62,7 +61,63 @@ bool PCGSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::v
     return false;
 }
 
-void PCGSolver::applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, const std::vector<double> &in, std::vector<double> &out)
+bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
+{
+    result.assign(result.size(),0);
+    if (vsimmath::isZero(vec))
+    {
+        return true;
+    }
+
+    //vec - b
+    std::vector<double> residual = vec; //r
+    std::vector<double> aux = vec; //q
+    std::vector<double> search = aux; //d
+    double sigma = vsimmath::dot(aux,residual);
+    double err = 0.0;
+    for (int i = 0; i < iterLimit; i++)
+    {
+        nomatVMul(elementProvider,search,aux);
+        double alpha = sigma/(vsimmath::dot(aux,search));
+        vsimmath::addMul(result,result,search,alpha);
+        vsimmath::subMul(residual,residual,aux,alpha);
+        err = vsimmath::maxAbs(residual);
+        if (err <= m_tol)
+        {
+            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
+            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+            return true;
+        }
+        aux = residual;
+        double newSigma = vsimmath::dot(aux,residual);
+        double beta = newSigma/(sigma);
+        vsimmath::addMul(search,aux,search,beta);
+        sigma = newSigma;
+    }
+
+    debug() << "Solver iter exhaustion, err = " << err;
+    std::cout << "Solver iter exhaustion, err = " << err << '\n';
+    return false;
+}
+
+void LinearSolver::nomatVMul(MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout)
+{
+    for(int rowIdx = 0; rowIdx < vin.size(); rowIdx++)
+    {
+        SparseMatRowElements neighbors = elementProvider(rowIdx);
+        double mulSum = 0.0;
+        for(auto &matElement : neighbors)
+        {
+            if(matElement.first >= 0 && matElement.first < vin.size())
+            {
+                mulSum += vin.at(matElement.first) * matElement.second;
+            }
+        }
+        vout[rowIdx] = mulSum;
+    }
+}
+
+void LinearSolver::applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, const std::vector<double> &in, std::vector<double> &out)
 {
     out = in;
 
@@ -104,7 +159,7 @@ void PCGSolver::applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond
     }
 }
 
-DynamicUpperTriangularSparseMatrix PCGSolver::calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix)
+DynamicUpperTriangularSparseMatrix LinearSolver::calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix)
 {
     float tuning = 0.97f;
     float safety = 0.25f;

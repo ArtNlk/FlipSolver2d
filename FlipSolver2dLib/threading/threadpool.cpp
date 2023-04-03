@@ -1,7 +1,14 @@
 #include "threadpool.h"
+#include <thread>
 
-ThreadPool::ThreadPool(unsigned int size)
-: m_running(true)
+ThreadPool::ThreadPool(unsigned int size):
+    m_threads(size),
+    m_tasks(),
+    m_cv(),
+    m_poolDone(),
+    m_mutex(),
+    m_running(true),
+    m_workingThreadCount(0)
 {
     if(size == 0)
     {
@@ -54,10 +61,14 @@ void ThreadPool::wait()
 {
     std::unique_lock<std::mutex> lock(m_mutex);
     //std::cout << "entered wait"<< std::endl;
+//    while(m_workingThreadCount != 0 || !m_tasks.empty())
+//    {
+//            std::this_thread::yield();
+//    }
     m_poolDone.wait(lock, [this] {
         //std::cout << "wakeup" << std::endl;
         //std::cout << m_running << std::endl;
         //std::cout << m_tasks.empty() << std::endl;
-        return m_running && m_tasks.empty();
+        return !m_running || (m_workingThreadCount == 0 && m_tasks.empty());
     });
 }

@@ -7,7 +7,7 @@ set(HEADERS
     customassert.h
     materialgrid.h
     sdfgrid.h
-    pcgsolver.h
+    linearsolver.h
     vmath.h
     uppertriangularmatrix.h
     dynamicuppertriangularsparsematrix.h
@@ -30,7 +30,7 @@ set(SOURCES
     grid2d.cpp
     materialgrid.cpp
     sdfgrid.cpp
-    pcgsolver.cpp
+    linearsolver.cpp
     vmath.cpp
     uppertriangularmatrix.cpp
     dynamicuppertriangularsparsematrix.cpp

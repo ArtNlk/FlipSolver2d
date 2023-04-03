@@ -1,6 +1,8 @@
 #include "flipsolver2d.h"
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <ostream>
 #include <queue>
@@ -51,14 +53,25 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_randEngine = std::mt19937(p->seed);
 }
 
+FlipSolver::~FlipSolver()
+{
+    m_pool.wait();
+}
+
 void FlipSolver::project()
 {
     std::vector<double> rhs(cellCount(),0.0);
     std::vector<double> pressures(cellCount(),0.0);
     calcPressureRhs(rhs);
-    //debug() << "Calculated rhs: " << rhs;
-    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
+//    //debug() << "Calculated rhs: " << rhs;
+//    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
+//    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
+//    {
+//        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
+//    }
+    auto provider = std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
+
+    if(!m_pcgSolver.mfcgSolve(provider,pressures,rhs,m_pcgIterLimit))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
@@ -73,6 +86,74 @@ void FlipSolver::project()
     applyPressuresToVelocityField(pressures);
 }
 
+LinearSolver::SparseMatRowElements FlipSolver::getMatFreeElementForLinIdx(int i)
+{
+    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
+    LinearSolver::SparseMatRowElements output;
+    output.fill(std::pair<int, double>(0,0.0));
+    Index2d i2d = index2d(i);
+    output[0].first = i;
+
+    Index2d ip1Idx = Index2d(i2d.m_i+1,i2d.m_j);
+    output[1].first = linearIndex(ip1Idx);
+
+    Index2d im1Idx = Index2d(i2d.m_i-1,i2d.m_j);
+    output[2].first = linearIndex(im1Idx);
+
+    Index2d jp1Idx = Index2d(i2d.m_i,i2d.m_j+1);
+    output[3].first = linearIndex(jp1Idx);
+
+    Index2d jm1Idx = Index2d(i2d.m_i,i2d.m_j-1);
+    output[4].first = linearIndex(jm1Idx);
+
+    if(m_materialGrid.isFluid(i2d))
+    {
+        //X NEIGHBORS
+        if(m_materialGrid.isFluid(ip1Idx))
+        {
+            output[1].second = -scale;
+            output[0].second += scale;
+        }
+        else if(m_materialGrid.isEmpty(ip1Idx))
+        {
+            output[0].second += scale;
+        }
+
+        if(m_materialGrid.isFluid(im1Idx))
+        {
+            output[2].second = -scale;
+            output[0].second += scale;
+        }
+        else if(m_materialGrid.isEmpty(im1Idx))
+        {
+            output[0].second += scale;
+        }
+
+        //Y NEIGHBORS
+        if(m_materialGrid.isFluid(jp1Idx))
+        {
+            output[3].second = -scale;
+            output[0].second += scale;
+        }
+        else if(m_materialGrid.isEmpty(jp1Idx))
+        {
+            output[0].second += scale;
+        }
+
+        if(m_materialGrid.isFluid(jm1Idx))
+        {
+            output[4].second = -scale;
+            output[0].second += scale;
+        }
+        else if(m_materialGrid.isEmpty(jm1Idx))
+        {
+            output[0].second += scale;
+        }
+    }
+
+    return output;
+}
+
 void FlipSolver::applyViscosity()
 {
     updateLinearFluidViscosityMapping();
@@ -83,7 +164,7 @@ void FlipSolver::applyViscosity()
     //debug() << "mat=" << mat;
     //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
-    if(!PCGSolver::solve(mat,result,rhs,2000))
+    if(!LinearSolver::solve(mat,result,rhs,2000))
     {
         std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
     }
@@ -210,8 +291,8 @@ void FlipSolver::step()
     applyBodyForces();
     project();
     updateVelocityFromSolids();
-    applyViscosity();
-    project();
+    //applyViscosity();
+    //project();
     m_fluidVelocityGrid.extrapolate(10);
     particleUpdate();
     countParticles();
@@ -999,10 +1080,11 @@ void FlipSolver::updateVelocityFromSolids()
 void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 {
     std::vector<Range> ranges = m_pool.splitRange(pressures.size());
-    for(Range& range : ranges)
+
+    for(Range range : ranges)
     {
-        m_pool.enqueue(&FlipSolver::applyPressureThreadU,this,range,&pressures);
-        m_pool.enqueue(&FlipSolver::applyPressureThreadV,this,range,&pressures);
+        m_pool.enqueue(&FlipSolver::applyPressureThreadU,this,range,pressures);
+        m_pool.enqueue(&FlipSolver::applyPressureThreadV,this,range,pressures);
     }
     m_pool.wait();
 
@@ -1017,7 +1099,7 @@ void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
     }
 }
 
-void FlipSolver::applyPressureThreadU(Range range, const std::vector<double>* pressures)
+void FlipSolver::applyPressureThreadU(Range range, const std::vector<double> &pressures)
 {
     double scale = m_stepDt / (m_fluidDensity * m_dx);
 
@@ -1027,8 +1109,8 @@ void FlipSolver::applyPressureThreadU(Range range, const std::vector<double>* pr
         Index2d i2dim1 = Index2d(i2d.m_i - 1,   i2d.m_j);
         //Index2d i2djm1 = Index2d(i2d.m_i,       i2d.m_j - 1);
         int pressureIndexIm1 = linearIndex(i2dim1);
-        double pCurrent = (*pressures)[pressureIdx];
-        double pIm1 = pressureIndexIm1 == -1 ? 0.0 : (*pressures)[pressureIndexIm1];
+        double pCurrent = pressures.at(pressureIdx);
+        double pIm1 = pressureIndexIm1 == -1 ? 0.0 : pressures.at(pressureIndexIm1);
         //U part
         if(m_materialGrid.isFluid(i2dim1) || m_materialGrid.isFluid(i2d))
         {
@@ -1048,7 +1130,7 @@ void FlipSolver::applyPressureThreadU(Range range, const std::vector<double>* pr
     }
 }
 
-void FlipSolver::applyPressureThreadV(Range range, const std::vector<double>* pressures)
+void FlipSolver::applyPressureThreadV(Range range, const std::vector<double> &pressures)
 {
     double scale = m_stepDt / (m_fluidDensity * m_dx);
 
@@ -1058,8 +1140,8 @@ void FlipSolver::applyPressureThreadV(Range range, const std::vector<double>* pr
         Index2d i2djm1 = Index2d(i2d.m_i,   i2d.m_j - 1);
         //Index2d i2djm1 = Index2d(i2d.m_i,       i2d.m_j - 1);
         int pressureIndexJm1 = linearIndex(i2djm1);
-        double pCurrent = (*pressures)[pressureIdx];
-        double pJm1 = pressureIndexJm1 == -1 ? 0.0 : (*pressures)[pressureIndexJm1];
+        double pCurrent = pressures.at(pressureIdx);
+        double pJm1 = pressureIndexJm1 == -1 ? 0.0 : pressures.at(pressureIndexJm1);
         //U part
         if(m_materialGrid.isFluid(i2djm1) || m_materialGrid.isFluid(i2d))
         {

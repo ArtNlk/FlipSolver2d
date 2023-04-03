@@ -2,6 +2,7 @@
 #define THREADPOOL_H
 
 #include <atomic>
+#include <exception>
 #include <functional>
 #include <ostream>
 #include <queue>
@@ -39,7 +40,7 @@ public:
 
     std::vector<Range> splitRange(unsigned int length, unsigned int minSize = 1);
 
-    std::vector<Range> splitRange(unsigned int start, unsigned int end, unsigned int minSize = 1);
+    std::vector<Range> splitRange(unsigned int start, unsigned int end, unsigned int minSize);
 
     void wait();
 

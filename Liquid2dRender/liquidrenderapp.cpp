@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 
+#include "GLFW/glfw3.h"
 #include "flipfiresolver.h"
 #include "flipsmokesolver.h"
 #include "flipsolver2d.h"
@@ -197,6 +198,23 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                         m_solver->stepFrame();
                         m_fluidRenderer.update();
                         render();
+                    }
+                    else if(mods & GLFW_MOD_CONTROL)
+                    {
+                        bool run = true;
+                        for(int i = 0; i < m_solver->fps() * 10; i++)
+                        {
+                            m_solver->stepFrame();
+                            m_fluidRenderer.update();
+                            render();
+                            glfwPollEvents();
+                            if(glfwWindowShouldClose(m_window))
+                            {
+                                glfwTerminate();
+                                run = false;
+                            }
+                            if(!run) break;
+                        }
                     }
                     else
                     {
