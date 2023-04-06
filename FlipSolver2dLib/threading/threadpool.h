@@ -44,6 +44,10 @@ public:
 
     void wait();
 
+    int activeThreadCount();
+
+    int queueLength();
+
 private:
     void threadFunc()
     {
@@ -70,11 +74,11 @@ private:
                 }
 
                 task = std::move(m_tasks.front());
+                m_workingThreadCount++;
                 m_tasks.pop();
             }
 
             //std::cout << "task started" << std::endl;;
-            m_workingThreadCount++;
             task();
             m_workingThreadCount--;
             //std::cout << "task done" << std::endl;

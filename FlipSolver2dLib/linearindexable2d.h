@@ -1,6 +1,7 @@
 #ifndef LINEARINDEXABLE2D_H
 #define LINEARINDEXABLE2D_H
 
+#include <array>
 #include <vector>
 
 #include "index2d.h"
@@ -74,6 +75,31 @@ public:
         }
 
         return output;
+    }
+
+    inline std::array<int,4> immidiateNeighbors(Index2d idx)
+    {
+        return immidiateNeighbors(linearIndex(idx));
+    }
+
+    inline std::array<int,4> immidiateNeighbors(int i, int j)
+    {
+        return immidiateNeighbors(linearIndex(i,j));
+    }
+
+    inline std::array<int,4> immidiateNeighbors(int linearIdx)
+    {
+        std::array<int,4> output;
+        output[0] = linearIdxOfOffset(linearIdx,-1,0);
+        output[1] = linearIdxOfOffset(linearIdx,1,0);
+        output[2] = linearIdxOfOffset(linearIdx,0,-1);
+        output[3] = linearIdxOfOffset(linearIdx,0,1);
+        return output;
+    }
+
+    inline int linearIdxOfOffset(int linearIdx, int iOffset, int jOffset)
+    {
+        return linearIdx + iOffset * m_sizeJ + jOffset;
     }
 
     inline bool inBounds(Index2d index) const

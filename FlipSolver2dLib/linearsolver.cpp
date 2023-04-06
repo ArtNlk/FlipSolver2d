@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include <cmath>
+#include <mutex>
 #include <sstream>
 #include <vector>
 
@@ -12,6 +13,12 @@
 #include "logger.h"
 
 const double LinearSolver::m_tol = 1.0e-14;
+
+LinearSolver::LinearSolver(ThreadPool &pool) :
+    m_poolRef(pool)
+{
+
+}
 
 bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
 {
@@ -84,8 +91,8 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
         err = vsimmath::maxAbs(residual);
         if (err <= m_tol)
         {
-            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
-            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+            //debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
+            //std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
             return true;
         }
         aux = residual;
@@ -95,14 +102,41 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
         sigma = newSigma;
     }
 
-    debug() << "Solver iter exhaustion, err = " << err;
-    std::cout << "Solver iter exhaustion, err = " << err << '\n';
+    //debug() << "Solver iter exhaustion, err = " << err;
+    //std::cout << "Solver iter exhaustion, err = " << err << '\n';
     return false;
 }
 
 void LinearSolver::nomatVMul(MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout)
 {
-    for(int rowIdx = 0; rowIdx < vin.size(); rowIdx++)
+    std::vector<Range> ranges = m_poolRef.splitRange(vin.size());
+
+    for(Range range : ranges)
+    {
+        m_poolRef.enqueue(&LinearSolver::nomatVMulThread,this,range,elementProvider,
+                          std::ref(vin),std::ref(vout));
+        //nomatVMulThread(range,elementProvider,vin,vout);
+    }
+    m_poolRef.wait();
+
+//    for(int rowIdx = 0; rowIdx < vin.size(); rowIdx++)
+//    {
+//        SparseMatRowElements neighbors = elementProvider(rowIdx);
+//        double mulSum = 0.0;
+//        for(auto &matElement : neighbors)
+//        {
+//            if(matElement.first >= 0 && matElement.first < vin.size())
+//            {
+//                mulSum += vin.at(matElement.first) * matElement.second;
+//            }
+//        }
+//        vout[rowIdx] = mulSum;
+//    }
+}
+
+void LinearSolver::nomatVMulThread(Range range, MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout)
+{
+    for(unsigned int rowIdx = range.start; rowIdx < range.end; rowIdx++)
     {
         SparseMatRowElements neighbors = elementProvider(rowIdx);
         double mulSum = 0.0;
@@ -110,7 +144,7 @@ void LinearSolver::nomatVMul(MatElementProvider elementProvider, const std::vect
         {
             if(matElement.first >= 0 && matElement.first < vin.size())
             {
-                mulSum += vin.at(matElement.first) * matElement.second;
+                mulSum += vin[matElement.first] * matElement.second;
             }
         }
         vout[rowIdx] = mulSum;

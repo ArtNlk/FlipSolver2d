@@ -48,7 +48,8 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_domainSizeJ(p->domainSizeJ),
     m_sceneScale(p->sceneScale),
     m_simulationMethod(p->simulationMethod),
-    m_pool()
+    m_pool(),
+    m_pcgSolver(m_pool)
 {
     m_randEngine = std::mt19937(p->seed);
 }
@@ -86,68 +87,23 @@ void FlipSolver::project()
     applyPressuresToVelocityField(pressures);
 }
 
-LinearSolver::SparseMatRowElements FlipSolver::getMatFreeElementForLinIdx(int i)
+LinearSolver::SparseMatRowElements FlipSolver::getMatFreeElementForLinIdx(unsigned int i)
 {
     double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
+    std::array<int,4> neighbors = immidiateNeighbors(static_cast<int>(i));
+    std::vector<FluidMaterial>& materials = m_materialGrid.data();
+
     LinearSolver::SparseMatRowElements output;
     output.fill(std::pair<int, double>(0,0.0));
-    Index2d i2d = index2d(i);
-    output[0].first = i;
+    output[4].first = i;
 
-    Index2d ip1Idx = Index2d(i2d.m_i+1,i2d.m_j);
-    output[1].first = linearIndex(ip1Idx);
-
-    Index2d im1Idx = Index2d(i2d.m_i-1,i2d.m_j);
-    output[2].first = linearIndex(im1Idx);
-
-    Index2d jp1Idx = Index2d(i2d.m_i,i2d.m_j+1);
-    output[3].first = linearIndex(jp1Idx);
-
-    Index2d jm1Idx = Index2d(i2d.m_i,i2d.m_j-1);
-    output[4].first = linearIndex(jm1Idx);
-
-    if(m_materialGrid.isFluid(i2d))
+    if(fluidTest(materials[i]))
     {
-        //X NEIGHBORS
-        if(m_materialGrid.isFluid(ip1Idx))
+        for(unsigned int i = 0; i < neighbors.size(); i++)
         {
-            output[1].second = -scale;
-            output[0].second += scale;
-        }
-        else if(m_materialGrid.isEmpty(ip1Idx))
-        {
-            output[0].second += scale;
-        }
-
-        if(m_materialGrid.isFluid(im1Idx))
-        {
-            output[2].second = -scale;
-            output[0].second += scale;
-        }
-        else if(m_materialGrid.isEmpty(im1Idx))
-        {
-            output[0].second += scale;
-        }
-
-        //Y NEIGHBORS
-        if(m_materialGrid.isFluid(jp1Idx))
-        {
-            output[3].second = -scale;
-            output[0].second += scale;
-        }
-        else if(m_materialGrid.isEmpty(jp1Idx))
-        {
-            output[0].second += scale;
-        }
-
-        if(m_materialGrid.isFluid(jm1Idx))
-        {
-            output[4].second = -scale;
-            output[0].second += scale;
-        }
-        else if(m_materialGrid.isEmpty(jm1Idx))
-        {
-            output[0].second += scale;
+            output[i].first = neighbors[i];
+            output[i].second = -scale * fluidTest(materials[neighbors[i]]);
+            output[4].second += scale * !solidTest(materials[neighbors[i]]);
         }
     }
 
@@ -164,7 +120,7 @@ void FlipSolver::applyViscosity()
     //debug() << "mat=" << mat;
     //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
-    if(!LinearSolver::solve(mat,result,rhs,2000))
+    if(!m_pcgSolver.solve(mat,result,rhs,2000))
     {
         std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
     }
@@ -278,6 +234,10 @@ void FlipSolver::afterTransfer()
 
 void FlipSolver::step()
 {
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
     advect();
     particleToGrid();
     updateSdf();
@@ -289,7 +249,10 @@ void FlipSolver::step()
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
+    auto t1 = high_resolution_clock::now();
     project();
+    auto t2 = high_resolution_clock::now();
+
     updateVelocityFromSolids();
     //applyViscosity();
     //project();
@@ -297,10 +260,18 @@ void FlipSolver::step()
     particleUpdate();
     countParticles();
     reseedParticles();
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << ms_double.count() << "ms\n";
 }
 
 void FlipSolver::stepFrame()
 {
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+    auto t1 = high_resolution_clock::now();
     if(m_frameNumber == 0)
     {
         firstFrameInit();
@@ -334,6 +305,10 @@ void FlipSolver::stepFrame()
         substepCount++;
         if(substepCount > 50) break;
     }
+    auto t2 = high_resolution_clock::now();
+    duration<double, std::milli> ms = t2 - t1;
+    //std::cout << "Frame took" << ms.count() << "ms\n";
+    m_frameTime = ms.count();
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
     m_frameNumber++;
 }
@@ -1483,6 +1458,11 @@ float FlipSolver::maxParticleVelocity()
 float FlipSolver::sceneScale() const
 {
     return m_sceneScale;
+}
+
+float FlipSolver::lastFrameTime() const
+{
+    return m_frameTime;
 }
 
 Vertex FlipSolver::globalAcceleration() const

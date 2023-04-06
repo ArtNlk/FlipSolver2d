@@ -57,6 +57,22 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
+    temp = "Target FPS: " + std::to_string(m_fluidRenderer.solver()->fps());
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Frame time: " + std::to_string(m_fluidRenderer.solver()->lastFrameTime()) + "ms";
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
     temp = "Particle count: " + std::to_string(m_fluidRenderer.solver()->particleCount());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
@@ -164,14 +180,6 @@ void TextMenuRenderer::render()
 
     currentTextPos += m_nextLineOffset;
     temp = "Substeps: " + std::to_string(m_fluidRenderer.solver()->maxSubsteps());
-    m_textRenderer.renderText(temp,
-                              currentTextPos.x + widthBaseline,
-                              m_height - currentTextPos.y,
-                              1.0f,
-                              Color(255,255,255));
-
-    currentTextPos += m_nextLineOffset;
-    temp = "Target FPS: " + std::to_string(m_fluidRenderer.solver()->fps());
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,

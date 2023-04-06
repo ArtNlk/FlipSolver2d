@@ -149,6 +149,8 @@ public:
 
     float sceneScale() const;
 
+    float lastFrameTime() const;
+
 protected:
 
     virtual double divergenceAt(int i, int j);
@@ -159,7 +161,7 @@ protected:
 
     virtual void project();
 
-    LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(int i);
+    LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
 
     void applyViscosity();
 
@@ -267,6 +269,8 @@ protected:
     float m_domainSizeJ;
     float m_sceneScale;
     SimulationMethod m_simulationMethod;
+
+    float m_frameTime;
 
     ThreadPool m_pool;
 

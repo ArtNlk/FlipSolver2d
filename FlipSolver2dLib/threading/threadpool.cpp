@@ -1,12 +1,11 @@
 #include "threadpool.h"
+#include <cmath>
+#include <iostream>
+#include <mutex>
 #include <thread>
 
 ThreadPool::ThreadPool(unsigned int size):
-    m_threads(size),
-    m_tasks(),
-    m_cv(),
-    m_poolDone(),
-    m_mutex(),
+    m_threads(),
     m_running(true),
     m_workingThreadCount(0)
 {
@@ -17,6 +16,7 @@ ThreadPool::ThreadPool(unsigned int size):
     for (size_t i = 0; i < size; i++) {
         m_threads.emplace_back(&ThreadPool::threadFunc,this);
     }
+    std::cout << "Threadpool created with size " << m_threads.size() << std::endl;
 }
 
 ThreadPool::~ThreadPool()
@@ -40,8 +40,9 @@ std::vector<Range> ThreadPool::splitRange(unsigned int start, unsigned int end, 
         }
         std::vector<Range> parts;
         parts.reserve(numParts);
-        unsigned int partSize = std::max(rangeSize / numParts, minSize);
-        unsigned int remainder = rangeSize % partSize;
+        unsigned int partSize = std::floor(rangeSize / numParts);
+        partSize = std::max(minSize,partSize);
+        unsigned int remainder = rangeSize - (partSize * numParts);
         unsigned int currentStart = start;
         unsigned int currentEnd = start + partSize;
         for (unsigned int i = 0; i < numParts; i++) {
@@ -63,7 +64,7 @@ void ThreadPool::wait()
     //std::cout << "entered wait"<< std::endl;
 //    while(m_workingThreadCount != 0 || !m_tasks.empty())
 //    {
-//            std::this_thread::yield();
+//        std::this_thread::yield();
 //    }
     m_poolDone.wait(lock, [this] {
         //std::cout << "wakeup" << std::endl;
@@ -71,4 +72,16 @@ void ThreadPool::wait()
         //std::cout << m_tasks.empty() << std::endl;
         return !m_running || (m_workingThreadCount == 0 && m_tasks.empty());
     });
+}
+
+int ThreadPool::activeThreadCount()
+{
+    return m_workingThreadCount;
+}
+
+int ThreadPool::queueLength()
+{
+    std::unique_lock lock(m_mutex);
+    int length = m_tasks.size();
+    return length;
 }
