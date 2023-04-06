@@ -1,7 +1,10 @@
 #include "uppertriangularmatrix.h"
 #include "logger.h"
 
+#include "threadpool.h"
+
 #include <stdexcept>
+#include <vector>
 
 UpperTriangularMatrix::UpperTriangularMatrix(const DynamicUpperTriangularSparseMatrix &dynamicMatrix):
     SquareMatrix(dynamicMatrix.size()),
@@ -96,17 +99,39 @@ double UpperTriangularMatrix::Ay(int i, int j, LinearIndexable2d &indexer) const
 
 std::vector<double> UpperTriangularMatrix::operator*(std::vector<double> &v) const
 {
-    std::vector<double> output(v.size());
-    for(int i = 0; i < size(); i++)
+    std::vector<double> output(v.size(),0.0);
+
+//    for(int i = 0; i < size(); i++)
+//    {
+//        //vout[i] = 0;
+//        for(int j = m_rowStart[i]; j < m_rowStart[i+1]; j++)
+//        {
+//            output[i] += m_values[j].second * v[m_values[j].first];
+//        }
+//    }
+
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(output.size());
+
+    for(const Range& range : ranges)
     {
-        output[i] = 0;
-        for(int j = m_rowStart[i]; j < m_rowStart[i+1]; j++)
-        {
-            output[i] += m_values[j].second * v[m_values[j].first];
-        }
+        ThreadPool::i()->enqueue(&UpperTriangularMatrix::mulThread,this,range,
+                                 std::ref(v),std::ref(output));
     }
+    ThreadPool::i()->wait();
 
     return output;
+}
+
+void UpperTriangularMatrix::mulThread(Range range, std::vector<double>& vin, std::vector<double> &vout) const
+{
+    for(int i = range.start; i < range.end; i++)
+    {
+        //vout[i] = 0;
+        for(int j = m_rowStart[i]; j < m_rowStart[i+1]; j++)
+        {
+            vout[i] += m_values[j].second * vin[m_values[j].first];
+        }
+    }
 }
 
 std::string UpperTriangularMatrix::toString()

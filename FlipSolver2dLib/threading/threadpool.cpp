@@ -4,15 +4,12 @@
 #include <mutex>
 #include <thread>
 
-ThreadPool::ThreadPool(unsigned int size):
+ThreadPool::ThreadPool():
     m_threads(),
     m_running(true),
     m_workingThreadCount(0)
 {
-    if(size == 0)
-    {
-        size = 1;
-    }
+    unsigned int size = std::thread::hardware_concurrency();
     for (size_t i = 0; i < size; i++) {
         m_threads.emplace_back(&ThreadPool::threadFunc,this);
     }
@@ -23,6 +20,12 @@ ThreadPool::~ThreadPool()
 {
     m_running = false;
     m_cv.notify_all();
+}
+
+ThreadPool *ThreadPool::i()
+{
+    static ThreadPool instance;
+    return &instance;
 }
 
 std::vector<Range> ThreadPool::splitRange(unsigned int length, unsigned int minSize)

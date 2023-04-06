@@ -272,8 +272,6 @@ protected:
 
     float m_frameTime;
 
-    ThreadPool m_pool;
-
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
 };

@@ -14,8 +14,7 @@
 
 const double LinearSolver::m_tol = 1.0e-14;
 
-LinearSolver::LinearSolver(ThreadPool &pool) :
-    m_poolRef(pool)
+LinearSolver::LinearSolver()
 {
 
 }
@@ -109,15 +108,15 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
 
 void LinearSolver::nomatVMul(MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout)
 {
-    std::vector<Range> ranges = m_poolRef.splitRange(vin.size());
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(vin.size());
 
-    for(Range range : ranges)
+    for(Range& range : ranges)
     {
-        m_poolRef.enqueue(&LinearSolver::nomatVMulThread,this,range,elementProvider,
+        ThreadPool::i()->enqueue(&LinearSolver::nomatVMulThread,this,range,elementProvider,
                           std::ref(vin),std::ref(vout));
         //nomatVMulThread(range,elementProvider,vin,vout);
     }
-    m_poolRef.wait();
+    ThreadPool::i()->wait();
 
 //    for(int rowIdx = 0; rowIdx < vin.size(); rowIdx++)
 //    {

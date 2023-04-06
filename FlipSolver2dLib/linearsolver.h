@@ -10,7 +10,7 @@
 class LinearSolver
 {
 public:
-    LinearSolver(ThreadPool& pool);
+    LinearSolver();
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
     using MatElementProvider = std::function<SparseMatRowElements(int)>;
 
@@ -24,8 +24,6 @@ protected:
     void applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
     DynamicUpperTriangularSparseMatrix calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix);
     static const double m_tol;
-
-    ThreadPool& m_poolRef;
 };
 
 #endif // PCGSOLVER_H

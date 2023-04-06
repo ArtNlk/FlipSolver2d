@@ -14,12 +14,14 @@
 #include "dynamicuppertriangularsparsematrix.h"
 #include "logger.h"
 #include "mathfuncs.h"
+#include "threadpool.h"
 
 FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     LinearIndexable2d(p->gridSizeI, p->gridSizeJ),
     m_frameNumber(0),
     m_validVVelocitySampleCount(0),
     m_validUVelocitySampleCount(0),
+    m_pcgSolver(),
     m_fluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_savedFluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_materialGrid(p->gridSizeI,p->gridSizeJ, FluidMaterial::SINK),
@@ -31,9 +33,9 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_solidId(p->gridSizeI, p->gridSizeJ,-1),
     m_fluidParticleCounts(p->gridSizeI, p->gridSizeJ),
     m_divergenceControl(p->gridSizeI,p->gridSizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
-    m_testGrid(p->gridSizeI,p->gridSizeJ),
-    m_stepDt(1.f / p->fps), m_frameDt(1.f / p->fps),
-    m_dx(p->dx), m_fluidDensity(p->fluidDensity),
+    m_testGrid(p->gridSizeI,p->gridSizeJ), m_stepDt(1.f / p->fps),
+    m_frameDt(1.f / p->fps), m_dx(p->dx),
+    m_fluidDensity(p->fluidDensity),
     m_seed(p->seed),
     m_particlesPerCell(p->particlesPerCell),
     m_globalAcceleration(p->globalAcceleration),
@@ -47,16 +49,14 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_domainSizeI(p->domainSizeI),
     m_domainSizeJ(p->domainSizeJ),
     m_sceneScale(p->sceneScale),
-    m_simulationMethod(p->simulationMethod),
-    m_pool(),
-    m_pcgSolver(m_pool)
+    m_simulationMethod(p->simulationMethod)
 {
     m_randEngine = std::mt19937(p->seed);
 }
 
 FlipSolver::~FlipSolver()
 {
-    m_pool.wait();
+    ThreadPool::i()->wait();
 }
 
 void FlipSolver::project()
@@ -65,17 +65,17 @@ void FlipSolver::project()
     std::vector<double> pressures(cellCount(),0.0);
     calcPressureRhs(rhs);
 //    //debug() << "Calculated rhs: " << rhs;
-//    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-//    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
-//    {
-//        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
-//    }
-    auto provider = std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
-
-    if(!m_pcgSolver.mfcgSolve(provider,pressures,rhs,m_pcgIterLimit))
+    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
+    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
+//    auto provider = std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
+
+//    if(!m_pcgSolver.mfcgSolve(provider,pressures,rhs,m_pcgIterLimit))
+//    {
+//        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
+//    }
 
     if(anyNanInf(pressures))
     {
@@ -238,6 +238,8 @@ void FlipSolver::step()
     using std::chrono::duration_cast;
     using std::chrono::duration;
     using std::chrono::milliseconds;
+    static double sum = 0.0;
+    static double count = 0.0;
     advect();
     particleToGrid();
     updateSdf();
@@ -262,6 +264,9 @@ void FlipSolver::step()
     reseedParticles();
 
     duration<double, std::milli> ms_double = t2 - t1;
+    sum += ms_double.count();
+    count+=1.0;
+    m_frameTime = sum / count;
     std::cout << ms_double.count() << "ms\n";
 }
 
@@ -308,7 +313,7 @@ void FlipSolver::stepFrame()
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms = t2 - t1;
     //std::cout << "Frame took" << ms.count() << "ms\n";
-    m_frameTime = ms.count();
+//    m_frameTime = ms.count();
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
     m_frameNumber++;
 }
@@ -1054,14 +1059,14 @@ void FlipSolver::updateVelocityFromSolids()
 
 void FlipSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
 {
-    std::vector<Range> ranges = m_pool.splitRange(pressures.size());
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(pressures.size());
 
     for(Range range : ranges)
     {
-        m_pool.enqueue(&FlipSolver::applyPressureThreadU,this,range,pressures);
-        m_pool.enqueue(&FlipSolver::applyPressureThreadV,this,range,pressures);
+        ThreadPool::i()->enqueue(&FlipSolver::applyPressureThreadU,this,range,pressures);
+        ThreadPool::i()->enqueue(&FlipSolver::applyPressureThreadV,this,range,pressures);
     }
-    m_pool.wait();
+    ThreadPool::i()->wait();
 
     if(anyNanInf(m_fluidVelocityGrid.velocityGridU().data()))
     {

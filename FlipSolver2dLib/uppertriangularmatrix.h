@@ -4,6 +4,8 @@
 #include "dynamicuppertriangularsparsematrix.h"
 #include "linearindexable2d.h"
 
+#include "threadpool.h"
+
 using StaticRowUnit = std::pair<int, double>;
 
 class UpperTriangularMatrix : public SquareMatrix
@@ -28,6 +30,7 @@ public:
 
     std::string toString();
 
+    void mulThread(Range range, std::vector<double> &vin, std::vector<double>& vout) const;
 protected:
     std::vector<StaticRowUnit> m_values;
     std::vector<int> m_rowStart;

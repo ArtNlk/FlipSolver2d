@@ -21,11 +21,12 @@ struct Range
 class ThreadPool
 {
 public:
-    ThreadPool(unsigned int size = std::thread::hardware_concurrency());
     ThreadPool(ThreadPool& other) = delete;
     ThreadPool& operator=(const ThreadPool& other) = delete;
 
     ~ThreadPool();
+
+    static ThreadPool* i();
 
     template<typename F, typename... Args>
     void enqueue(F&& f, Args&&... args)
@@ -49,6 +50,8 @@ public:
     int queueLength();
 
 private:
+    ThreadPool();
+
     void threadFunc()
     {
         while (true) {
