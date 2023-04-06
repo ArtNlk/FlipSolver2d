@@ -65,17 +65,17 @@ void FlipSolver::project()
     std::vector<double> pressures(cellCount(),0.0);
     calcPressureRhs(rhs);
 //    //debug() << "Calculated rhs: " << rhs;
-    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
-    {
-        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
-    }
-//    auto provider = std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
-
-//    if(!m_pcgSolver.mfcgSolve(provider,pressures,rhs,m_pcgIterLimit))
+//    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
+//    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
 //    {
 //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
 //    }
+    auto provider = std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
+
+    if(!m_pcgSolver.mfcgSolve(provider,pressures,rhs,m_pcgIterLimit))
+    {
+        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
+    }
 
     if(anyNanInf(pressures))
     {
@@ -242,7 +242,9 @@ void FlipSolver::step()
     static double count = 0.0;
     advect();
     particleToGrid();
+    auto t1 = high_resolution_clock::now();
     updateSdf();
+    auto t2 = high_resolution_clock::now();
     updateLinearFluidViscosityMapping();
     updateMaterials();
     afterTransfer();
@@ -251,9 +253,7 @@ void FlipSolver::step()
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
-    auto t1 = high_resolution_clock::now();
     project();
-    auto t2 = high_resolution_clock::now();
 
     updateVelocityFromSolids();
     //applyViscosity();
@@ -266,7 +266,7 @@ void FlipSolver::step()
     duration<double, std::milli> ms_double = t2 - t1;
     sum += ms_double.count();
     count+=1.0;
-    m_frameTime = sum / count;
+    //m_frameTime = sum / count;
     std::cout << ms_double.count() << "ms\n";
 }
 
@@ -313,7 +313,7 @@ void FlipSolver::stepFrame()
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms = t2 - t1;
     //std::cout << "Frame took" << ms.count() << "ms\n";
-//    m_frameTime = ms.count();
+    m_frameTime = ms.count();
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
     m_frameNumber++;
 }
@@ -1178,27 +1178,59 @@ void FlipSolver::applyBodyForces()
 
 void FlipSolver::updateSdf()
 {
-    float particleRadius = m_particleScale;
-    for(int i = 0; i < m_sizeI; i++)
-    {
-        for(int j = 0; j < m_sizeJ; j++)
-        {
-            float distSqrd = std::numeric_limits<float>::max();
-            Vertex centerPoint = Vertex(static_cast<float>(i) + 0.5f,
-                                        static_cast<float>(j) + 0.5f);
-            for(MarkerParticle& p : m_markerParticles)
-            {
-                float diffX = p.position.x() - centerPoint.x();
-                float diffY = p.position.y() - centerPoint.y();
-                float newDistSqrd = diffX*diffX + diffY * diffY;
-                if(newDistSqrd < distSqrd)
-                {
-                    distSqrd = newDistSqrd;
-                }
-            }
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_fluidSdf.data().size());
 
-            m_fluidSdf.at(i,j) = std::sqrt(distSqrd) - particleRadius;
+    for(const Range& range: ranges)
+    {
+        ThreadPool::i()->enqueue(&FlipSolver::updateSdfThread,this,range);
+    }
+    ThreadPool::i()->wait();
+//    float particleRadius = m_particleScale;
+//    for(int i = 0; i < m_sizeI; i++)
+//    {
+//        for(int j = 0; j < m_sizeJ; j++)
+//        {
+//            float distSqrd = std::numeric_limits<float>::max();
+//            Vertex centerPoint = Vertex(static_cast<float>(i) + 0.5f,
+//                                        static_cast<float>(j) + 0.5f);
+//            for(MarkerParticle& p : m_markerParticles)
+//            {
+//                float diffX = p.position.x() - centerPoint.x();
+//                float diffY = p.position.y() - centerPoint.y();
+//                float newDistSqrd = diffX*diffX + diffY * diffY;
+//                if(newDistSqrd < distSqrd)
+//                {
+//                    distSqrd = newDistSqrd;
+//                }
+//            }
+
+//            m_fluidSdf.at(i,j) = std::sqrt(distSqrd) - particleRadius;
+//        }
+//    }
+}
+
+void FlipSolver::updateSdfThread(Range range)
+{
+    const float particleRadius = m_particleScale;
+    std::vector<float>& sdfData = m_fluidSdf.data();
+    for(int idx = range.start; idx < range.end; idx++)
+    {
+        Index2d i2d = index2d(idx);
+        float distSqrd = std::numeric_limits<float>::max();
+        Vertex centerPoint = Vertex(static_cast<float>(i2d.m_i) + 0.5f,
+                                    static_cast<float>(i2d.m_j) + 0.5f);
+        for(MarkerParticle& p : m_markerParticles)
+        {
+            float diffX = p.position.x() - centerPoint.x();
+            float diffY = p.position.y() - centerPoint.y();
+            float newDistSqrd = diffX*diffX + diffY * diffY;
+            if(newDistSqrd < distSqrd)
+            {
+                distSqrd = newDistSqrd;
+            }
         }
+
+        sdfData[idx] = std::sqrt(distSqrd) - particleRadius;
     }
 }
 

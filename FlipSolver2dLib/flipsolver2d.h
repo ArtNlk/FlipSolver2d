@@ -209,6 +209,8 @@ protected:
 
     virtual void updateSdf();
 
+    void updateSdfThread(Range range);
+
     virtual void particleVelocityToGrid();
 
     virtual void centeredParamsToGrid();
