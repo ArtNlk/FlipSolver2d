@@ -252,6 +252,8 @@ protected:
     Grid2d<int> m_fluidParticleCounts;
     Grid2d<float> m_divergenceControl;
     Grid2d<float> m_testGrid;
+    std::vector<double> m_rhs;
+    std::vector<double> m_pressures;
 
     float m_stepDt;
     float m_frameDt;

@@ -33,7 +33,10 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_solidId(p->gridSizeI, p->gridSizeJ,-1),
     m_fluidParticleCounts(p->gridSizeI, p->gridSizeJ),
     m_divergenceControl(p->gridSizeI,p->gridSizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
-    m_testGrid(p->gridSizeI,p->gridSizeJ), m_stepDt(1.f / p->fps),
+    m_testGrid(p->gridSizeI,p->gridSizeJ),
+    m_rhs(m_sizeI * m_sizeJ,0.0),
+    m_pressures(m_sizeI * m_sizeJ,0.0),
+    m_stepDt(1.f / p->fps),
     m_frameDt(1.f / p->fps), m_dx(p->dx),
     m_fluidDensity(p->fluidDensity),
     m_seed(p->seed),
@@ -61,9 +64,12 @@ FlipSolver::~FlipSolver()
 
 void FlipSolver::project()
 {
-    std::vector<double> rhs(cellCount(),0.0);
-    std::vector<double> pressures(cellCount(),0.0);
-    calcPressureRhs(rhs);
+    for(int i = 0; i < m_rhs.size(); i++)
+    {
+        m_rhs[i] = 0.0;
+        m_pressures[i] = 0.0;
+    }
+    calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
 //    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
 //    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
@@ -72,19 +78,19 @@ void FlipSolver::project()
 //    }
     auto provider = std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
 
-    if(!m_pcgSolver.mfcgSolve(provider,pressures,rhs,m_pcgIterLimit))
+    if(!m_pcgSolver.mfcgSolve(provider,m_pressures,m_rhs,m_pcgIterLimit))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
 
-    if(anyNanInf(pressures))
+    if(anyNanInf(m_pressures))
     {
         std::cout << "NaN or inf in pressures vector!\n" << std::flush;
     }
 
     //debug() << "pressures = " << pressures;
 
-    applyPressuresToVelocityField(pressures);
+    applyPressuresToVelocityField(m_pressures);
 }
 
 LinearSolver::SparseMatRowElements FlipSolver::getMatFreeElementForLinIdx(unsigned int i)
@@ -242,9 +248,9 @@ void FlipSolver::step()
     static double count = 0.0;
     advect();
     particleToGrid();
-    auto t1 = high_resolution_clock::now();
+
     updateSdf();
-    auto t2 = high_resolution_clock::now();
+
     updateLinearFluidViscosityMapping();
     updateMaterials();
     afterTransfer();
@@ -253,7 +259,9 @@ void FlipSolver::step()
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
+    auto t1 = high_resolution_clock::now();
     project();
+    auto t2 = high_resolution_clock::now();
 
     updateVelocityFromSolids();
     //applyViscosity();
@@ -266,7 +274,7 @@ void FlipSolver::step()
     duration<double, std::milli> ms_double = t2 - t1;
     sum += ms_double.count();
     count+=1.0;
-    //m_frameTime = sum / count;
+    m_frameTime = sum / count;
     std::cout << ms_double.count() << "ms\n";
 }
 
@@ -313,7 +321,7 @@ void FlipSolver::stepFrame()
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms = t2 - t1;
     //std::cout << "Frame took" << ms.count() << "ms\n";
-    m_frameTime = ms.count();
+    //m_frameTime = ms.count();
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
     m_frameNumber++;
 }
