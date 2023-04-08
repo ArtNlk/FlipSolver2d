@@ -29,6 +29,7 @@ struct MarkerParticle
     float fuel;
     FluidMaterial material = FluidMaterial::FLUID;
     float testValue = 0.f;
+    bool markForDeath = false;
 };
 
 struct FlipSolverParameters
@@ -166,6 +167,8 @@ protected:
     void applyViscosity();
 
     virtual void advect();
+
+    void advectThread(Range range);
 
     virtual void particleUpdate();
 

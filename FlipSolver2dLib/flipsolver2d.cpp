@@ -7,6 +7,7 @@
 #include <ostream>
 #include <queue>
 #include <thread>
+#include <type_traits>
 
 #include "linearindexable2d.h"
 #include "materialgrid.h"
@@ -72,7 +73,7 @@ void FlipSolver::project()
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
 //    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-//    if(!m_pcgSolver.solve(mat,pressures,rhs,m_pcgIterLimit))
+//    if(!m_pcgSolver.solve(mat,m_pressures,m_rhs,m_pcgIterLimit))
 //    {
 //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
 //    }
@@ -168,26 +169,43 @@ void FlipSolver::applyViscosity()
 
 void FlipSolver::advect()
 {
-    int maxSubsteps = -1;
-    for(int i = m_markerParticles.size() - 1; i >= 0; i--)
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_markerParticles.size());
+
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&FlipSolver::advectThread,this,range);
+    }
+    ThreadPool::i()->wait();
+
+    for(int i = 0; i < m_markerParticles.size(); i++)
+    {
+        if(m_markerParticles[i].markForDeath)
+        {
+            std::swap(m_markerParticles[i],m_markerParticles.back());
+            m_markerParticles.pop_back();
+            i--;
+        }
+    }
+    //std::cout << "Advection done in max " << maxSubsteps << " substeps" << std::endl;
+}
+
+void FlipSolver::advectThread(Range range)
+{
+    for(int i = range.start; i < range.end; i++)
     {
         MarkerParticle &p = m_markerParticles[i];
-        int substepCount = 0;
         p.position = rk3Integrate(p.position,m_stepDt, m_fluidVelocityGrid);
         if(m_solidSdf.interpolateAt(p.position.x(),p.position.y()) < 0.f)
         {
             p.position = m_solidSdf.closestSurfacePoint(p.position);
         }
-        maxSubsteps = std::max(substepCount,maxSubsteps);
         int pI = simmath::integr(p.position.x());
         int pJ = simmath::integr(p.position.y());
         if(!inBounds(pI,pJ) || m_materialGrid.isSink(pI,pJ))
         {
-            m_markerParticles.erase(markerParticles().begin() + i);
+            p.markForDeath = true;
         }
-
     }
-    //std::cout << "Advection done in max " << maxSubsteps << " substeps" << std::endl;
 }
 
 void FlipSolver::particleUpdate()
@@ -246,7 +264,9 @@ void FlipSolver::step()
     using std::chrono::milliseconds;
     static double sum = 0.0;
     static double count = 0.0;
+    auto t1 = high_resolution_clock::now();
     advect();
+    auto t2 = high_resolution_clock::now();
     particleToGrid();
 
     updateSdf();
@@ -259,9 +279,8 @@ void FlipSolver::step()
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
-    auto t1 = high_resolution_clock::now();
+
     project();
-    auto t2 = high_resolution_clock::now();
 
     updateVelocityFromSolids();
     //applyViscosity();
@@ -274,7 +293,7 @@ void FlipSolver::step()
     duration<double, std::milli> ms_double = t2 - t1;
     sum += ms_double.count();
     count+=1.0;
-    m_frameTime = sum / count;
+    //m_frameTime = sum / count;
     std::cout << ms_double.count() << "ms\n";
 }
 
@@ -321,7 +340,7 @@ void FlipSolver::stepFrame()
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms = t2 - t1;
     //std::cout << "Frame took" << ms.count() << "ms\n";
-    //m_frameTime = ms.count();
+    m_frameTime = ms.count();
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
     m_frameNumber++;
 }
