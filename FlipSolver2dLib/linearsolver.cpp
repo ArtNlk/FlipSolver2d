@@ -2,21 +2,37 @@
 
 #include <algorithm>
 
+#include <array>
 #include <cmath>
 #include <mutex>
 #include <sstream>
 #include <vector>
 
 #include "dynamicuppertriangularsparsematrix.h"
+#include "grid2d.h"
+#include "materialgrid.h"
 #include "vmath.h"
 
 #include "logger.h"
 
-const double LinearSolver::m_tol = 1.0e-14;
+const double LinearSolver::m_tol = 1.0e-6;
 
-LinearSolver::LinearSolver()
+LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
+    m_mainMaterialGrid(materialGrid)
 {
+    int sizeI = materialGrid.sizeI();
+    int sizeJ = materialGrid.sizeJ();
+    int subgridLevelCount = (std::min(sizeI,sizeJ) / 8) - 1;
+    subgridLevelCount = std::min(maxMultigridDepth,subgridLevelCount);
 
+
+    for(int level = 0; level < subgridLevelCount; level++)
+    {
+        sizeI /= 2;
+        sizeJ /= 2;
+        m_materialSubgrids.emplace_back(sizeI,sizeJ,FluidMaterial::SOLID);
+        m_pressureGrids.emplace_back(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND);
+    }
 }
 
 bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
@@ -91,7 +107,7 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
         if (err <= m_tol)
         {
             //debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
-            //std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
             return true;
         }
         aux = residual;
@@ -148,6 +164,11 @@ void LinearSolver::nomatVMulThread(Range range, MatElementProvider elementProvid
         }
         vout[rowIdx] = mulSum;
     }
+}
+
+void LinearSolver::applyMGPrecond(const std::vector<double> &in, std::vector<double> &out)
+{
+
 }
 
 void LinearSolver::applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, const std::vector<double> &in, std::vector<double> &out)
@@ -243,6 +264,81 @@ DynamicUpperTriangularSparseMatrix LinearSolver::calcPrecond(const DynamicUpperT
             }
         }
     }
+
+    return output;
+}
+
+void LinearSolver::updateSubgrids()
+{
+    propagateMaterialGrid(m_mainMaterialGrid, m_materialSubgrids[0]);
+    for(int i = 0; i < (m_materialSubgrids.size() - 1); i++)
+    {
+        propagateMaterialGrid(m_materialSubgrids[i], m_materialSubgrids[i+1]);
+    }
+}
+
+void LinearSolver::propagateMaterialGrid(const MaterialGrid &fineGrid, MaterialGrid &coarseGrid)
+{
+    //neumann - solid
+    //dirichlet - air
+    //interior - fluid
+    const std::vector<FluidMaterial> &fineGridData = fineGrid.data();
+    const int gridDataSize = fineGridData.size();
+    for(int i = 0; i < coarseGrid.sizeI(); i++)
+    {
+        for(int j = 0; j < coarseGrid.sizeJ(); j++)
+        {
+            std::array<int,4> childCellIdxs = getFineGridChildIdxs(fineGrid,i,j);
+            FluidMaterial m = FluidMaterial::SOLID;
+            for(int idx : childCellIdxs)
+            {
+                if(idx < 0 || idx >= gridDataSize)
+                {
+                    continue;
+                }
+                if(fineGridData[idx] == FluidMaterial::EMPTY)
+                {
+                    coarseGrid.at(i,j) = FluidMaterial::EMPTY;
+                    break;
+                }
+                if(fineGridData[idx] == FluidMaterial::FLUID)
+                {
+                    m = FluidMaterial::FLUID;
+                }
+            }
+
+            coarseGrid.at(i,j) = m;
+        }
+    }
+}
+
+std::array<int, 16> LinearSolver::getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse)
+{
+    std::array<int, 16> output{0};
+    Index2d topLeftCorner(iCoarse*2 - 1, jCoarse*2 - 1);
+    int topLeftLinearIdx = fineGridIndexer.linearIndex(topLeftCorner);
+
+    int idx = 0;
+    for(int iOffset = 0; iOffset < 4; iOffset++)
+    {
+        for(int jOffset = 0; jOffset < 4; jOffset++)
+        {
+            output[idx] = fineGridIndexer.linearIdxOfOffset(topLeftLinearIdx,iOffset, jOffset);
+            idx++;
+        }
+    }
+
+    return output;
+}
+
+std::array<int, 4> LinearSolver::getFineGridChildIdxs(const LinearIndexable2d &fineGridIndexer, int iCoarse, int jCoarse)
+{
+    std::array<int, 4> output{0};
+    Index2d topLeftCorner(iCoarse*2, jCoarse*2);
+    output[0] = fineGridIndexer.linearIndex(topLeftCorner);
+    output[1] = fineGridIndexer.linearIdxOfOffset(output[0],0, 1);
+    output[2] = fineGridIndexer.linearIdxOfOffset(output[0],1, 0);
+    output[3] = fineGridIndexer.linearIdxOfOffset(output[0],1, 1);
 
     return output;
 }

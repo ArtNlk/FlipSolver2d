@@ -22,7 +22,6 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_frameNumber(0),
     m_validVVelocitySampleCount(0),
     m_validUVelocitySampleCount(0),
-    m_pcgSolver(),
     m_fluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_savedFluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_materialGrid(p->gridSizeI,p->gridSizeJ, FluidMaterial::SINK),
@@ -37,6 +36,7 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_testGrid(p->gridSizeI,p->gridSizeJ),
     m_rhs(m_sizeI * m_sizeJ,0.0),
     m_pressures(m_sizeI * m_sizeJ,0.0),
+    m_pcgSolver(m_materialGrid,8),
     m_stepDt(1.f / p->fps),
     m_frameDt(1.f / p->fps), m_dx(p->dx),
     m_fluidDensity(p->fluidDensity),
@@ -68,7 +68,7 @@ void FlipSolver::project()
     for(int i = 0; i < m_rhs.size(); i++)
     {
         m_rhs[i] = 0.0;
-        m_pressures[i] = 0.0;
+        //m_pressures[i] = 0.0;
     }
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;

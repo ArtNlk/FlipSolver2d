@@ -97,7 +97,7 @@ public:
         return output;
     }
 
-    inline int linearIdxOfOffset(int linearIdx, int iOffset, int jOffset)
+    inline int linearIdxOfOffset(int linearIdx, int iOffset, int jOffset) const
     {
         return linearIdx + iOffset * m_sizeJ + jOffset;
     }

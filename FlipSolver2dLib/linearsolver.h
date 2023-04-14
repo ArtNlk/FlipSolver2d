@@ -3,14 +3,17 @@
 
 #include <functional>
 #include <unordered_map>
+#include <vector>
 
+#include "linearindexable2d.h"
+#include "materialgrid.h"
 #include "threadpool.h"
 #include "uppertriangularmatrix.h"
 
 class LinearSolver
 {
 public:
-    LinearSolver();
+    LinearSolver(MaterialGrid& materialGrid, int maxMultigridDepth);
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
     using MatElementProvider = std::function<SparseMatRowElements(int)>;
 
@@ -21,9 +24,23 @@ protected:
     void nomatVMul(MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout);
     void nomatVMulThread(Range range, MatElementProvider elementProvider,
                          const std::vector<double> &vin, std::vector<double> &vout);
+    void applyMGPrecond(std::vector<double> const &in, std::vector<double> &out);
     void applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
     DynamicUpperTriangularSparseMatrix calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix);
+
+    void updateSubgrids();
+
+    void propagateMaterialGrid(const MaterialGrid& fineGrid, MaterialGrid &coarseGrid);
+
+    std::array<int,16> getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
+
+    std::array<int,4> getFineGridChildIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
+
     static const double m_tol;
+
+    MaterialGrid& m_mainMaterialGrid;
+    std::vector<MaterialGrid> m_materialSubgrids;
+    std::vector<Grid2d<float>> m_pressureGrids;
 };
 
 #endif // PCGSOLVER_H

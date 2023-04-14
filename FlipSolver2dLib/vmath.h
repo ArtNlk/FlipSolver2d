@@ -48,7 +48,7 @@ inline bool isZero(const std::vector<double> &v1,const double eps = 1.0e-15)
 {
     for(int i = 0; i < v1.size(); i++)
     {
-        if(v1[i] > eps)
+        if(std::abs(v1[i]) > eps)
         {
             return false;
         }

@@ -126,7 +126,17 @@ public:
         m_data.assign(m_data.size(),value);
     }
 
+    T oobVal() const
+    {
+        return m_oobConst;
+    }
+
     std::vector<T> &data()
+    {
+        return m_data;
+    }
+
+    const std::vector<T> &data() const
     {
         return m_data;
     }

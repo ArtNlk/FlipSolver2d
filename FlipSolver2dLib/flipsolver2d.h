@@ -236,7 +236,6 @@ protected:
     int m_validVVelocitySampleCount;
     int m_validUVelocitySampleCount;
     std::vector<MarkerParticle> m_markerParticles;
-    LinearSolver m_pcgSolver;
     std::mt19937 m_randEngine;
     std::vector<Obstacle> m_obstacles;
     std::vector<Emitter> m_sources;
@@ -257,6 +256,8 @@ protected:
     Grid2d<float> m_testGrid;
     std::vector<double> m_rhs;
     std::vector<double> m_pressures;
+
+    LinearSolver m_pcgSolver;
 
     float m_stepDt;
     float m_frameDt;
