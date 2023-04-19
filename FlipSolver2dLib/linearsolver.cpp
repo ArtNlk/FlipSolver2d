@@ -25,13 +25,24 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     int subgridLevelCount = (std::min(sizeI,sizeJ) / 8) - 1;
     subgridLevelCount = std::min(maxMultigridDepth,subgridLevelCount);
 
-
     for(int level = 0; level < subgridLevelCount; level++)
     {
         sizeI /= 2;
         sizeJ /= 2;
         m_materialSubgrids.emplace_back(sizeI,sizeJ,FluidMaterial::SOLID);
         m_pressureGrids.emplace_back(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND);
+    }
+
+    const std::array<float, 4> weights = {1.f,3.f,3.f,1.f};
+
+    int idx = 0;
+    for(int i = 0; i < 4; i++)
+    {
+        for(int j = 0; j < 4; j++)
+        {
+            m_restrictionWeights[idx] = (weights[i] * weights[j]) / 64.f;
+            m_prolongationWeights[idx] = weights[i] * weights[j];
+        }
     }
 }
 
@@ -312,6 +323,59 @@ void LinearSolver::propagateMaterialGrid(const MaterialGrid &fineGrid, MaterialG
     }
 }
 
+void LinearSolver::restrictGrid(const MaterialGrid &coarseMaterials, const Grid2d<float> &fineGrid, Grid2d<float> coarseGrid)
+{
+    const std::vector<float> &fineGridData = fineGrid.data();
+    const int gridDataSize = fineGridData.size();
+    for(int i = 0; i < coarseGrid.sizeI(); i++)
+    {
+        for(int j = 0; j < coarseGrid.sizeJ(); j++)
+        {
+            std::array<int,16> stencilCellIdxs = getFineGridStencilIdxs(fineGrid,i,j);
+            coarseGrid.at(i,j) = 0.f;
+            if(!coarseMaterials.isFluid(i,j))
+            {
+                continue;
+            }
+
+            for(int idx : stencilCellIdxs)
+            {
+                if(idx < 0 || idx >= gridDataSize)
+                {
+                    continue;
+                }
+                coarseGrid.at(i,j) += fineGridData[idx] * m_restrictionWeights[idx];
+            }
+        }
+    }
+}
+
+void LinearSolver::prolongateGrid(const MaterialGrid &fineMaterials, const Grid2d<float> &coarseGrid, Grid2d<float> fineGrid)
+{
+    const std::vector<float> &coarseGridData = coarseGrid.data();
+    const int gridDataSize = coarseGridData.size();
+    for(int i = 0; i < fineGrid.sizeI(); i++)
+    {
+        for(int j = 0; j < fineGrid.sizeJ(); j++)
+        {
+            if(!fineMaterials.isFluid(i,j))
+            {
+                continue;
+            }
+            std::array<int, 4> coarseNeghbors = getCoarseProlongIdxs(coarseGrid,i,j);
+            std::array<float,4> coarseWeights = getProlongationWeights(i,j);
+            for(int idx = 0; idx < 4; idx++)
+            {
+                if(idx < 0 || idx >= gridDataSize)
+                {
+                    continue;
+                }
+                fineGrid.at(i,j) += coarseGridData[coarseNeghbors[idx]] * coarseWeights[idx];
+            }
+        }
+    }
+}
+
 std::array<int, 16> LinearSolver::getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse)
 {
     std::array<int, 16> output{0};
@@ -339,6 +403,61 @@ std::array<int, 4> LinearSolver::getFineGridChildIdxs(const LinearIndexable2d &f
     output[1] = fineGridIndexer.linearIdxOfOffset(output[0],0, 1);
     output[2] = fineGridIndexer.linearIdxOfOffset(output[0],1, 0);
     output[3] = fineGridIndexer.linearIdxOfOffset(output[0],1, 1);
+
+    return output;
+}
+
+std::array<float, 4> LinearSolver::getProlongationWeights(int finei, int finej)
+{
+    int coarsePos = finei % 2;
+    coarsePos |= (finej % 2) << 1;
+
+    switch(coarsePos)
+    {
+    case 0:
+        return {m_prolongationWeights[5],
+                m_prolongationWeights[15],
+                m_prolongationWeights[13],
+                m_prolongationWeights[7]};
+        break;
+
+    case 1:
+        return {m_prolongationWeights[6],
+                m_prolongationWeights[12],
+                m_prolongationWeights[14],
+                m_prolongationWeights[4]};
+        break;
+
+    case 2:
+        return {m_prolongationWeights[9],
+                m_prolongationWeights[3],
+                m_prolongationWeights[1],
+                m_prolongationWeights[11]};
+        break;
+
+    case 3:
+        return {m_prolongationWeights[10],
+                m_prolongationWeights[0],
+                m_prolongationWeights[2],
+                m_prolongationWeights[8]};
+        break;
+    }
+
+    return {0,0,0,0};
+}
+
+std::array<int, 4> LinearSolver::getCoarseProlongIdxs(const LinearIndexable2d &coarseGridIndexer, int finei, int finej)
+{
+    std::array<int,4> output;
+
+    int iOffset = finei % 2 == 0 ? -1 : 1;
+    int jOffset = finej % 2 == 0 ? -1 : 1;
+
+    int currentCellIdx = coarseGridIndexer.linearIndex(finei/2,finej/2);
+    output[0] = currentCellIdx;
+    output[1] = coarseGridIndexer.linearIdxOfOffset(currentCellIdx,iOffset,jOffset);
+    output[2] = coarseGridIndexer.linearIdxOfOffset(currentCellIdx,iOffset,0);
+    output[3] = coarseGridIndexer.linearIdxOfOffset(currentCellIdx,0,jOffset);
 
     return output;
 }

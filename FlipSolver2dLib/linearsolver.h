@@ -32,11 +32,22 @@ protected:
 
     void propagateMaterialGrid(const MaterialGrid& fineGrid, MaterialGrid &coarseGrid);
 
+    void restrictGrid(const MaterialGrid& coarseMaterials, const Grid2d<float> &fineGrid, Grid2d<float> coarseGrid);
+
+    void prolongateGrid(const MaterialGrid& fineMaterials, const Grid2d<float> &coarseGrid, Grid2d<float> fineGrid);
+
     std::array<int,16> getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
 
     std::array<int,4> getFineGridChildIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
 
+    std::array<float,4> getProlongationWeights(int finei, int finej);
+
+    std::array<int,4> getCoarseProlongIdxs(const LinearIndexable2d &coarseGridIndexer, int finei, int finej);
+
     static const double m_tol;
+
+    std::array<float,16> m_restrictionWeights;
+    std::array<float,16> m_prolongationWeights;
 
     MaterialGrid& m_mainMaterialGrid;
     std::vector<MaterialGrid> m_materialSubgrids;

@@ -36,41 +36,41 @@ class MaterialGrid : public Grid2d<FluidMaterial>
 public:
     MaterialGrid(int sizeI, int sizeJ, FluidMaterial oobMaterial);
 
-    bool isFluid(Index2d idx);
+    bool isFluid(Index2d idx) const;
 
-    bool isStrictFluid(Index2d idx);
+    bool isStrictFluid(Index2d idx) const;
 
-    bool isSolid(Index2d idx);
+    bool isSolid(Index2d idx) const;
 
-    bool isEmpty(Index2d idx);
+    bool isEmpty(Index2d idx) const;
 
-    bool isSource(Index2d idx);
+    bool isSource(Index2d idx) const;
 
-    bool isSink(Index2d idx);
+    bool isSink(Index2d idx) const;
 
-    bool isFluid(int i, int j);
+    bool isFluid(int i, int j) const;
 
-    bool isStrictFluid(int i, int j);
+    bool isStrictFluid(int i, int j) const;
 
-    bool isSolid(int i, int j);
+    bool isSolid(int i, int j) const;
 
-    bool isEmpty(int i, int j);
+    bool isEmpty(int i, int j) const;
 
-    bool isSource(int i, int j);
+    bool isSource(int i, int j) const;
 
-    bool isSink(int i, int j);
+    bool isSink(int i, int j) const;
 
-    bool uVelocitySampleInside(int i, int j);
+    bool uVelocitySampleInside(int i, int j) const;
 
-    bool vVelocitySampleInside(int i, int j);
+    bool vVelocitySampleInside(int i, int j) const;
 
-    bool uSampleAffectedBySolid(int i, int j);
+    bool uSampleAffectedBySolid(int i, int j) const;
 
-    bool vSampleAffectedBySolid(int i, int j);
+    bool vSampleAffectedBySolid(int i, int j) const;
 
-    VelocitySampleState uVelocitySampleState(int i, int j);
+    VelocitySampleState uVelocitySampleState(int i, int j) const;
 
-    VelocitySampleState vVelocitySampleState(int i, int j);
+    VelocitySampleState vVelocitySampleState(int i, int j) const;
 };
 
 #endif // MATERIALGRID_H

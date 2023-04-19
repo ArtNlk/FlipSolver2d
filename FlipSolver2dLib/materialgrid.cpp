@@ -6,91 +6,91 @@ MaterialGrid::MaterialGrid(int sizeI, int sizeJ, FluidMaterial oobMaterial) :
 {
 }
 
-bool MaterialGrid::isFluid(Index2d idx)
+bool MaterialGrid::isFluid(Index2d idx) const
 {
     return isFluid(idx.m_i, idx.m_j);
 }
 
-bool MaterialGrid::isStrictFluid(Index2d idx)
+bool MaterialGrid::isStrictFluid(Index2d idx) const
 {
     return isStrictFluid(idx.m_i, idx.m_j);
 }
 
-bool MaterialGrid::isSolid(Index2d idx)
+bool MaterialGrid::isSolid(Index2d idx) const
 {
     return isSolid(idx.m_i, idx.m_j);
 }
 
-bool MaterialGrid::isEmpty(Index2d idx)
+bool MaterialGrid::isEmpty(Index2d idx) const
 {
     return isEmpty(idx.m_i, idx.m_j);
 }
 
-bool MaterialGrid::isSource(Index2d idx)
+bool MaterialGrid::isSource(Index2d idx) const
 {
     return isSource(idx.m_i, idx.m_j);
 }
 
-bool MaterialGrid::isSink(Index2d idx)
+bool MaterialGrid::isSink(Index2d idx) const
 {
     return isSink(idx.m_i, idx.m_j);
 }
 
-bool MaterialGrid::isFluid(int i, int j)
+bool MaterialGrid::isFluid(int i, int j) const
 {
     return fluidTest(getAt(i,j));
 }
 
-bool MaterialGrid::isStrictFluid(int i, int j)
+bool MaterialGrid::isStrictFluid(int i, int j) const
 {
     return strictFluidTest(getAt(i,j));
 }
 
-bool MaterialGrid::isSolid(int i, int j)
+bool MaterialGrid::isSolid(int i, int j) const
 {
     return solidTest(getAt(i,j));
 }
 
-bool MaterialGrid::isEmpty(int i, int j)
+bool MaterialGrid::isEmpty(int i, int j) const
 {
     return emptyTest(getAt(i,j));
 }
 
-bool MaterialGrid::isSource(int i, int j)
+bool MaterialGrid::isSource(int i, int j) const
 {
     return sourceTest(getAt(i,j));
 }
 
-bool MaterialGrid::isSink(int i, int j)
+bool MaterialGrid::isSink(int i, int j) const
 {
     return sinkTest(getAt(i,j));
 }
 
-bool MaterialGrid::uVelocitySampleInside(int i, int j)
+bool MaterialGrid::uVelocitySampleInside(int i, int j) const
 {
     return (!isEmpty(i,j) && !isEmpty(i-1, j));
 }
 
-bool MaterialGrid::vVelocitySampleInside(int i, int j)
+bool MaterialGrid::vVelocitySampleInside(int i, int j) const
 {
     return (!isEmpty(i,j) && !isEmpty(i, j-1));
 }
 
-bool MaterialGrid::uSampleAffectedBySolid(int i, int j)
+bool MaterialGrid::uSampleAffectedBySolid(int i, int j) const
 {
     return (isSolid(i,j+1) || isSolid(i-1, j+1) ||
             isSolid(i,j) || isSolid(i-1, j) ||
             isSolid(i,j-1) || isSolid(i-1, j-1));
 }
 
-bool MaterialGrid::vSampleAffectedBySolid(int i, int j)
+bool MaterialGrid::vSampleAffectedBySolid(int i, int j) const
 {
     return (isSolid(i+1,j) || isSolid(i+1, j-1) ||
             isSolid(i,j) || isSolid(i, j-1) ||
             isSolid(i-1,j) || isSolid(i-1, j-1));
 }
 
-VelocitySampleState MaterialGrid::uVelocitySampleState(int i, int j)
+VelocitySampleState MaterialGrid::uVelocitySampleState(int i, int j) const
 {
     char currentMat = at(i,j) >> 4;
     char neighborMat = at(i-1,j) >> 4;
@@ -106,7 +106,7 @@ VelocitySampleState MaterialGrid::uVelocitySampleState(int i, int j)
     return static_cast<VelocitySampleState>(result);
 }
 
-VelocitySampleState MaterialGrid::vVelocitySampleState(int i, int j)
+VelocitySampleState MaterialGrid::vVelocitySampleState(int i, int j) const
 {
     char currentMat = at(i,j) >> 4;
     char neighborMat = at(i-1,j) >> 4;
