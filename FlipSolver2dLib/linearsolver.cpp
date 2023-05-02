@@ -19,7 +19,9 @@
 const double LinearSolver::m_tol = 1.0e-6;
 
 LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
-    m_mainMaterialGrid(materialGrid)
+    m_mainMaterialGrid(materialGrid),
+    m_restrictionWeights({0}),
+    m_prolongationWeights({0})
 {
     int sizeI = materialGrid.sizeI();
     int sizeJ = materialGrid.sizeJ();
@@ -30,9 +32,14 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     {
         sizeI /= 2;
         sizeJ /= 2;
+        if(sizeI < 8 || sizeJ < 8)
+        {
+            break;
+        }
         m_materialSubgrids.emplace_back(sizeI,sizeJ,FluidMaterial::SOLID);
         m_pressureGrids.emplace_back(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND);
         m_rhsGrids.emplace_back(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND);
+        std::cout << "Added subgrid IxJ: " << sizeI << ' ' << sizeJ << std::endl;
     }
 
     const std::array<float, 4> weights = {1.f,3.f,3.f,1.f};
@@ -43,7 +50,8 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
         for(int j = 0; j < 4; j++)
         {
             m_restrictionWeights[idx] = (weights[i] * weights[j]) / 64.f;
-            m_prolongationWeights[idx] = weights[i] * weights[j];
+            m_prolongationWeights[idx] = (weights[i] * weights[j]) / 32.f;
+            idx++;
         }
     }
 }
@@ -103,31 +111,33 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
     {
         return true;
     }
+    updateSubgrids();
 
     //vec - b
     std::vector<double> residual = vec; //r
-    std::vector<double> aux = vec; //q
-    //applyMGPrecond(residual,aux);
-    std::vector<double> search = aux; //d
+    std::vector<double> aux = vec; //z
+    applyMGPrecond(residual,aux);
+    std::vector<double> search = aux; //p
     double sigma = vsimmath::dot(aux,residual);
     double err = 0.0;
     for (int i = 0; i < iterLimit; i++)
     {
         nomatVMul(elementProvider,search,aux);
         double alpha = sigma/(vsimmath::dot(aux,search));
-        vsimmath::addMul(result,result,search,alpha);
         vsimmath::subMul(residual,residual,aux,alpha);
         err = vsimmath::maxAbs(residual);
         if (err <= m_tol)
         {
             //debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
-            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+            std::cout << "MFSolver done, iter = " << i << " err = " << err << '\n';
             return true;
         }
-        aux = residual;
+        //aux = residual;
         applyMGPrecond(residual,aux);
         double newSigma = vsimmath::dot(aux,residual);
+        std::cout << "New sigma:" << newSigma << std::endl;
         double beta = newSigma/(sigma);
+        vsimmath::addMul(result,result,search,alpha);
         vsimmath::addMul(search,aux,search,beta);
         sigma = newSigma;
     }
@@ -390,14 +400,14 @@ void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<doubl
         const auto weights = getMultigridMatrixEntriesForCell(materials,i);
         int currIdx = weights[0].first;
         float result = 0.f;
-        for(const auto& w : weights)
+        for(int wIdx = 1; wIdx < weights.size(); wIdx++)
         {
-            if(w.first < 0)
+            if(weights[wIdx].first < 0)
             {
                 continue;
             }
 
-            result += w.second * pressures[w.first];
+            result += weights[wIdx].second * pressures[weights[wIdx].first];
         }
         temp[currIdx] = (rhs[currIdx]-result)/weights[0].second;
     }
@@ -413,7 +423,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
     vout.assign(vin.size(),0.f);
     const int subLevelCount = m_materialSubgrids.size();
     //Down stroke
-    for(int level = -1; level < m_materialSubgrids.size() - 1; level++)
+    for(int level = -1; level < (int)m_materialSubgrids.size() - 1; level++)
     {
         if(level != -1)
         {
@@ -451,14 +461,14 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
     //Up stroke
     for(int level = m_materialSubgrids.size() - 2; level >= -1; level--)
     {
-        if(level > -1)
+        if(level != -1)
         {
             prolongateGrid(m_materialSubgrids[level],m_pressureGrids[level+1],m_pressureGrids[level].data());
             dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
         }
         else
         {
-            prolongateGrid(m_mainMaterialGrid,m_pressureGrids[level+1],vout);
+            prolongateGrid(m_mainMaterialGrid,m_pressureGrids[0],vout);
             dampedJacobi(m_mainMaterialGrid,vout,vin);
         }
     }
