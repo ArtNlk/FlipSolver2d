@@ -32,9 +32,22 @@ protected:
 
     void propagateMaterialGrid(const MaterialGrid& fineGrid, MaterialGrid &coarseGrid);
 
-    void restrictGrid(const MaterialGrid& coarseMaterials, const Grid2d<float> &fineGrid, Grid2d<float> coarseGrid);
+    void restrictGrid(const MaterialGrid& coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid);
 
-    void prolongateGrid(const MaterialGrid& fineMaterials, const Grid2d<float> &coarseGrid, Grid2d<float> fineGrid);
+    void prolongateGrid(const MaterialGrid& fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double> &fineGridData);
+
+    void dampedJacobi(const MaterialGrid& materials, std::vector<double> &pressures, const std::vector<double> &rhs);
+
+    void vCycle(std::vector<double> &vout, const std::vector<double> &vin);
+
+    void multigridMatmul(const MaterialGrid& materials, const std::vector<double>& vin, std::vector<double>& vout);
+
+    void multigridSubMatmul(const MaterialGrid& materials, const std::vector<double>& vsub,
+                            const std::vector<double>& vmul, std::vector<double>& vout);
+
+    std::array<std::pair<int,float>,5> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j);
+
+    std::array<std::pair<int,float>,5> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx);
 
     std::array<int,16> getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
 
@@ -51,7 +64,8 @@ protected:
 
     MaterialGrid& m_mainMaterialGrid;
     std::vector<MaterialGrid> m_materialSubgrids;
-    std::vector<Grid2d<float>> m_pressureGrids;
+    std::vector<Grid2d<double>> m_pressureGrids;
+    std::vector<Grid2d<double>> m_rhsGrids;
 };
 
 #endif // PCGSOLVER_H

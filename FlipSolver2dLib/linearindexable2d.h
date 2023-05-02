@@ -77,17 +77,17 @@ public:
         return output;
     }
 
-    inline std::array<int,4> immidiateNeighbors(Index2d idx)
+    inline std::array<int,4> immidiateNeighbors(Index2d idx) const
     {
         return immidiateNeighbors(linearIndex(idx));
     }
 
-    inline std::array<int,4> immidiateNeighbors(int i, int j)
+    inline std::array<int,4> immidiateNeighbors(int i, int j) const
     {
         return immidiateNeighbors(linearIndex(i,j));
     }
 
-    inline std::array<int,4> immidiateNeighbors(int linearIdx)
+    inline std::array<int,4> immidiateNeighbors(int linearIdx) const
     {
         std::array<int,4> output;
         output[0] = linearIdxOfOffset(linearIdx,-1,0);

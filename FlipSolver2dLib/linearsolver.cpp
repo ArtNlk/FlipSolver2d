@@ -6,6 +6,7 @@
 #include <cmath>
 #include <mutex>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 #include "dynamicuppertriangularsparsematrix.h"
@@ -31,6 +32,7 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
         sizeJ /= 2;
         m_materialSubgrids.emplace_back(sizeI,sizeJ,FluidMaterial::SOLID);
         m_pressureGrids.emplace_back(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND);
+        m_rhsGrids.emplace_back(sizeI,sizeJ,0.f,OOBStrategy::OOB_EXTEND);
     }
 
     const std::array<float, 4> weights = {1.f,3.f,3.f,1.f};
@@ -105,6 +107,7 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
     //vec - b
     std::vector<double> residual = vec; //r
     std::vector<double> aux = vec; //q
+    //applyMGPrecond(residual,aux);
     std::vector<double> search = aux; //d
     double sigma = vsimmath::dot(aux,residual);
     double err = 0.0;
@@ -122,6 +125,7 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
             return true;
         }
         aux = residual;
+        applyMGPrecond(residual,aux);
         double newSigma = vsimmath::dot(aux,residual);
         double beta = newSigma/(sigma);
         vsimmath::addMul(search,aux,search,beta);
@@ -179,7 +183,7 @@ void LinearSolver::nomatVMulThread(Range range, MatElementProvider elementProvid
 
 void LinearSolver::applyMGPrecond(const std::vector<double> &in, std::vector<double> &out)
 {
-
+    vCycle(out,in);
 }
 
 void LinearSolver::applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, const std::vector<double> &in, std::vector<double> &out)
@@ -323,9 +327,9 @@ void LinearSolver::propagateMaterialGrid(const MaterialGrid &fineGrid, MaterialG
     }
 }
 
-void LinearSolver::restrictGrid(const MaterialGrid &coarseMaterials, const Grid2d<float> &fineGrid, Grid2d<float> coarseGrid)
+void LinearSolver::restrictGrid(const MaterialGrid &coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid)
 {
-    const std::vector<float> &fineGridData = fineGrid.data();
+    const std::vector<double> &fineGridData = fineGrid.data();
     const int gridDataSize = fineGridData.size();
     for(int i = 0; i < coarseGrid.sizeI(); i++)
     {
@@ -350,13 +354,13 @@ void LinearSolver::restrictGrid(const MaterialGrid &coarseMaterials, const Grid2
     }
 }
 
-void LinearSolver::prolongateGrid(const MaterialGrid &fineMaterials, const Grid2d<float> &coarseGrid, Grid2d<float> fineGrid)
+void LinearSolver::prolongateGrid(const MaterialGrid &fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double>& fineGridData)
 {
-    const std::vector<float> &coarseGridData = coarseGrid.data();
+    const std::vector<double> &coarseGridData = coarseGrid.data();
     const int gridDataSize = coarseGridData.size();
-    for(int i = 0; i < fineGrid.sizeI(); i++)
+    for(int i = 0; i < fineMaterials.sizeI(); i++)
     {
-        for(int j = 0; j < fineGrid.sizeJ(); j++)
+        for(int j = 0; j < fineMaterials.sizeJ(); j++)
         {
             if(!fineMaterials.isFluid(i,j))
             {
@@ -370,10 +374,184 @@ void LinearSolver::prolongateGrid(const MaterialGrid &fineMaterials, const Grid2
                 {
                     continue;
                 }
-                fineGrid.at(i,j) += coarseGridData[coarseNeghbors[idx]] * coarseWeights[idx];
+                fineGridData[fineMaterials.linearIndex(i,j)] +=
+                    coarseGridData[coarseNeghbors[idx]] * coarseWeights[idx];
             }
         }
     }
+}
+
+void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<double> &pressures, const std::vector<double> &rhs)
+{
+    std::vector<double> temp(pressures.size(),0.f);
+    const float tune = 2.f/3.f;
+    for(int i = 0; i < pressures.size(); i++)
+    {
+        const auto weights = getMultigridMatrixEntriesForCell(materials,i);
+        int currIdx = weights[0].first;
+        float result = 0.f;
+        for(const auto& w : weights)
+        {
+            if(w.first < 0)
+            {
+                continue;
+            }
+
+            result += w.second * pressures[w.first];
+        }
+        temp[currIdx] = (rhs[currIdx]-result)/weights[0].second;
+    }
+
+    for(int i = 0; i < pressures.size(); i++)
+    {
+        pressures[i] = temp[i] * tune;
+    }
+}
+
+void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &vin)
+{
+    vout.assign(vin.size(),0.f);
+    const int subLevelCount = m_materialSubgrids.size();
+    //Down stroke
+    for(int level = -1; level < m_materialSubgrids.size() - 1; level++)
+    {
+        if(level != -1)
+        {
+            Grid2d<double> temp(m_materialSubgrids[level].sizeI(),m_materialSubgrids[level].sizeJ(),0.f);
+            dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
+            multigridSubMatmul(m_materialSubgrids[level],
+                               m_rhsGrids[level].data(),
+                               m_pressureGrids[level].data(),
+                               temp.data());
+            restrictGrid(m_materialSubgrids[level+1],temp,m_rhsGrids[level+1]);
+            m_pressureGrids[level+1].data().assign(m_pressureGrids[level+1].data().size(),0.f);
+        }
+        else
+        {
+            Grid2d<double> temp(m_mainMaterialGrid.sizeI(),m_mainMaterialGrid.sizeJ(),0.f);
+            dampedJacobi(m_mainMaterialGrid,vout,vin);
+            multigridSubMatmul(m_mainMaterialGrid,
+                               vin,
+                               vout,
+                               temp.data());
+            restrictGrid(m_materialSubgrids[0],temp,m_rhsGrids[0]);
+            m_pressureGrids[0].data().assign(m_pressureGrids[0].data().size(),0.f);
+        }
+    }
+
+    //Solve coarse
+    for(int i = 0; i < 10; i++)
+    {
+        dampedJacobi(m_materialSubgrids[subLevelCount-1],
+                     m_pressureGrids[subLevelCount-1].data(),
+                     m_rhsGrids[subLevelCount-1].data());
+    }
+
+
+    //Up stroke
+    for(int level = m_materialSubgrids.size() - 2; level >= -1; level--)
+    {
+        if(level > -1)
+        {
+            prolongateGrid(m_materialSubgrids[level],m_pressureGrids[level+1],m_pressureGrids[level].data());
+            dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
+        }
+        else
+        {
+            prolongateGrid(m_mainMaterialGrid,m_pressureGrids[level+1],vout);
+            dampedJacobi(m_mainMaterialGrid,vout,vin);
+        }
+    }
+}
+
+void LinearSolver::multigridMatmul(const MaterialGrid &materials, const std::vector<double> &vin, std::vector<double> &vout)
+{
+    for(int idx = 0; idx < vin.size(); idx++)
+    {
+        const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
+        float result = 0.f;
+        for(const auto& w : weights)
+        {
+            if(w.first < 0)
+            {
+                continue;
+            }
+
+            result += w.second * vin[w.first];
+        }
+        vout[idx] = result;
+    }
+}
+
+void LinearSolver::multigridSubMatmul(const MaterialGrid &materials, const std::vector<double> &vsub, const std::vector<double> &vmul, std::vector<double> &vout)
+{
+    for(int idx = 0; idx < vout.size(); idx++)
+    {
+        const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
+        float result = 0.f;
+        for(const auto& w : weights)
+        {
+            if(w.first < 0)
+            {
+                continue;
+            }
+
+            result += w.second * vmul[w.first];
+        }
+        vout[idx] = vsub[idx] - result;
+    }
+}
+
+std::array<std::pair<int, float>, 5> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j)
+{
+    std::array<std::pair<int,float>,5> output{std::pair<int,float>()};
+    std::array<int,4> neighbors = materials.immidiateNeighbors(i,j);
+    const std::vector<FluidMaterial> &materialsData = materials.data();
+
+    int neighborCount = 0;
+    int outputIdx = 1;
+    for(int idx : neighbors)
+    {
+        if(idx < 0 || idx > materialsData.size())
+        {
+            output[outputIdx] = std::make_pair(-1,0);
+            outputIdx++;
+            continue;
+        }
+        const float weight = !solidTest(materialsData[idx]);
+        output[outputIdx] = std::make_pair(idx,weight);
+        neighborCount++;
+        outputIdx++;
+    }
+    output[0] = std::make_pair(materials.linearIndex(i,j),-neighborCount);
+
+    return output;
+}
+
+std::array<std::pair<int, float>, 5> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx)
+{
+    std::array<std::pair<int,float>,5> output{std::pair<int,float>()};
+    std::array<int,4> neighbors = materials.immidiateNeighbors(linearIdx);
+    const std::vector<FluidMaterial> &materialsData = materials.data();
+
+    int neighborCount = 0;
+    int outputIdx = 1;
+    for(int idx : neighbors)
+    {
+        if(idx < 0 || idx > materialsData.size())
+        {
+            output[outputIdx] = std::make_pair(-1,0);
+            outputIdx++;
+            continue;
+        }
+        const float weight = !solidTest(materialsData[idx]);
+        output[outputIdx] = std::make_pair(idx,weight);
+        neighborCount++;
+        outputIdx++;
+    }
+    output[0] = std::make_pair(linearIdx,-neighborCount);
+
+    return output;
 }
 
 std::array<int, 16> LinearSolver::getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse)
