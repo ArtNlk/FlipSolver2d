@@ -32,17 +32,33 @@ protected:
 
     void propagateMaterialGrid(const MaterialGrid& fineGrid, MaterialGrid &coarseGrid);
 
-    void restrictGrid(const MaterialGrid& coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid);
+    void restrictGrid(const MaterialGrid& coarseMaterials, const Grid2d<double> &fineGrid,
+                      Grid2d<double> coarseGrid);
 
-    void prolongateGrid(const MaterialGrid& fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double> &fineGridData);
+    void restrictGridThread(const Range range, const MaterialGrid& coarseMaterials,
+                      const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid);
+
+    void prolongateGrid(const MaterialGrid& fineMaterials, const Grid2d<double> &coarseGrid,
+                        std::vector<double> &fineGridData);
+
+    void prolongateGridThread(const Range range, const MaterialGrid& fineMaterials,
+                              const Grid2d<double> &coarseGrid, std::vector<double> &fineGridData);
 
     void dampedJacobi(const MaterialGrid& materials, std::vector<double> &pressures, const std::vector<double> &rhs);
+
+    void dampedJacobiThread(const Range range, const MaterialGrid& materials, std::vector<double> &vout,
+                            const std::vector<double> &pressures, const std::vector<double> &rhs);
+
+    void vaddmul(const Range range, std::vector<double> &vin, const std::vector<double> &vadd, double weight);
 
     void vCycle(std::vector<double> &vout, const std::vector<double> &vin);
 
     void multigridMatmul(const MaterialGrid& materials, const std::vector<double>& vin, std::vector<double>& vout);
 
     void multigridSubMatmul(const MaterialGrid& materials, const std::vector<double>& vsub,
+                            const std::vector<double>& vmul, std::vector<double>& vout);
+
+    void multigridSubMatmulThread(const Range range, const MaterialGrid& materials, const std::vector<double>& vsub,
                             const std::vector<double>& vmul, std::vector<double>& vout);
 
     std::array<std::pair<int,float>,5> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j);

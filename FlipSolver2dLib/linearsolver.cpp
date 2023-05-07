@@ -135,7 +135,7 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
         //aux = residual;
         applyMGPrecond(residual,aux);
         double newSigma = vsimmath::dot(aux,residual);
-        std::cout << "New sigma:" << newSigma << std::endl;
+        //std::cout << "New sigma:" << newSigma << std::endl;
         double beta = newSigma/(sigma);
         vsimmath::addMul(result,result,search,alpha);
         vsimmath::addMul(search,aux,search,beta);
@@ -339,63 +339,114 @@ void LinearSolver::propagateMaterialGrid(const MaterialGrid &fineGrid, MaterialG
 
 void LinearSolver::restrictGrid(const MaterialGrid &coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid)
 {
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(coarseMaterials.data().size(),128);
+
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&LinearSolver::restrictGridThread,this,range,coarseMaterials,
+                                 std::ref(fineGrid),std::ref(coarseGrid));
+        //nomatVMulThread(range,elementProvider,vin,vout);
+    }
+    ThreadPool::i()->wait();
+}
+
+void LinearSolver::restrictGridThread(const Range range, const MaterialGrid &coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid)
+{
     const std::vector<double> &fineGridData = fineGrid.data();
     const int gridDataSize = fineGridData.size();
-    for(int i = 0; i < coarseGrid.sizeI(); i++)
+    for(int idx = range.start; idx < range.end; idx++)
     {
-        for(int j = 0; j < coarseGrid.sizeJ(); j++)
+        Index2d i2d = coarseMaterials.index2d(idx);
+        std::array<int,16> stencilCellIdxs = getFineGridStencilIdxs(fineGrid,i2d.m_i,i2d.m_j);
+        coarseGrid.at(i2d.m_i,i2d.m_j) = 0.f;
+        if(!coarseMaterials.isFluid(i2d.m_i,i2d.m_j))
         {
-            std::array<int,16> stencilCellIdxs = getFineGridStencilIdxs(fineGrid,i,j);
-            coarseGrid.at(i,j) = 0.f;
-            if(!coarseMaterials.isFluid(i,j))
+            continue;
+        }
+
+        int weightIdx = 0;
+        for(int idx : stencilCellIdxs)
+        {
+            if(idx < 0 || idx >= gridDataSize)
             {
+                weightIdx++;
                 continue;
             }
-
-            for(int idx : stencilCellIdxs)
-            {
-                if(idx < 0 || idx >= gridDataSize)
-                {
-                    continue;
-                }
-                coarseGrid.at(i,j) += fineGridData[idx] * m_restrictionWeights[idx];
-            }
+            coarseGrid.at(i2d.m_i,i2d.m_j) += fineGridData[idx] * m_restrictionWeights[weightIdx];
+            weightIdx++;
         }
     }
 }
 
 void LinearSolver::prolongateGrid(const MaterialGrid &fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double>& fineGridData)
 {
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(fineMaterials.data().size(),128);
+
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&LinearSolver::prolongateGridThread,this,range,fineMaterials,
+                                 std::ref(coarseGrid),std::ref(fineGridData));
+        //nomatVMulThread(range,elementProvider,vin,vout);
+    }
+    ThreadPool::i()->wait();
+}
+
+void LinearSolver::prolongateGridThread(const Range range, const MaterialGrid &fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double> &fineGridData)
+{
     const std::vector<double> &coarseGridData = coarseGrid.data();
     const int gridDataSize = coarseGridData.size();
-    for(int i = 0; i < fineMaterials.sizeI(); i++)
+    for(int idx = range.start; idx < range.end; idx++)
     {
-        for(int j = 0; j < fineMaterials.sizeJ(); j++)
+        Index2d i2d = fineMaterials.index2d(idx);
+        if(!fineMaterials.isFluid(i2d))
         {
-            if(!fineMaterials.isFluid(i,j))
+            continue;
+        }
+        std::array<int, 4> coarseNeghbors = getCoarseProlongIdxs(coarseGrid,i2d.m_i,i2d.m_j);
+        std::array<float,4> coarseWeights = getProlongationWeights(i2d.m_i,i2d.m_j);
+        for(int idx = 0; idx < 4; idx++)
+        {
+            if(idx < 0 || idx >= gridDataSize)
             {
                 continue;
             }
-            std::array<int, 4> coarseNeghbors = getCoarseProlongIdxs(coarseGrid,i,j);
-            std::array<float,4> coarseWeights = getProlongationWeights(i,j);
-            for(int idx = 0; idx < 4; idx++)
-            {
-                if(idx < 0 || idx >= gridDataSize)
-                {
-                    continue;
-                }
-                fineGridData[fineMaterials.linearIndex(i,j)] +=
-                    coarseGridData[coarseNeghbors[idx]] * coarseWeights[idx];
-            }
+            fineGridData[fineMaterials.linearIndex(i2d.m_i,i2d.m_j)] +=
+                coarseGridData[coarseNeghbors[idx]] * coarseWeights[idx];
         }
     }
 }
 
 void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<double> &pressures, const std::vector<double> &rhs)
 {
-    std::vector<double> temp(pressures.size(),0.f);
+    std::vector<double> temp(pressures.size(), 0.);
+
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(pressures.size(),128);
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&LinearSolver::dampedJacobiThread,this,range,std::ref(materials),
+                                                std::ref(temp),std::ref(pressures),std::ref(rhs));
+    }
+    ThreadPool::i()->wait();
+
+    std::swap(temp,pressures);
+
+//    for(int i = 0; i < pressures.size(); i++)
+//    {
+//        pressures[i] += temp[i] * tune;
+//    }
+
+//    for(Range& range : ranges)
+//    {
+//        ThreadPool::i()->enqueue(&LinearSolver::vaddmul,this,range,std::ref(pressures),
+//                                 std::ref(temp),tune);
+//    }
+//    ThreadPool::i()->wait();
+}
+
+void LinearSolver::dampedJacobiThread(const Range range, const MaterialGrid &materials, std::vector<double> &vout, const std::vector<double> &pressures, const std::vector<double> &rhs)
+{
     const float tune = 2.f/3.f;
-    for(int i = 0; i < pressures.size(); i++)
+    for(int i = range.start; i < range.end; i++)
     {
         const auto weights = getMultigridMatrixEntriesForCell(materials,i);
         int currIdx = weights[0].first;
@@ -409,12 +460,15 @@ void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<doubl
 
             result += weights[wIdx].second * pressures[weights[wIdx].first];
         }
-        temp[currIdx] = (rhs[currIdx]-result)/weights[0].second;
+        vout[currIdx] = ((rhs[currIdx]-result)/weights[0].second) * tune;
     }
+}
 
-    for(int i = 0; i < pressures.size(); i++)
+void LinearSolver::vaddmul(const Range range, std::vector<double> &vin, const std::vector<double> &vadd, double weight)
+{
+    for(int i = range.start; i < range.end; i++)
     {
-        pressures[i] = temp[i] * tune;
+        vin[i] += vadd[i] * weight;
     }
 }
 
@@ -423,7 +477,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
     vout.assign(vin.size(),0.f);
     const int subLevelCount = m_materialSubgrids.size();
     //Down stroke
-    for(int level = -1; level < (int)m_materialSubgrids.size() - 1; level++)
+    for(int level = -1; level < static_cast<int>(m_materialSubgrids.size() - 1); level++)
     {
         if(level != -1)
         {
@@ -495,7 +549,18 @@ void LinearSolver::multigridMatmul(const MaterialGrid &materials, const std::vec
 
 void LinearSolver::multigridSubMatmul(const MaterialGrid &materials, const std::vector<double> &vsub, const std::vector<double> &vmul, std::vector<double> &vout)
 {
-    for(int idx = 0; idx < vout.size(); idx++)
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(vout.size(),8*8);
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&LinearSolver::multigridSubMatmulThread,this,range,std::ref(materials),
+                                 std::ref(vsub),std::ref(vmul),std::ref(vout));
+    }
+    ThreadPool::i()->wait();
+}
+
+void LinearSolver::multigridSubMatmulThread(const Range range, const MaterialGrid &materials, const std::vector<double> &vsub, const std::vector<double> &vmul, std::vector<double> &vout)
+{
+    for(int idx = range.start; idx < range.end; idx++)
     {
         const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
         float result = 0.f;
@@ -543,18 +608,19 @@ std::array<std::pair<int, float>, 5> LinearSolver::getMultigridMatrixEntriesForC
     std::array<std::pair<int,float>,5> output{std::pair<int,float>()};
     std::array<int,4> neighbors = materials.immidiateNeighbors(linearIdx);
     const std::vector<FluidMaterial> &materialsData = materials.data();
+    const auto dataSize = materialsData.size();
 
     int neighborCount = 0;
     int outputIdx = 1;
     for(int idx : neighbors)
     {
-        if(idx < 0 || idx > materialsData.size())
+        if(idx < 0 || idx >= dataSize)
         {
             output[outputIdx] = std::make_pair(-1,0);
             outputIdx++;
             continue;
         }
-        const float weight = !solidTest(materialsData[idx]);
+        const float weight = solidTest(materialsData[idx]) ? 0.f : 1.f;
         output[outputIdx] = std::make_pair(idx,weight);
         neighborCount++;
         outputIdx++;

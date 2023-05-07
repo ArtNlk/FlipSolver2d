@@ -3,7 +3,7 @@
     "simType": "flip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 128,
+    "resolution": 50,
     "fps": 30,
     "density": 1,
     "airDensity": 0.001,

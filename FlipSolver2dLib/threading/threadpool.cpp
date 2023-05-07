@@ -35,30 +35,39 @@ std::vector<Range> ThreadPool::splitRange(unsigned int length, unsigned int minS
 
 std::vector<Range> ThreadPool::splitRange(unsigned int start, unsigned int end, unsigned int minSize)
 {
-        unsigned int rangeSize = end - start;
-        unsigned int numParts = m_threads.size();
-        if(rangeSize < numParts)
-        {
-            numParts = rangeSize;
+    if(start == end)
+    {
+        return std::vector<Range>();
+    }
+    unsigned int rangeSize = end - start;
+    unsigned int numParts = m_threads.size();
+    if(rangeSize < numParts)
+    {
+        numParts = rangeSize;
+    }
+    std::vector<Range> parts;
+    parts.reserve(numParts);
+    unsigned int partSize = std::floor(rangeSize / numParts);
+    partSize = std::max(minSize,partSize);
+    unsigned int remainder = 0;
+    if(partSize * numParts < rangeSize)
+    {
+        remainder = rangeSize - (partSize * numParts);
+    }
+    unsigned int currentStart = start;
+    unsigned int currentEnd = start + partSize;
+    currentEnd = std::min(end,currentEnd);
+    for (unsigned int i = 0; i < numParts; i++) {
+        if (i < remainder) {
+            currentEnd++;
         }
-        std::vector<Range> parts;
-        parts.reserve(numParts);
-        unsigned int partSize = std::floor(rangeSize / numParts);
-        partSize = std::max(minSize,partSize);
-        unsigned int remainder = rangeSize - (partSize * numParts);
-        unsigned int currentStart = start;
-        unsigned int currentEnd = start + partSize;
-        for (unsigned int i = 0; i < numParts; i++) {
-            if (i < remainder) {
-                currentEnd++;
-            }
-            parts.emplace_back(Range{currentStart, currentEnd});
-            currentStart = currentEnd;
-            currentEnd = std::min(currentStart + partSize, end);
-            if(currentEnd == currentStart) break;
-        }
-        parts.shrink_to_fit();
-        return parts;
+        parts.emplace_back(Range{currentStart, currentEnd});
+        currentStart = currentEnd;
+        currentEnd = std::min(currentStart + partSize, end);
+        if(currentEnd == currentStart) break;
+    }
+    parts.shrink_to_fit();
+    return parts;
 }
 
 void ThreadPool::wait()
