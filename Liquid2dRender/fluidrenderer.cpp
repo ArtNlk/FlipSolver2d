@@ -1013,8 +1013,9 @@ void FluidRenderer::dumpToPng(std::string fileName)
         return;
     }
 
-    unsigned char data[m_textureWidth*m_textureHeight*3], argb_data[m_textureWidth*m_textureHeight*4];
-    unsigned char *rows[m_textureHeight];
+    std::vector<unsigned char> data(m_textureWidth*m_textureHeight*3,0);
+    std::vector<unsigned char> argb_data(m_textureWidth*m_textureHeight*4,0);
+    std::vector<unsigned char *> rows(m_textureHeight,nullptr);
     png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
     if (!png_ptr) {
         goto close_file;
@@ -1035,11 +1036,11 @@ void FluidRenderer::dumpToPng(std::string fileName)
 
     render();
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
-    glReadPixels(0, 0, m_textureWidth, m_textureHeight, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, argb_data);
+    glReadPixels(0, 0, m_textureWidth, m_textureHeight, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, argb_data.data());
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     for (int i = 0; i < m_textureHeight; ++i) {
-        rows[m_textureHeight - i - 1] = data + (i*m_textureWidth*3);
+        rows[m_textureHeight - i - 1] = data.data() + (i*m_textureWidth*3);
         for (int j = 0; j < m_textureWidth; ++j) {
             int i1 = (i*m_textureWidth+j)*3;
             int i2 = (i*m_textureWidth+j)*4;
@@ -1049,7 +1050,7 @@ void FluidRenderer::dumpToPng(std::string fileName)
         }
     }
 
-    png_set_rows(png_ptr, png_info, rows);
+    png_set_rows(png_ptr, png_info, rows.data());
     png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
     png_write_end(png_ptr, png_info);
 
