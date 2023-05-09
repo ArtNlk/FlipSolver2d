@@ -2,16 +2,18 @@
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
-#include <execinfo.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 
 #include <iostream>
 
 #include "liquidrenderapp.h"
 #include "logger.h"
 
+#ifdef __linux__
+#include <execinfo.h>
 void handler(int sig) {
     void *array[10];
     size_t size;
@@ -24,10 +26,13 @@ void handler(int sig) {
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
 }
+#endif
 
 int main()
 {
+#ifdef __linux__
     signal(SIGSEGV, handler);
+#endif
     LiquidRenderApp app;
     app.init();
     app.run();
