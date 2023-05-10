@@ -9,7 +9,6 @@
 #include "logger.h"
 #include "materialgrid.h"
 #include "glm/gtc/type_ptr.hpp"
-#include "png.h"
 
 #include "globalcallbackhandler.h"
 
