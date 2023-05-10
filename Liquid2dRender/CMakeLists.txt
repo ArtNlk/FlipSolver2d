@@ -66,38 +66,6 @@ if(NOT nlohmann_json_POPULATED)
     add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
 endif()
 
-#ZLIB
-FetchContent_Declare(
-        zlib
-        GIT_REPOSITORY https://github.com/madler/zlib.git
-        GIT_TAG 04f42ceca40f73e2978b50e93806c2a18c1281fc
-)
-FetchContent_GetProperties(zlib)
-if(NOT zlib_POPULATED)
-    FetchContent_Populate(zlib)
-    add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
-endif()
-set(ZLIB_LIBRARY zlib)
-
-#LIBPNG
-FetchContent_Declare(
-        libpng
-        GIT_REPOSITORY https://github.com/glennrp/libpng.git
-        GIT_TAG 07b8803110da160b158ebfef872627da6c85cbdf
-)
-FetchContent_GetProperties(libpng)
-if(NOT libpng_POPULATED)
-    FetchContent_Populate(libpng)
-
-    set(PNG_BUILD_ZLIB ON CACHE INTERNAL "Custom zlib location")
-    set(PNG_STATIC ON CACHE INTERNAL "Build static lib")
-    set(PNG_SHARED OFF CACHE INTERNAL "Build shared lib")
-    set(PNG_EXECUTABLES OFF CACHE INTERNAL "Build exes")
-    set(PNG_TESTS OFF CACHE INTERNAL "Build tests")
-
-    add_subdirectory(${libpng_SOURCE_DIR} ${libpng_BINARY_DIR})
-endif()
-
 find_package(OpenGL REQUIRED)
 
 set(HEADERS
@@ -145,8 +113,6 @@ target_link_libraries(LiquidRenderApp FlipSolver2d)
 target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} -static-libgcc -static-libstdc++)
 target_link_libraries(LiquidRenderApp glfw)
 target_link_libraries(LiquidRenderApp freetype)
-target_link_libraries(LiquidRenderApp libpng16.a)
-target_link_libraries(LiquidRenderApp zlib)
 target_link_libraries(LiquidRenderApp glm)
 target_link_libraries(LiquidRenderApp nlohmann_json::nlohmann_json)
 

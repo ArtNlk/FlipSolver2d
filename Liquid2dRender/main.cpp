@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 
 #include <iostream>
@@ -14,6 +13,7 @@
 
 #ifdef __linux__
 #include <execinfo.h>
+#include <unistd.h>
 void handler(int sig) {
     void *array[10];
     size_t size;

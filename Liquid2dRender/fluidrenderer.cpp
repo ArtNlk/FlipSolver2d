@@ -1005,57 +1005,28 @@ Color FluidRenderer::getBlackbodyColor(float temp)
     return Color(r,g,b);
 }
 
-void FluidRenderer::dumpToPng(std::string fileName)
+void FluidRenderer::dumpToTga(const std::string& fileName)
 {
     FILE *fp = fopen(("./output/" + fileName).c_str(), "wb");
     if (!fp) {
-        std::cout << "cannot open for png frame dump: " << fileName << '\n';
+        std::cout << "cannot open for tga frame dump: " << fileName << '\n';
         return;
     }
 
-    std::vector<unsigned char> data(m_textureWidth*m_textureHeight*3,0);
-    std::vector<unsigned char> argb_data(m_textureWidth*m_textureHeight*4,0);
-    std::vector<unsigned char *> rows(m_textureHeight,nullptr);
-    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (!png_ptr) {
-        goto close_file;
-    }
-    png_infop png_info;
-    if (!(png_info = png_create_info_struct(png_ptr))) {
-        goto destroy_write;
-    }
-
-    if (setjmp(png_jmpbuf(png_ptr))) {
-        goto destroy_write;
-    }
-
-    png_init_io(png_ptr, fp);
-    png_set_IHDR(png_ptr, png_info, m_textureWidth, m_textureHeight, 8, PNG_COLOR_TYPE_RGB,
-        PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
-        PNG_FILTER_TYPE_DEFAULT);
+    std::vector<GLubyte> data(m_textureWidth*m_textureHeight*4,0);
 
     render();
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
-    glReadPixels(0, 0, m_textureWidth, m_textureHeight, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8, argb_data.data());
+    glReadPixels(0, 0, m_textureWidth, m_textureHeight, GL_BGRA, GL_UNSIGNED_BYTE, data.data());
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    for (int i = 0; i < m_textureHeight; ++i) {
-        rows[m_textureHeight - i - 1] = data.data() + (i*m_textureWidth*3);
-        for (int j = 0; j < m_textureWidth; ++j) {
-            int i1 = (i*m_textureWidth+j)*3;
-            int i2 = (i*m_textureWidth+j)*4;
-            data[i1++] = argb_data[++i2];
-            data[i1++] = argb_data[++i2];
-            data[i1++] = argb_data[++i2];
-        }
-    }
-
-    png_set_rows(png_ptr, png_info, rows.data());
-    png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
-    png_write_end(png_ptr, png_info);
-
-destroy_write:
-    png_destroy_write_struct(&png_ptr, nullptr);
-close_file:
+    std::array<GLubyte,18> header = {00,00,02, 00,00,00, 00,00,00, 00,00,00,
+                        static_cast<GLubyte>(0xff & m_textureWidth),
+                        static_cast<GLubyte>(0xff & m_textureWidth >> 8),
+                        static_cast<GLubyte>(0xff & m_textureHeight),
+                        static_cast<GLubyte>(0xff & m_textureHeight >> 8),
+                        32, 0x00 }; // next-to-last = bit depth
+    fwrite( header.data(), header.size(), 1, fp);
+    fwrite(data.data(), data.size(), 1, fp);
     fclose(fp);
 }

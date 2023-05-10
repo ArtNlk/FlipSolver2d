@@ -117,8 +117,8 @@ public:
     static const Color &velocityVectorColor();
 
     unsigned int renderTexture();
-
-    void dumpToPng(std::string fileName);
+    
+    void dumpToTga(const std::string& fileName);
 
     void resizeTexture(int width, int height);
 

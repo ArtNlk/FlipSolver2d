@@ -172,7 +172,7 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                             m_solver->stepFrame();
                             m_fluidRenderer.update();
                             render();
-                            m_fluidRenderer.dumpToPng(std::to_string(m_solver->fps()) + "fps_" + std::to_string(m_solver->frameNumber()) + ".png");
+                            m_fluidRenderer.dumpToTga(std::to_string(m_solver->fps()) + "fps_" + std::to_string(m_solver->frameNumber()) + ".tga");
                             frame++;
                             glfwPollEvents();
                             if(glfwWindowShouldClose(m_window))
@@ -188,7 +188,7 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                 break;
 
                 case GLFW_KEY_F:
-                    m_fluidRenderer.dumpToPng("frame.png");
+                    m_fluidRenderer.dumpToTga("frame.png");
                 break;
 
                 case GLFW_KEY_SPACE:
