@@ -16,6 +16,11 @@ struct Range
 {
     unsigned int start;
     unsigned int end;
+
+    unsigned int size() const
+    {
+        return end-start;
+    }
 };
 
 class ThreadPool

@@ -22,7 +22,8 @@ set(HEADERS
     sink.h
     staggeredvelocitygrid.h
     flipfiresolver.h
-    nbflipsolver.h)
+    nbflipsolver.h
+    simddispatcher.h)
 
 set(SOURCES
     linearindexable2d.cpp
@@ -44,13 +45,28 @@ set(SOURCES
     sink.cpp
     staggeredvelocitygrid.cpp
     flipfiresolver.cpp
-    nbflipsolver.cpp)
+    nbflipsolver.cpp
+    simddispatcher.cpp)
+
+set(SSE42_SOURCES
+    vops_sse42.cpp)
+
+set(SSE42_HEADERS
+    vops_sse42.h)
+
+if(UNIX)
+    set_source_files_properties(${SSE42_SOURCES} PROPERTIES COMPILE_FLAGS "-mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4.1 -msse4.2")
+elseif(MSVC)
+
+endif()
 
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 
 add_library(FlipSolver2d STATIC
   ${HEADERS}
   ${SOURCES}
+  ${SSE42_HEADERS}
+  ${SSE42_SOURCES}
 )
 target_include_directories(FlipSolver2d PUBLIC "./threading/")
 target_link_libraries(FlipSolver2d SimThreadTools)

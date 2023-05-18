@@ -59,7 +59,7 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
 bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
 {
     result.assign(result.size(),0);
-    if (vsimmath::isZero(vec))
+    if (VOps::i().isZero(vec))
     {
         return true;
     }
@@ -71,15 +71,15 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
     std::vector<double> aux = vec;
     applyICPrecond(precond,residual,aux);
     std::vector<double> search = aux;
-    double sigma = vsimmath::dot(aux,residual);
+    double sigma = VOps::i().dot(aux,residual);
     double err = 0.0;
     for (int i = 0; i < iterLimit; i++)
     {
         aux = matrix * search;
-        double alpha = sigma/(vsimmath::dot(aux,search));
-        vsimmath::addMul(result,result,search,alpha);
-        vsimmath::subMul(residual,residual,aux,alpha);
-        err = vsimmath::maxAbs(residual);
+        double alpha = sigma/(VOps::i().dot(aux,search));
+        VOps::i().addMul(result,result,search,alpha);
+        VOps::i().subMul(residual,residual,aux,alpha);
+        err = VOps::i().maxAbs(residual);
 //        if(i % 5 == 0)
 //        {
 //            std::cout << "Solver: " << i << " : " << err << "\n";
@@ -93,9 +93,9 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
         }
         aux = residual;
         applyICPrecond(precond,residual,aux);
-        double newSigma = vsimmath::dot(aux,residual);
+        double newSigma = VOps::i().dot(aux,residual);
         double beta = newSigma/(sigma);
-        vsimmath::addMul(search,aux,search,beta);
+        VOps::i().addMul(search,aux,search,beta);
         sigma = newSigma;
     }
 
@@ -107,7 +107,7 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
 bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
 {
     result.assign(result.size(),0);
-    if (vsimmath::isZero(vec))
+    if (VOps::i().isZero(vec))
     {
         return true;
     }
@@ -118,14 +118,14 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
     std::vector<double> aux = vec; //z
     applyMGPrecond(residual,aux);
     std::vector<double> search = aux; //p
-    double sigma = vsimmath::dot(aux,residual);
+    double sigma = VOps::i().dot(aux,residual);
     double err = 0.0;
     for (int i = 0; i < iterLimit; i++)
     {
         nomatVMul(elementProvider,search,aux);
-        double alpha = sigma/(vsimmath::dot(aux,search));
-        vsimmath::subMul(residual,residual,aux,alpha);
-        err = vsimmath::maxAbs(residual);
+        double alpha = sigma/(VOps::i().dot(aux,search));
+        VOps::i().subMul(residual,residual,aux,alpha);
+        err = VOps::i().maxAbs(residual);
         if (err <= m_tol)
         {
             //debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
@@ -134,11 +134,11 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
         }
         //aux = residual;
         applyMGPrecond(residual,aux);
-        double newSigma = vsimmath::dot(aux,residual);
+        double newSigma = VOps::i().dot(aux,residual);
         //std::cout << "New sigma:" << newSigma << std::endl;
         double beta = newSigma/(sigma);
-        vsimmath::addMul(result,result,search,alpha);
-        vsimmath::addMul(search,aux,search,beta);
+        VOps::i().addMul(result,result,search,alpha);
+        VOps::i().addMul(search,aux,search,beta);
         sigma = newSigma;
     }
 
