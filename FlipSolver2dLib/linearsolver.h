@@ -7,10 +7,11 @@
 
 #include "linearindexable2d.h"
 #include "materialgrid.h"
+#include "simddispatcher.h"
 #include "threadpool.h"
 #include "uppertriangularmatrix.h"
 
-class LinearSolver
+class LinearSolver : SimdDispatcher
 {
 public:
     LinearSolver(MaterialGrid& materialGrid, int maxMultigridDepth);
@@ -19,6 +20,8 @@ public:
 
     bool solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit = 20);
     bool mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit = 20);
+
+    friend class LinearSolver_sse42;
 
 protected:
     void nomatVMul(MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout);
@@ -46,7 +49,7 @@ protected:
 
     void dampedJacobi(const MaterialGrid& materials, std::vector<double> &pressures, const std::vector<double> &rhs);
 
-    void dampedJacobiThread(const Range range, const MaterialGrid& materials, std::vector<double> &vout,
+    static void dampedJacobiThread(LinearSolver* solver, const Range range, const MaterialGrid& materials, std::vector<double> &vout,
                             const std::vector<double> &pressures, const std::vector<double> &rhs);
 
     void vaddmul(const Range range, std::vector<double> &vin, const std::vector<double> &vadd, double weight);
@@ -82,6 +85,9 @@ protected:
     std::vector<MaterialGrid> m_materialSubgrids;
     std::vector<Grid2d<double>> m_pressureGrids;
     std::vector<Grid2d<double>> m_rhsGrids;
+
+    void(*m_dampedJacobiThread)(LinearSolver*,const Range,const MaterialGrid&,std::vector<double>&,
+                                 const std::vector<double>&, const std::vector<double>&);
 };
 
 #endif // PCGSOLVER_H

@@ -1,6 +1,5 @@
 #include "vops_sse42.h"
 
-#include <emmintrin.h>
 #include <nmmintrin.h>
 
 void VOps_sse42::addMulThread(Range range, std::vector<double> &output, const std::vector<double> &vec1, const std::vector<double> &vec2, double value)

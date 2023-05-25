@@ -12,17 +12,35 @@
 #include "dynamicuppertriangularsparsematrix.h"
 #include "grid2d.h"
 #include "materialgrid.h"
+#include "simddispatcher.h"
 #include "vmath.h"
+#include "linearsolver_sse42.h"
 
 #include "logger.h"
 
 const double LinearSolver::m_tol = 1.0e-6;
 
 LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
-    m_mainMaterialGrid(materialGrid),
+    SimdDispatcher(),
     m_restrictionWeights({0}),
-    m_prolongationWeights({0})
+    m_prolongationWeights({0}),
+    m_mainMaterialGrid(materialGrid),
+    m_dampedJacobiThread(&LinearSolver::dampedJacobiThread)
 {
+    switch(m_simdLevel)
+    {
+    case SIMD_LEVEL_NONE:
+        break;
+    case SIMD_LEVEL_SSE42:
+        m_dampedJacobiThread = &LinearSolver_sse42::dampedJacobiThread;
+        break;
+    case SIMD_LEVEL_SSE4a_XOP_FMA:
+    case SIMD_LEVEL_AVX:
+    case SIMD_LEVEL_AVX2:
+    case SIMD_LEVEL_AVX512:
+        break;
+    }
+
     int sizeI = materialGrid.sizeI();
     int sizeJ = materialGrid.sizeJ();
     int subgridLevelCount = (std::min(sizeI,sizeJ) / 8) - 1;
@@ -423,7 +441,7 @@ void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<doubl
     std::vector<Range> ranges = ThreadPool::i()->splitRange(pressures.size(),128);
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&LinearSolver::dampedJacobiThread,this,range,std::ref(materials),
+        ThreadPool::i()->enqueue(m_dampedJacobiThread,this,range,std::ref(materials),
                                                 std::ref(temp),std::ref(pressures),std::ref(rhs));
     }
     ThreadPool::i()->wait();
@@ -443,12 +461,12 @@ void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<doubl
 //    ThreadPool::i()->wait();
 }
 
-void LinearSolver::dampedJacobiThread(const Range range, const MaterialGrid &materials, std::vector<double> &vout, const std::vector<double> &pressures, const std::vector<double> &rhs)
+void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, const MaterialGrid &materials, std::vector<double> &vout, const std::vector<double> &pressures, const std::vector<double> &rhs)
 {
     const float tune = 2.f/3.f;
     for(int i = range.start; i < range.end; i++)
     {
-        const auto weights = getMultigridMatrixEntriesForCell(materials,i);
+        const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
         int currIdx = weights[0].first;
         float result = 0.f;
         for(int wIdx = 1; wIdx < weights.size(); wIdx++)

@@ -3,7 +3,7 @@
 
 #include "grid2d.h"
 
-enum FluidMaterial : char
+enum FluidMaterial : int8_t
 {
     FLUID = 0b01000000,
     SOURCE =0b01000001,

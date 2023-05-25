@@ -48,11 +48,13 @@ set(SOURCES
     nbflipsolver.cpp
     simddispatcher.cpp)
 
-set(SSE42_SOURCES
-    vops_sse42.cpp)
-
 set(SSE42_HEADERS
-    vops_sse42.h)
+    vops_sse42.h
+    linearsolver_sse42.h)
+
+set(SSE42_SOURCES
+    vops_sse42.cpp
+    linearsolver_sse42.cpp)
 
 if(UNIX)
     set_source_files_properties(${SSE42_SOURCES} PROPERTIES COMPILE_FLAGS "-mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4.1 -msse4.2")
