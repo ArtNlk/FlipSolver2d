@@ -12,7 +12,7 @@
 #include "dynamicuppertriangularsparsematrix.h"
 #include "grid2d.h"
 #include "materialgrid.h"
-#include "simddispatcher.h"
+#include "hwinfo.h"
 #include "vmath.h"
 #include "linearsolver_sse42.h"
 
@@ -21,18 +21,17 @@
 const double LinearSolver::m_tol = 1.0e-6;
 
 LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
-    SimdDispatcher(),
     m_restrictionWeights({0}),
     m_prolongationWeights({0}),
     m_mainMaterialGrid(materialGrid),
     m_dampedJacobiThread(&LinearSolver::dampedJacobiThread)
 {
-    switch(m_simdLevel)
+    switch(HwInfo::i().getSimdLevel())
     {
     case SIMD_LEVEL_NONE:
         break;
     case SIMD_LEVEL_SSE42:
-        m_dampedJacobiThread = &LinearSolver_sse42::dampedJacobiThread;
+        //m_dampedJacobiThread = &LinearSolver_sse42::dampedJacobiThread;
         break;
     case SIMD_LEVEL_SSE4a_XOP_FMA:
     case SIMD_LEVEL_AVX:

@@ -1,5 +1,5 @@
 #include "vmath.h"
-#include "simddispatcher.h"
+#include "hwinfo.h"
 #include "vops_sse42.h"
 
 void VOps::dotThread(Range range, std::vector<double> &v1, std::vector<double> &v2, double &output)
@@ -133,13 +133,12 @@ double VOps::maxAbs(std::vector<double> &vec)
 }
 
 VOps::VOps() :
-    SimdDispatcher(),
     m_dotThread(&VOps::dotThread),
     m_addMulThread(&VOps::addMulThread),
     m_subMulThread(&VOps::subMulThread),
     m_maxAbsThread(&VOps::maxAbsThread)
 {
-    switch(m_simdLevel)
+    switch(HwInfo::i().getSimdLevel())
     {
     case SIMD_LEVEL_NONE:
         break;

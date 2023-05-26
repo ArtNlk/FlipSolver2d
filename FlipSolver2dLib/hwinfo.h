@@ -6,6 +6,7 @@
 #include <array>
 
 using SIMDFeatureMask = uint32_t;
+
 enum SIMDFeatures : SIMDFeatureMask {
     SIMD_FEATURE_NONE       =0,
     SIMD_FEATURE_SSE        =(1u << 0),
@@ -40,14 +41,22 @@ enum SIMDLevel : uint8_t {
     SIMD_LEVEL_AVX512
 };
 
-class SimdDispatcher
+class HwInfo
 {
 public:
-    SimdDispatcher();
+    HwInfo(HwInfo &other) = delete;
+    void operator=(const HwInfo &) = delete;
 
-protected:
-    SIMDFeatureMask getSimdFeatures();
+    static HwInfo& i();
+
     SIMDLevel getSimdLevel();
+
+private:
+    HwInfo();
+    ~HwInfo() = default;
+
+    SIMDFeatureMask simdFeatures();
+    SIMDLevel simdLevel();
 
     SIMDFeatureMask m_featureMask;
     SIMDLevel m_simdLevel;

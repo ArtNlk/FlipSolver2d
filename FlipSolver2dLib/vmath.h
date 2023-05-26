@@ -1,14 +1,14 @@
 #ifndef VMATH_H
 #define VMATH_H
 
-#include "simddispatcher.h"
+#include "hwinfo.h"
 #include "threadpool.h"
 #include <limits>
 #include <vector>
 #include <cmath>
 #include <customassert.h>
 
-class VOps : SimdDispatcher
+class VOps
 {
 public:
     static VOps& i();

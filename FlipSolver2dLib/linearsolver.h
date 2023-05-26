@@ -7,11 +7,11 @@
 
 #include "linearindexable2d.h"
 #include "materialgrid.h"
-#include "simddispatcher.h"
+#include "hwinfo.h"
 #include "threadpool.h"
 #include "uppertriangularmatrix.h"
 
-class LinearSolver : SimdDispatcher
+class LinearSolver
 {
 public:
     LinearSolver(MaterialGrid& materialGrid, int maxMultigridDepth);

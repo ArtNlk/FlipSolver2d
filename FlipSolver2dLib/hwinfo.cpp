@@ -1,4 +1,4 @@
-#include "simddispatcher.h"
+#include "hwinfo.h"
 
 
 //Thanks to https://github.com/Mysticial/FeatureDetector
@@ -18,13 +18,24 @@ void cpuid(int info[4], int InfoType){
 
 #endif
 
-SimdDispatcher::SimdDispatcher()
+HwInfo::HwInfo()
 {
-    m_featureMask = getSimdFeatures();
-    m_simdLevel = getSimdLevel();
+    m_featureMask = simdFeatures();
+    m_simdLevel = simdLevel();
 }
 
-SIMDFeatureMask SimdDispatcher::getSimdFeatures()
+HwInfo &HwInfo::i()
+{
+    static HwInfo instance;
+    return instance;
+}
+
+SIMDLevel HwInfo::getSimdLevel()
+{
+    return m_simdLevel;
+}
+
+SIMDFeatureMask HwInfo::simdFeatures()
 {
     SIMDFeatureMask output = SIMD_FEATURE_NONE;
     int info[4];
@@ -76,7 +87,7 @@ SIMDFeatureMask SimdDispatcher::getSimdFeatures()
     return output;
 }
 
-SIMDLevel SimdDispatcher::getSimdLevel()
+SIMDLevel HwInfo::simdLevel()
 {
     SIMDLevel output = SIMD_LEVEL_NONE;
 
