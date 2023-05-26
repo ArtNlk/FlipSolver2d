@@ -45,35 +45,31 @@ void NBFlipSolver::advect()
     Grid2d<float> advectedU(m_sizeI + 1, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.5f, 0.f));
     Grid2d<float> advectedV(m_sizeI, m_sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.f, 0.5f));
 
-    for(int i = 0; i < m_sizeI + 1; i++)
-    {
-        for(int j = 0; j < m_sizeJ; j++)
-        {
-            Vertex currentPos(0.5f + i,j);
-            Vertex prevPos = inverseRk3Integrate(currentPos,m_fluidVelocityGrid);
-            advectedU.at(i,j) = m_fluidVelocityGrid.velocityGridU().interpolateAt(prevPos);
-        }
-    }
+    Vertex offsetU(0.5f,0.f);
+    Vertex offsetV(0.f,0.5f);
+    Vertex offsetCentered(0.5f,0.5f);
 
-    for(int i = 0; i < m_sizeI; i++)
-    {
-        for(int j = 0; j < m_sizeJ + 1; j++)
-        {
-            Vertex currentPos(i,0.5f + j);
-            Vertex prevPos = inverseRk3Integrate(currentPos,m_fluidVelocityGrid);
-            advectedV.at(i,j) = m_fluidVelocityGrid.velocityGridV().interpolateAt(prevPos);
-        }
-    }
+    std::vector<Range> rangesU = ThreadPool::i()->splitRange(advectedU.data().size());
+    std::vector<Range> rangesV = ThreadPool::i()->splitRange(advectedV.data().size());
+    std::vector<Range> rangesSdf = ThreadPool::i()->splitRange(m_advectedSdf.data().size());
 
-    for(int i = 0; i < m_sizeI; i++)
+    for(Range r : rangesU)
     {
-        for(int j = 0; j < m_sizeJ; j++)
-        {
-            Vertex currentPos(0.5f + i,0.5f + j);
-            Vertex prevPos = inverseRk3Integrate(currentPos,m_fluidVelocityGrid);
-            m_advectedSdf.at(i,j) = m_fluidSdf.interpolateAt(prevPos);
-        }
+        ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
+                                 offsetU,std::ref(m_fluidVelocityGrid.velocityGridU()), std::ref(advectedU));
     }
+    for(Range r : rangesV)
+    {
+        ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
+                                 offsetV,std::ref(m_fluidVelocityGrid.velocityGridV()), std::ref(advectedV));
+    }
+    for(Range r : rangesSdf)
+    {
+        ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
+                                 offsetCentered,std::ref(m_fluidSdf), std::ref(m_advectedSdf));
+    }
+    ThreadPool::i()->wait();
+
     m_advectedVelocity.velocityGridU() = advectedU;
     m_advectedVelocity.velocityGridV() = advectedV;
 }
@@ -214,6 +210,18 @@ void NBFlipSolver::firstFrameInit()
     fluidSdfFromInitialFluid();
     m_fluidParticleCounts.fill(0);
     initialFluidSeed();
+}
+
+void NBFlipSolver::eulerAdvectionThread(Range range, Vertex offset, const Grid2d<float> &inputGrid, Grid2d<float> &outputGrid)
+{
+    std::vector<float>& dataOut = outputGrid.data();
+    for(int idx = range.start; idx < range.end; idx++)
+    {
+        Index2d i2d = outputGrid.index2d(idx);
+        Vertex currentPos = Vertex(i2d.m_i, i2d.m_j) + offset;
+        Vertex prevPos = inverseRk3Integrate(currentPos,m_fluidVelocityGrid);
+        dataOut[idx] = inputGrid.interpolateAt(prevPos);
+    }
 }
 
 void NBFlipSolver::initialFluidSeed()
