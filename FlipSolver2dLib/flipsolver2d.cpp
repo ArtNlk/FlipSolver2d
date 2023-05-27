@@ -303,6 +303,7 @@ void FlipSolver::stepFrame()
     using std::chrono::duration_cast;
     using std::chrono::duration;
     using std::chrono::milliseconds;
+    static double msSum = 0.0;
     auto t1 = high_resolution_clock::now();
     if(m_frameNumber == 0)
     {
@@ -341,8 +342,10 @@ void FlipSolver::stepFrame()
     duration<double, std::milli> ms = t2 - t1;
     //std::cout << "Frame took" << ms.count() << "ms\n";
     m_frameTime = ms.count();
+    msSum += ms.count();
     std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
     m_frameNumber++;
+    m_avgFrameMs = msSum / m_frameNumber;
 }
 
 void FlipSolver::updateSolids()
@@ -1527,6 +1530,11 @@ float FlipSolver::sceneScale() const
 float FlipSolver::lastFrameTime() const
 {
     return m_frameTime;
+}
+
+float FlipSolver::avgFrameTime() const
+{
+    return m_avgFrameMs;
 }
 
 Vertex FlipSolver::globalAcceleration() const

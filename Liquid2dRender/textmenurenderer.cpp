@@ -65,7 +65,15 @@ void TextMenuRenderer::render()
                               Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
-    temp = "Frame time: " + std::to_string(m_fluidRenderer.solver()->lastFrameTime()) + "ms";
+    temp = "Last frame time: " + std::to_string(m_fluidRenderer.solver()->lastFrameTime()) + "ms";
+    m_textRenderer.renderText(temp,
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
+    temp = "Average frame time: " + std::to_string(m_fluidRenderer.solver()->avgFrameTime()) + "ms";
     m_textRenderer.renderText(temp,
                               currentTextPos.x + widthBaseline,
                               m_height - currentTextPos.y,

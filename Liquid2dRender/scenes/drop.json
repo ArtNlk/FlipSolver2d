@@ -3,7 +3,7 @@
     "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 256,
+    "resolution": 128,
     "fps": 30,
     "density": 1000,
     "airDensity": 300,

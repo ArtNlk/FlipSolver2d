@@ -152,6 +152,8 @@ public:
 
     float lastFrameTime() const;
 
+    float avgFrameTime() const;
+
 protected:
 
     virtual double divergenceAt(int i, int j);
@@ -279,6 +281,7 @@ protected:
     SimulationMethod m_simulationMethod;
 
     float m_frameTime;
+    float m_avgFrameMs;
 
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
