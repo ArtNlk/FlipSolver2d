@@ -10,7 +10,7 @@ ThreadPool::ThreadPool():
     m_workingThreadCount(0)
 {
     unsigned int size = std::thread::hardware_concurrency();
-    //unsigned int size = 1;
+    //size = 1;
     for (size_t i = 0; i < size; i++) {
         m_threads.emplace_back(&ThreadPool::threadFunc,this);
     }

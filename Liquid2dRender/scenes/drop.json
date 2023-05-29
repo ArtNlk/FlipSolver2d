@@ -3,7 +3,7 @@
     "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 128,
+    "resolution": 64,
     "fps": 30,
     "density": 1000,
     "airDensity": 300,
@@ -12,7 +12,7 @@
     "seed": 0,
     "particlesPerCell": 4,
     "particleScale": 0.8,
-    "picRatio": 1,
+    "picRatio": 0.03,
     "cflNumber": 5,
     "globalAcceleration": [9.8,0]
   },

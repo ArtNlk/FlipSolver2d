@@ -16,6 +16,10 @@ public:
     inline float &y() {return m_y;}
     inline float &z() {return m_z;}
 
+    inline const float &x() const {return m_x;}
+    inline const float &y() const {return m_y;}
+    inline const float &z() const {return m_z;}
+
     friend Vertex operator-(Vertex lhs, Vertex rhs);
 
     friend Vertex operator*(Vertex lhs, float rhs);
