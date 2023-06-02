@@ -64,9 +64,9 @@ protected:
     void multigridSubMatmulThread(const Range range, const MaterialGrid& materials, const std::vector<double>& vsub,
                             const std::vector<double>& vmul, std::vector<double>& vout);
 
-    std::array<std::pair<int,float>,5> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j);
+    std::pair<std::array<int,5>,std::array<double,5>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j);
 
-    std::array<std::pair<int,float>,5> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx);
+    std::pair<std::array<int,5>,std::array<double,5>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx);
 
     std::array<int,16> getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
 

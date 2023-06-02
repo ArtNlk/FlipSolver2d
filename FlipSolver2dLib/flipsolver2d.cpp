@@ -36,7 +36,7 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_testGrid(p->gridSizeI,p->gridSizeJ),
     m_rhs(m_sizeI * m_sizeJ,0.0),
     m_pressures(m_sizeI * m_sizeJ,0.0),
-    m_pcgSolver(m_materialGrid,8),
+    m_pcgSolver(m_materialGrid,10),
     m_stepDt(1.f / p->fps),
     m_frameDt(1.f / p->fps), m_dx(p->dx),
     m_fluidDensity(p->fluidDensity),

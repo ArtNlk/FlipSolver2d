@@ -31,7 +31,7 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     case SIMD_LEVEL_NONE:
         break;
     case SIMD_LEVEL_SSE42:
-        //m_dampedJacobiThread = &LinearSolver_sse42::dampedJacobiThread;
+        m_dampedJacobiThread = &LinearSolver_sse42::dampedJacobiThread;
         break;
     case SIMD_LEVEL_SSE4a_XOP_FMA:
     case SIMD_LEVEL_AVX:
@@ -466,18 +466,18 @@ void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, c
     for(int i = range.start; i < range.end; i++)
     {
         const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
-        int currIdx = weights[0].first;
+        int currIdx = weights.first[0];
         float result = 0.f;
-        for(int wIdx = 1; wIdx < weights.size(); wIdx++)
+        for(int wIdx = 1; wIdx < weights.first.size(); wIdx++)
         {
-            if(weights[wIdx].first < 0)
+            if(weights.first[wIdx] < 0)
             {
                 continue;
             }
 
-            result += weights[wIdx].second * pressures[weights[wIdx].first];
+            result += weights.second[wIdx] * pressures[weights.first[wIdx]];
         }
-        vout[currIdx] = ((rhs[currIdx]-result)/weights[0].second) * tune;
+        vout[currIdx] = ((rhs[currIdx]-result)/weights.second[0]) * tune;
     }
 }
 
@@ -551,14 +551,14 @@ void LinearSolver::multigridMatmul(const MaterialGrid &materials, const std::vec
     {
         const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
         float result = 0.f;
-        for(const auto& w : weights)
+        for(int i = 0; i < weights.first.size(); i++)
         {
-            if(w.first < 0)
+            if(weights.first[i] < 0)
             {
                 continue;
             }
 
-            result += w.second * vin[w.first];
+            result += weights.second[i] * vin[weights.first[i]];
         }
         vout[idx] = result;
     }
@@ -581,22 +581,22 @@ void LinearSolver::multigridSubMatmulThread(const Range range, const MaterialGri
     {
         const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
         float result = 0.f;
-        for(const auto& w : weights)
+        for(int i = 0; i < weights.first.size(); i++)
         {
-            if(w.first < 0)
+            if(weights.first[i] < 0)
             {
                 continue;
             }
 
-            result += w.second * vmul[w.first];
+            result += weights.second[i] * vmul[weights.first[i]];
         }
         vout[idx] = vsub[idx] - result;
     }
 }
 
-std::array<std::pair<int, float>, 5> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j)
+std::pair<std::array<int,5>,std::array<double,5>> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j)
 {
-    std::array<std::pair<int,float>,5> output{std::pair<int,float>()};
+    std::pair<std::array<int,5>,std::array<double,5>> output;
     std::array<int,4> neighbors = materials.immidiateNeighbors(i,j);
     const std::vector<FluidMaterial> &materialsData = materials.data();
 
@@ -606,23 +606,26 @@ std::array<std::pair<int, float>, 5> LinearSolver::getMultigridMatrixEntriesForC
     {
         if(idx < 0 || idx > materialsData.size())
         {
-            output[outputIdx] = std::make_pair(-1,0);
+            output.first[outputIdx] = -1;
+            output.second[outputIdx] = 0.;
             outputIdx++;
             continue;
         }
         const float weight = !solidTest(materialsData[idx]);
-        output[outputIdx] = std::make_pair(idx,weight);
+        output.first[outputIdx] = idx;
+        output.second[outputIdx] = weight;
         neighborCount++;
         outputIdx++;
     }
-    output[0] = std::make_pair(materials.linearIndex(i,j),-neighborCount);
+    output.first[0] = materials.linearIndex(i,j);
+    output.second[0] = -neighborCount;
 
     return output;
 }
 
-std::array<std::pair<int, float>, 5> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx)
+std::pair<std::array<int,5>,std::array<double,5>> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx)
 {
-    std::array<std::pair<int,float>,5> output{std::pair<int,float>()};
+    std::pair<std::array<int,5>,std::array<double,5>> output;
     std::array<int,4> neighbors = materials.immidiateNeighbors(linearIdx);
     const std::vector<FluidMaterial> &materialsData = materials.data();
     const auto dataSize = materialsData.size();
@@ -633,16 +636,19 @@ std::array<std::pair<int, float>, 5> LinearSolver::getMultigridMatrixEntriesForC
     {
         if(idx < 0 || idx >= dataSize)
         {
-            output[outputIdx] = std::make_pair(-1,0);
+            output.first[outputIdx] = -1;
+            output.second[outputIdx] = 0.;
             outputIdx++;
             continue;
         }
-        const float weight = solidTest(materialsData[idx]) ? 0.f : 1.f;
-        output[outputIdx] = std::make_pair(idx,weight);
+        const float weight = solidTest(materialsData[idx]) ? 0. : 1.;
+        output.first[outputIdx] = idx;
+        output.second[outputIdx] = weight;
         neighborCount++;
         outputIdx++;
     }
-    output[0] = std::make_pair(linearIdx,-neighborCount);
+    output.first[0] = linearIdx;
+    output.second[0] = -neighborCount;
 
     return output;
 }
