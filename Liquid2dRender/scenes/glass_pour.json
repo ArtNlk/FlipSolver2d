@@ -1,0 +1,57 @@
+{
+  "settings": {
+    "simType": "flip",
+    "domainSizeI": 75,
+    "domainSizeJ": 50,
+    "resolution": 128,
+    "fps": 30,
+    "scale": 1,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "cflNumber": 5,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "solid",
+        "verts": [
+          [72,0],
+          [72,50],
+          [75,50],
+          [75,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [3,0],
+          [3,3],
+          [72,3],
+          [72,0]
+        ]
+      },
+      {
+        "type": "solid",
+        "verts": [
+          [3,47],
+          [3,50],
+          [72,50],
+          [72,47]
+        ]
+      },
+        {
+        "type": "source",
+        "viscosity": 0,
+        "verts": [
+          [3,3],
+          [3,15],
+          [15,15],
+          [15,3]
+        ]
+      }
+    ]
+  }
+}

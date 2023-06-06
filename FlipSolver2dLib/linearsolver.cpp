@@ -465,10 +465,6 @@ void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, c
     const double tune = 2.0/3.0;
     for(int i = range.start; i < range.end; i++)
     {
-        if(!fluidTest(materials.data()[i]))
-        {
-            continue;
-        }
         const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
         double result = 0.0;
         for(int wIdx = 0; wIdx < weights.first.size(); wIdx++)
@@ -558,10 +554,6 @@ void LinearSolver::multigridSubMatmulThread(const Range range, const MaterialGri
 {
     for(int idx = range.start; idx < range.end; idx++)
     {
-        if(!fluidTest(materials.data()[idx]))
-        {
-            continue;
-        }
         const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
         double result = 0.0;
         for(int i = 0; i < weights.first.size(); i++)

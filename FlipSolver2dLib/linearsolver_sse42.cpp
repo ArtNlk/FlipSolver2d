@@ -12,10 +12,6 @@ void LinearSolver_sse42::dampedJacobiThread(LinearSolver*, const Range range, co
     const double tune = 2.0/3.0;
     for(int i = range.start; i < range.end; i++)
     {
-        if(!fluidTest(materials.data()[i]))
-        {
-            continue;
-        }
         const auto weights = getMultigridMatrixEntriesForCell(materials,i);
         __m128d _weightsI, _weightsJ;
         __m128d _pressuresI, _pressuresJ;
