@@ -465,14 +465,17 @@ void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, c
     const double tune = 2.0/3.0;
     for(int i = range.start; i < range.end; i++)
     {
+        if(materials.data()[i] != FluidMaterial::FLUID)
+        {
+            continue;
+        }
         const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
-        int currIdx = weights.first[0];
         double result = 0.0;
         for(int wIdx = 0; wIdx < weights.first.size(); wIdx++)
         {
             result += weights.second[wIdx] * pressures[weights.first[wIdx]];
         }
-        vout[currIdx] = ((rhs[currIdx]-result)/-4.0) * tune;
+        vout[i] = ((rhs[i]-result)/-4.0) * tune;
     }
 }
 
@@ -555,6 +558,10 @@ void LinearSolver::multigridSubMatmulThread(const Range range, const MaterialGri
 {
     for(int idx = range.start; idx < range.end; idx++)
     {
+        if(materials.data()[idx] != FluidMaterial::FLUID)
+        {
+            continue;
+        }
         const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
         double result = 0.0;
         for(int i = 0; i < weights.first.size(); i++)
@@ -583,7 +590,7 @@ std::pair<std::array<int,4>,std::array<double,4>> LinearSolver::getMultigridMatr
     {
         if(idx < 0 || idx >= dataSize)
         {
-            output.first[outputIdx] = linearIdx;
+            output.first[outputIdx] = 0;
             output.second[outputIdx] = 0.;
             outputIdx++;
             continue;

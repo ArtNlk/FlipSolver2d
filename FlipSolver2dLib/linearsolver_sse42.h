@@ -16,7 +16,7 @@ public:
     static  void dampedJacobiThread(LinearSolver*, const Range range, const MaterialGrid& materials, std::vector<double> &vout,
                                     const std::vector<double> &pressures, const std::vector<double> &rhs);
 
-    static std::pair<std::array<int,5>,std::array<double,5>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx);
+    static std::pair<std::array<int,4>,std::array<double,4>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx);
 };
 
 #endif // LINEARSOLVER_SSE42_H
