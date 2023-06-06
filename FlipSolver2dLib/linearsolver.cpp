@@ -462,22 +462,17 @@ void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<doubl
 
 void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, const MaterialGrid &materials, std::vector<double> &vout, const std::vector<double> &pressures, const std::vector<double> &rhs)
 {
-    const float tune = 2.f/3.f;
+    const double tune = 2.0/3.0;
     for(int i = range.start; i < range.end; i++)
     {
         const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
         int currIdx = weights.first[0];
-        float result = 0.f;
-        for(int wIdx = 1; wIdx < weights.first.size(); wIdx++)
+        double result = 0.0;
+        for(int wIdx = 0; wIdx < weights.first.size(); wIdx++)
         {
-            if(weights.first[wIdx] < 0)
-            {
-                continue;
-            }
-
             result += weights.second[wIdx] * pressures[weights.first[wIdx]];
         }
-        vout[currIdx] = ((rhs[currIdx]-result)/weights.second[0]) * tune;
+        vout[currIdx] = ((rhs[currIdx]-result)/-4.0) * tune;
     }
 }
 
@@ -545,25 +540,6 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
     }
 }
 
-void LinearSolver::multigridMatmul(const MaterialGrid &materials, const std::vector<double> &vin, std::vector<double> &vout)
-{
-    for(int idx = 0; idx < vin.size(); idx++)
-    {
-        const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
-        float result = 0.f;
-        for(int i = 0; i < weights.first.size(); i++)
-        {
-            if(weights.first[i] < 0)
-            {
-                continue;
-            }
-
-            result += weights.second[i] * vin[weights.first[i]];
-        }
-        vout[idx] = result;
-    }
-}
-
 void LinearSolver::multigridSubMatmul(const MaterialGrid &materials, const std::vector<double> &vsub, const std::vector<double> &vmul, std::vector<double> &vout)
 {
     std::vector<Range> ranges = ThreadPool::i()->splitRange(vout.size(),8*8);
@@ -580,75 +556,43 @@ void LinearSolver::multigridSubMatmulThread(const Range range, const MaterialGri
     for(int idx = range.start; idx < range.end; idx++)
     {
         const auto weights = getMultigridMatrixEntriesForCell(materials,idx);
-        float result = 0.f;
+        double result = 0.0;
         for(int i = 0; i < weights.first.size(); i++)
         {
-            if(weights.first[i] < 0)
-            {
-                continue;
-            }
-
             result += weights.second[i] * vmul[weights.first[i]];
         }
+        result += -4.0 * vmul[idx];
         vout[idx] = vsub[idx] - result;
     }
 }
 
-std::pair<std::array<int,5>,std::array<double,5>> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j)
+std::pair<std::array<int,4>,std::array<double,4>> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j)
 {
-    std::pair<std::array<int,5>,std::array<double,5>> output;
-    std::array<int,4> neighbors = materials.immidiateNeighbors(i,j);
-    const std::vector<FluidMaterial> &materialsData = materials.data();
-
-    int neighborCount = 0;
-    int outputIdx = 1;
-    for(int idx : neighbors)
-    {
-        if(idx < 0 || idx > materialsData.size())
-        {
-            output.first[outputIdx] = -1;
-            output.second[outputIdx] = 0.;
-            outputIdx++;
-            continue;
-        }
-        const float weight = !solidTest(materialsData[idx]);
-        output.first[outputIdx] = idx;
-        output.second[outputIdx] = weight;
-        neighborCount++;
-        outputIdx++;
-    }
-    output.first[0] = materials.linearIndex(i,j);
-    output.second[0] = -neighborCount;
-
-    return output;
+    return getMultigridMatrixEntriesForCell(materials, materials.linearIndex(i,j));
 }
 
-std::pair<std::array<int,5>,std::array<double,5>> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx)
+std::pair<std::array<int,4>,std::array<double,4>> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx)
 {
-    std::pair<std::array<int,5>,std::array<double,5>> output;
+    std::pair<std::array<int,4>,std::array<double,4>> output;
     std::array<int,4> neighbors = materials.immidiateNeighbors(linearIdx);
     const std::vector<FluidMaterial> &materialsData = materials.data();
     const auto dataSize = materialsData.size();
 
-    int neighborCount = 0;
-    int outputIdx = 1;
+    int outputIdx = 0;
     for(int idx : neighbors)
     {
         if(idx < 0 || idx >= dataSize)
         {
-            output.first[outputIdx] = -1;
+            output.first[outputIdx] = linearIdx;
             output.second[outputIdx] = 0.;
             outputIdx++;
             continue;
         }
-        const float weight = solidTest(materialsData[idx]) ? 0. : 1.;
+        const double weight = solidTest(materialsData[idx]) ? 0. : 1.;
         output.first[outputIdx] = idx;
         output.second[outputIdx] = weight;
-        neighborCount++;
         outputIdx++;
     }
-    output.first[0] = linearIdx;
-    output.second[0] = -neighborCount;
 
     return output;
 }

@@ -56,17 +56,15 @@ protected:
 
     void vCycle(std::vector<double> &vout, const std::vector<double> &vin);
 
-    void multigridMatmul(const MaterialGrid& materials, const std::vector<double>& vin, std::vector<double>& vout);
-
     void multigridSubMatmul(const MaterialGrid& materials, const std::vector<double>& vsub,
                             const std::vector<double>& vmul, std::vector<double>& vout);
 
     void multigridSubMatmulThread(const Range range, const MaterialGrid& materials, const std::vector<double>& vsub,
                             const std::vector<double>& vmul, std::vector<double>& vout);
 
-    std::pair<std::array<int,5>,std::array<double,5>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j);
+    std::pair<std::array<int,4>,std::array<double,4>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j);
 
-    std::pair<std::array<int,5>,std::array<double,5>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx);
+    std::pair<std::array<int,4>,std::array<double,4>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx);
 
     std::array<int,16> getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
 
