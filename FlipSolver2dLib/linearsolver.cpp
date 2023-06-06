@@ -465,7 +465,7 @@ void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, c
     const double tune = 2.0/3.0;
     for(int i = range.start; i < range.end; i++)
     {
-        if(materials.data()[i] != FluidMaterial::FLUID)
+        if(!fluidTest(materials.data()[i]))
         {
             continue;
         }
@@ -558,7 +558,7 @@ void LinearSolver::multigridSubMatmulThread(const Range range, const MaterialGri
 {
     for(int idx = range.start; idx < range.end; idx++)
     {
-        if(materials.data()[idx] != FluidMaterial::FLUID)
+        if(!fluidTest(materials.data()[idx]))
         {
             continue;
         }

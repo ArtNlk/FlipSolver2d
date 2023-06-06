@@ -12,7 +12,7 @@ void LinearSolver_sse42::dampedJacobiThread(LinearSolver*, const Range range, co
     const double tune = 2.0/3.0;
     for(int i = range.start; i < range.end; i++)
     {
-        if(materials.data()[i] != FluidMaterial::FLUID)
+        if(!fluidTest(materials.data()[i]))
         {
             continue;
         }
