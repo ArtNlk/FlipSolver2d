@@ -42,12 +42,12 @@ void NBFlipSolver::advect()
 {
     FlipSolver::advect();
 
-    Grid2d<float> advectedU(m_sizeI + 1, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.5f, 0.f));
-    Grid2d<float> advectedV(m_sizeI, m_sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.f, 0.5f));
-
     Vertex offsetU(0.5f,0.f);
     Vertex offsetV(0.f,0.5f);
     Vertex offsetCentered(0.5f,0.5f);
+
+    Grid2d<float> advectedU(m_sizeI + 1, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetU);
+    Grid2d<float> advectedV(m_sizeI, m_sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetV);
 
     std::vector<Range> rangesU = ThreadPool::i()->splitRange(advectedU.data().size());
     std::vector<Range> rangesV = ThreadPool::i()->splitRange(advectedV.data().size());

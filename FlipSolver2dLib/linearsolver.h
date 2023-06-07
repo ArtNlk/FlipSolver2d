@@ -48,6 +48,10 @@ protected:
     void prolongateGridThread(const Range range, const MaterialGrid& fineMaterials,
                               const Grid2d<double> &coarseGrid, std::vector<double> &fineGridData);
 
+    void premaskPressures(const MaterialGrid& materials, std::vector<double>& pressures);
+
+    void premaskPressuresThread(const Range range, const MaterialGrid& materials, std::vector<double>& pressures);
+
     void dampedJacobi(const MaterialGrid& materials, std::vector<double> &pressures, const std::vector<double> &rhs);
 
     static void dampedJacobiThread(LinearSolver* solver, const Range range, const MaterialGrid& materials, std::vector<double> &vout,
