@@ -386,11 +386,11 @@ void NBFlipSolver::combineVelocityGrid()
 
 Vertex NBFlipSolver::inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid &grid)
 {
-    float dt = m_stepDt;
-    Vertex k1 = dt*grid.velocityAt(newPosition);
-    Vertex k2 = dt*grid.velocityAt(newPosition - 0.5f*k1);
-    Vertex k3 = dt*grid.velocityAt(newPosition - 0.5f*k2);
-    Vertex k4 = dt*grid.velocityAt(newPosition - k3);
+    float factor = m_stepDt / m_dx;
+    Vertex k1 = factor*grid.velocityAt(newPosition);
+    Vertex k2 = factor*grid.velocityAt(newPosition - 0.5f*k1);
+    Vertex k3 = factor*grid.velocityAt(newPosition - 0.5f*k2);
+    Vertex k4 = factor*grid.velocityAt(newPosition - k3);
 
     return newPosition - (1.0f/6.0f)*(k1 - 2.f*k2 - 2.f*k3 - k4);
 }

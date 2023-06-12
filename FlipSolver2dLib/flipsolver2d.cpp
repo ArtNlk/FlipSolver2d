@@ -313,10 +313,7 @@ void FlipSolver::stepFrame()
     float substepTime = 0.f;
     bool finished = false;
     int substepCount = 0;
-//    for(int i = 0; i < SimSettings::maxSubsteps(); i++)
-//    {
-//        step();
-//    }
+
     while(!finished)
     {
         float vel = maxParticleVelocity();
@@ -1173,10 +1170,11 @@ void FlipSolver::applyPressureThreadV(Range range, const std::vector<double> &pr
 
 Vertex FlipSolver::rk4Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid)
 {
-    Vertex k1 = dt*grid.velocityAt(currentPosition);
-    Vertex k2 = dt*grid.velocityAt(currentPosition + 0.5f*k1);
-    Vertex k3 = dt*grid.velocityAt(currentPosition + 0.5f*k2);
-    Vertex k4 = dt*grid.velocityAt(currentPosition + k3);
+    float dxFactor = 1.f/m_dx;
+    Vertex k1 = dxFactor*dt*grid.velocityAt(currentPosition);
+    Vertex k2 = dxFactor*dt*grid.velocityAt(currentPosition + 0.5f*k1);
+    Vertex k3 = dxFactor*dt*grid.velocityAt(currentPosition + 0.5f*k2);
+    Vertex k4 = dxFactor*dt*grid.velocityAt(currentPosition + k3);
 
     return currentPosition + (1.0f/6.0f)*(k1 + 2.f*k2 + 2.f*k3 + k4);
 }
