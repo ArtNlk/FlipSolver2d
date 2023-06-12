@@ -41,8 +41,8 @@ protected:
     void combineLevelset();
 
     void combineVelocityGrid();
-
-    Vertex inverseRk3Integrate(Vertex newPosition, StaggeredVelocityGrid& grid);
+    
+    Vertex inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid& grid);
 
 protected:
     StaggeredVelocityGrid m_advectedVelocity;

@@ -205,8 +205,8 @@ protected:
     void applyPressureThreadU(Range range, const std::vector<double> &pressures);
 
     void applyPressureThreadV(Range range,const std::vector<double> &pressures);
-
-    Vertex rk3Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid);
+    
+    Vertex rk4Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid);
 
     virtual void particleToGrid();
 

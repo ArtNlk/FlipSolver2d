@@ -153,7 +153,7 @@ void NBFlipSolver::reseedParticles()
         float sdf = m_fluidSdf.interpolateAt(m_markerParticles[pIndex].position);
         int i = m_markerParticles[pIndex].position.x();
         int j = m_markerParticles[pIndex].position.y();
-        if(sdf < -3.f)
+        if(!m_materialGrid.isSource(i,j) && sdf < -3.f)
         {
             m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
             m_fluidParticleCounts.at(i,j) -= 1;
@@ -161,7 +161,7 @@ void NBFlipSolver::reseedParticles()
             continue;
         }
 
-        if(sdf < -1.f && m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+        if((m_materialGrid.isSource(i,j) || sdf < -1.f) && m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
         {
             m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
             m_fluidParticleCounts.at(i,j) -= 1;
@@ -175,7 +175,7 @@ void NBFlipSolver::reseedParticles()
         for (int j = 0; j < m_sizeJ; j++)
         {
             //if(m_fluidSdf.at(i,j) < 0.f)
-            if((m_materialGrid.isSource(i,j) || m_fluidSdf.at(i,j) < -1.f) && m_fluidSdf.at(i,j) > -3.f)
+            if(m_materialGrid.isSource(i,j) || (m_fluidSdf.at(i,j) < -1.f && m_fluidSdf.at(i,j) > -3.f))
             {
                 int particleCount = m_fluidParticleCounts.at(i,j);
                 if(particleCount > 20)
@@ -191,12 +191,13 @@ void NBFlipSolver::reseedParticles()
                 {
                     Vertex pos = jitteredPosInCell(i,j);
                     float newSdf = m_fluidSdf.interpolateAt(pos);
-                    if((!m_materialGrid.isSource(i,j) && m_fluidSdf.at(i,j) > -1.f)
+                    if((m_materialGrid.isSource(i,j) && m_fluidSdf.at(i,j) > -1.f)
                         || newSdf < -3.f)
                     {
                         continue;
                     }
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    Vertex velocity = m_materialGrid.isSource(i,j) ?
+                                          Vertex() : m_fluidVelocityGrid.velocityAt(pos);
                     float viscosity = m_viscosityGrid.interpolateAt(pos);
                     addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
                 }
@@ -219,7 +220,7 @@ void NBFlipSolver::eulerAdvectionThread(Range range, Vertex offset, const Grid2d
     {
         Index2d i2d = outputGrid.index2d(idx);
         Vertex currentPos = Vertex(i2d.m_i, i2d.m_j) + offset;
-        Vertex prevPos = inverseRk3Integrate(currentPos,m_fluidVelocityGrid);
+        Vertex prevPos = inverseRk4Integrate(currentPos,m_fluidVelocityGrid);
         dataOut[idx] = inputGrid.interpolateAt(prevPos);
     }
 }
@@ -305,8 +306,8 @@ void NBFlipSolver::updateSdfFromSources()
             for(int sourceIdx = 0; sourceIdx < m_sources.size(); sourceIdx++)
             {
                 float sdf = m_sources[sourceIdx].geometry().signedDistance(
-                            (static_cast<float>(i)+0.5)*dx,
-                            (static_cast<float>(j)+0.5)*dx) / dx;
+                            (static_cast<float>(i))*dx,
+                            (static_cast<float>(j))*dx) / dx;
                 if(sdf < dist)
                 {
                     dist = sdf;
@@ -316,7 +317,7 @@ void NBFlipSolver::updateSdfFromSources()
             m_fluidSdf.at(i,j) = std::min(dist,m_fluidSdf.at(i,j));
             if(dist < 0)
             {
-                m_materialGrid.at(i,j) = FluidMaterial::FLUID;
+                //m_materialGrid.at(i,j) = FluidMaterial::SOURCE;
                 if(sourceId != -1)
                 {
                     m_viscosityGrid.at(i,j) = m_sources[sourceId].viscosity();
@@ -383,12 +384,13 @@ void NBFlipSolver::combineVelocityGrid()
     }
 }
 
-Vertex NBFlipSolver::inverseRk3Integrate(Vertex newPosition, StaggeredVelocityGrid &grid)
+Vertex NBFlipSolver::inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid &grid)
 {
     float dt = m_stepDt;
-    Vertex k1 = grid.velocityAt(newPosition);
-    Vertex k2 = grid.velocityAt(newPosition - 1.f/2.f * dt * k1);
-    Vertex k3 = grid.velocityAt(newPosition - 3.f/4.f * dt * k2);
+    Vertex k1 = dt*grid.velocityAt(newPosition);
+    Vertex k2 = dt*grid.velocityAt(newPosition - 0.5f*k1);
+    Vertex k3 = dt*grid.velocityAt(newPosition - 0.5f*k2);
+    Vertex k4 = dt*grid.velocityAt(newPosition - k3);
 
-    return newPosition - (2.f/9.f) * dt * k1 - (3.f/9.f) * dt * k2 - (4.f/9.f) * dt * k3;
+    return newPosition - (1.0f/6.0f)*(k1 - 2.f*k2 - 2.f*k3 - k4);
 }

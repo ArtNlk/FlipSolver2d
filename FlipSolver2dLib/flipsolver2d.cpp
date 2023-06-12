@@ -194,7 +194,7 @@ void FlipSolver::advectThread(Range range)
     for(int i = range.start; i < range.end; i++)
     {
         MarkerParticle &p = m_markerParticles[i];
-        p.position = rk3Integrate(p.position,m_stepDt, m_fluidVelocityGrid);
+        p.position = rk4Integrate(p.position,m_stepDt, m_fluidVelocityGrid);
         if(m_solidSdf.interpolateAt(p.position.x(),p.position.y()) < 0.f)
         {
             p.position = m_solidSdf.closestSurfacePoint(p.position);
@@ -1171,13 +1171,14 @@ void FlipSolver::applyPressureThreadV(Range range, const std::vector<double> &pr
     }
 }
 
-Vertex FlipSolver::rk3Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid)
+Vertex FlipSolver::rk4Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid)
 {
-    Vertex k1 = grid.velocityAt(currentPosition);
-    Vertex k2 = grid.velocityAt(currentPosition + 1.f/2.f * dt * k1);
-    Vertex k3 = grid.velocityAt(currentPosition + 3.f/4.f * dt * k2);
+    Vertex k1 = dt*grid.velocityAt(currentPosition);
+    Vertex k2 = dt*grid.velocityAt(currentPosition + 0.5f*k1);
+    Vertex k3 = dt*grid.velocityAt(currentPosition + 0.5f*k2);
+    Vertex k4 = dt*grid.velocityAt(currentPosition + k3);
 
-    return currentPosition + (2.f/9.f) * dt * k1 + (3.f/9.f) * dt * k2 + (4.f/9.f) * dt * k3;
+    return currentPosition + (1.0f/6.0f)*(k1 + 2.f*k2 + 2.f*k3 + k4);
 }
 
 void FlipSolver::particleToGrid()
