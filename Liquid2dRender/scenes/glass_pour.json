@@ -1,6 +1,6 @@
 {
   "settings": {
-    "simType": "flip",
+    "simType": "nbflip",
     "domainSizeI": 75,
     "domainSizeJ": 50,
     "resolution": 128,

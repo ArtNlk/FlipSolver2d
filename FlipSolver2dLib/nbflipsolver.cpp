@@ -42,8 +42,8 @@ void NBFlipSolver::advect()
 {
     FlipSolver::advect();
 
-    Vertex offsetU(0.5f,0.f);
-    Vertex offsetV(0.f,0.5f);
+    Vertex offsetU(0.f,0.5f);
+    Vertex offsetV(0.5f,0.f);
     Vertex offsetCentered(0.5f,0.5f);
 
     Grid2d<float> advectedU(m_sizeI + 1, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetU);
@@ -363,7 +363,7 @@ void NBFlipSolver::combineVelocityGrid()
     {
         for (int j = 0; j < m_sizeJ; j++)
         {
-            Vertex samplePosition = Vertex(0.5f + i, j);
+            Vertex samplePosition = Vertex(i, 0.5f + j);
             float advectedVelocity = m_advectedVelocity.getU(i,j);
             float particleVelocity = m_fluidVelocityGrid.getU(i,j);
             float sdf = m_fluidSdf.interpolateAt(samplePosition);
@@ -375,7 +375,7 @@ void NBFlipSolver::combineVelocityGrid()
     {
         for (int j = 0; j < m_sizeJ + 1; j++)
         {
-            Vertex samplePosition = Vertex(i, 0.5f + j);
+            Vertex samplePosition = Vertex(0.5f + i, j);
             float advectedVelocity = m_advectedVelocity.getV(i,j);
             float particleVelocity = m_fluidVelocityGrid.getV(i,j);
             float sdf = m_fluidSdf.interpolateAt(samplePosition);

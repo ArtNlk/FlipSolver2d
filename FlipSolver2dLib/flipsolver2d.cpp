@@ -405,7 +405,7 @@ void FlipSolver::updateSinks()
         {
             for(Sink& s : m_sinks)
             {
-                if(s.geo().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                if(s.geo().signedDistance((static_cast<float>(i)+0.5f)*dx,(static_cast<float>(j)+0.5f)*dx) <= 0.f)
                 {
                     m_materialGrid.at(i,j) = FluidMaterial::SINK;
                     m_divergenceControl.at(i,j) = s.divergence();
@@ -424,7 +424,7 @@ void FlipSolver::updateInitialFluid()
         {
             for(Emitter& e : m_initialFluid)
             {
-                if(e.geometry().signedDistance((static_cast<float>(i)+0.5)*dx,(static_cast<float>(j)+0.5)*dx) <= 0.f)
+                if(e.geometry().signedDistance((static_cast<float>(i)+0.5f)*dx,(static_cast<float>(j)+0.5f)*dx) <= 0.f)
                 {
                     m_materialGrid.at(i,j) = FluidMaterial::FLUID;
                     m_viscosityGrid.at(i,j) = e.viscosity();
