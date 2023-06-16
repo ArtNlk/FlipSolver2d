@@ -484,6 +484,20 @@ int FlipSolver::frameNumber()
 
 void FlipSolver::reseedParticles()
 {
+    for (int pIndex = 0; pIndex < m_markerParticles.size(); pIndex++)
+    {
+        int i = m_markerParticles[pIndex].position.x();
+        int j = m_markerParticles[pIndex].position.y();
+
+        if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+        {
+            m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
+            m_fluidParticleCounts.at(i,j) -= 1;
+            pIndex--;
+            continue;
+        }
+    }
+
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
