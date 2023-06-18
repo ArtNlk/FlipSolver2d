@@ -1,56 +1,33 @@
 #include "linearsolver_sse42.h"
+#include "materialgrid.h"
 
 #include <emmintrin.h>
 #include <nmmintrin.h>
 #include <popcntintrin.h>
 #include <smmintrin.h>
 
-#include "linearsolver.h"
-
-void LinearSolver_sse42::dampedJacobiThread(LinearSolver*, const Range range, const MaterialGrid &materials, std::vector<double> &vout, const std::vector<double> &pressures, const std::vector<double> &rhs)
+void LinearSolver_sse42::premaskPressuresThread(const Range range, const MaterialGrid& materials, std::vector<double>& pressures)
 {
-    const double tune = 2.0/3.0;
-    for(int i = range.start; i < range.end; i++)
-    {
-        const auto weights = getMultigridMatrixEntriesForCell(materials,i);
-        __m128d _weightsI, _weightsJ;
-        __m128d _pressuresI, _pressuresJ;
-        __m128d _temp;
-        _weightsI = _mm_loadu_pd(&weights.second[0]);
-        _weightsJ = _mm_loadu_pd(&weights.second[2]);
-        _pressuresI = _mm_setr_pd(pressures[weights.first[0]],
-                                 pressures[weights.first[1]]);
-        _pressuresJ = _mm_setr_pd(pressures[weights.first[2]],
-                                 pressures[weights.first[3]]);
-        _temp = _mm_dp_pd(_pressuresI,_weightsI,0xF1);
-        _temp = _mm_add_pd(_temp,_mm_dp_pd(_pressuresJ,_weightsJ,0xF2));
-        double result = _temp[0] + _temp[1];
-        vout[i] = ((rhs[i]-result)/-4.0) * tune;
-    }
-}
+    const unsigned int regSize = 2;
+    const unsigned int leftover = range.size() % regSize;
+    const unsigned int wholeElements = range.size() - leftover;
+    const unsigned int newEnd = range.start + wholeElements;
+    const unsigned int leftoverEnd = newEnd + leftover;
 
-std::pair<std::array<int,4>,std::array<double,4>> LinearSolver_sse42::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx)
-{
-    std::pair<std::array<int,4>,std::array<double,4>> output;
-    std::array<int,4> neighbors = materials.immidiateNeighbors(linearIdx);
-    const std::vector<FluidMaterial> &materialsData = materials.data();
-    const auto dataSize = materialsData.size();
+    __m128i _solid = _mm_set1_epi64x(FluidMaterial::SOLID);
 
-    int outputIdx = 0;
-    for(int idx : neighbors)
+    for(unsigned int i = range.start; i < newEnd; i+=regSize)
     {
-        if(idx < 0 || idx >= dataSize)
-        {
-            output.first[outputIdx] = 0;
-            output.second[outputIdx] = 0.;
-            outputIdx++;
-            continue;
-        }
-        const double weight = solidTest(materialsData[idx]) ? 0. : 1.;
-        output.first[outputIdx] = idx;
-        output.second[outputIdx] = weight;
-        outputIdx++;
+        __m128d _pressures = _mm_loadu_pd(pressures.data() + i);
+        __m128i _materials = _mm_set_epi64x(materials.data()[i+1], materials.data()[i]);
+        _materials = _mm_cmpeq_epi64(_materials,_solid);
+        _materials = _mm_xor_si128(_materials, _mm_set1_epi64x(-1));
+        _pressures = _mm_and_pd(_pressures, _mm_castsi128_pd(_materials));
+        _mm_storeu_pd(pressures.data() + i,_pressures);
     }
 
-    return output;
+    for(unsigned int i = newEnd; i < leftoverEnd; i++)
+    {
+        pressures[i] *= !solidTest(materials.data()[i]);
+    }
 }

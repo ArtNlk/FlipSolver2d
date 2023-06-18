@@ -24,14 +24,14 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     m_restrictionWeights({0}),
     m_prolongationWeights({0}),
     m_mainMaterialGrid(materialGrid),
-    m_dampedJacobiThread(&LinearSolver::dampedJacobiThread)
+    m_premaskPressuresThread(&LinearSolver::premaskPressuresThread)
 {
     switch(HwInfo::i().getSimdLevel())
     {
     case SIMD_LEVEL_NONE:
         break;
     case SIMD_LEVEL_SSE42:
-        //m_dampedJacobiThread = &LinearSolver_sse42::dampedJacobiThread;
+        m_premaskPressuresThread = &LinearSolver_sse42::premaskPressuresThread;
         break;
     case SIMD_LEVEL_SSE4a_XOP_FMA:
     case SIMD_LEVEL_AVX:
@@ -403,7 +403,6 @@ void LinearSolver::prolongateGrid(const MaterialGrid &fineMaterials, const Grid2
     {
         ThreadPool::i()->enqueue(&LinearSolver::prolongateGridThread,this,range,fineMaterials,
                                  std::ref(coarseGrid),std::ref(fineGridData));
-        //nomatVMulThread(range,elementProvider,vin,vout);
     }
     ThreadPool::i()->wait();
 }
@@ -438,7 +437,7 @@ void LinearSolver::premaskPressures(const MaterialGrid &materials, std::vector<d
     std::vector<Range> ranges = ThreadPool::i()->splitRange(pressures.size(),128);
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&LinearSolver::premaskPressuresThread,this,range,
+        ThreadPool::i()->enqueue(m_premaskPressuresThread,range,
                                  std::ref(materials),std::ref(pressures));
     }
     ThreadPool::i()->wait();
@@ -459,7 +458,7 @@ void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<doubl
     std::vector<Range> ranges = ThreadPool::i()->splitRange(pressures.size(),128);
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(m_dampedJacobiThread,this,range,std::ref(materials),
+        ThreadPool::i()->enqueue(&LinearSolver::dampedJacobiThread,this,range,std::ref(materials),
                                                 std::ref(temp),std::ref(pressures),std::ref(rhs));
     }
     ThreadPool::i()->wait();

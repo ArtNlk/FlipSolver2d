@@ -50,7 +50,7 @@ protected:
 
     void premaskPressures(const MaterialGrid& materials, std::vector<double>& pressures);
 
-    void premaskPressuresThread(const Range range, const MaterialGrid& materials, std::vector<double>& pressures);
+    static void premaskPressuresThread(const Range range, const MaterialGrid& materials, std::vector<double>& pressures);
 
     void dampedJacobi(const MaterialGrid& materials, std::vector<double> &pressures, const std::vector<double> &rhs);
 
@@ -88,9 +88,8 @@ protected:
     std::vector<MaterialGrid> m_materialSubgrids;
     std::vector<Grid2d<double>> m_pressureGrids;
     std::vector<Grid2d<double>> m_rhsGrids;
-
-    void(*m_dampedJacobiThread)(LinearSolver*,const Range,const MaterialGrid&,std::vector<double>&,
-                                 const std::vector<double>&, const std::vector<double>&);
+    
+    void(*m_premaskPressuresThread)(const Range,const MaterialGrid&,std::vector<double>&);
 };
 
 #endif // PCGSOLVER_H
