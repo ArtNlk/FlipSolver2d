@@ -29,7 +29,7 @@ public:
         m_gridOffset(gridOffset)
     {
         m_data.assign(sizeI*sizeJ,initValue);
-        //initSimdPtrs();
+        initSimdPtrs();
     }
 
     friend Grid_sse42;
@@ -57,6 +57,18 @@ public:
     {
         //return simmath::lerpCenteredGrid(i, j, *this, m_gridOffset);
         return m_cubicInterpFunc(this,i, j);
+    }
+
+    template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
+    T lerpolateAt(Vertex position) const
+    {
+        return lerpolateAt(position.x(), position.y());
+    }
+
+    template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
+    T lerpolateAt(float i, float j) const
+    {
+        return Grid2d::lerp(this,i,j);
     }
 
     typename std::vector<T>::reference at(int i, int j)
@@ -169,6 +181,38 @@ public:
 
 protected:
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
+    T static lerp(const Grid2d<T>* grid,float i, float j)
+    {
+        i+= grid->m_gridOffset.x();
+        j+= grid->m_gridOffset.y();
+
+        i = std::clamp(i,0.f,static_cast<float>(grid->sizeI() - 1));
+        j = std::clamp(j,0.f,static_cast<float>(grid->sizeJ() - 1));
+        Index2d currentCell(simmath::integr(i),simmath::integr(j));
+
+        Index2d cell2(currentCell.m_i,
+                      simmath::frac(j) >= 0.5f ?
+                            currentCell.m_j + 1 : currentCell.m_j - 1);
+
+        Index2d cell3(simmath::frac(i) >= 0.5f ?
+                            currentCell.m_i + 1 : currentCell.m_i - 1,
+                      simmath::frac(j) >= 0.5f ?
+                            currentCell.m_j + 1 : currentCell.m_j - 1);
+
+        Index2d cell4(simmath::frac(i) >= 0.5f ?
+                            currentCell.m_i + 1 : currentCell.m_i - 1,
+                      currentCell.m_j);
+
+        float iLerpFactor = simmath::frac(i) < 0.5f ? 0.5f - simmath::frac(i) : simmath::frac(i) - 0.5f;
+        float jLerpFactor = simmath::frac(j) < 0.5f ? 0.5f - simmath::frac(j) : simmath::frac(j) - 0.5f;
+
+        float v1 = simmath::lerp(grid->getAt(currentCell),grid->getAt(cell4),iLerpFactor);
+        float v2 = simmath::lerp(grid->getAt(cell2),grid->getAt(cell3),iLerpFactor);
+
+        return simmath::lerp(v1,v2,jLerpFactor);
+    }
+
+    template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
     T static cubicInterp(const Grid2d<T>* grid,float i, float j)
     {
         i+= grid->m_gridOffset.x();
@@ -212,6 +256,8 @@ protected:
                        + jWeights[3]*temp[3];
         return output;
     }
+
+
 
     //Simds for float
     template<class U = T, typename std::enable_if<std::is_same<U,float>::value>::type* = nullptr>

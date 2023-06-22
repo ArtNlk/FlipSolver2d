@@ -19,13 +19,70 @@
         "type": "source",
         "viscosity": 0,
         "temperature": 253,
-        "concentration": 1,
+        "concentration": 0.3,
         "velocity": [30,0],
+        "transferVelocity": true,
         "verts": [
           [0,3],
-          [0,47],
-          [3,47],
+          [0,11],
+          [3,11],
           [3,3]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "temperature": 253,
+        "concentration": 0.6,
+        "velocity": [30,0],
+        "transferVelocity": true,
+        "verts": [
+          [0,12],
+          [0,20],
+          [3,20],
+          [3,12]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "temperature": 253,
+        "concentration": 0.3,
+        "velocity": [30,0],
+        "transferVelocity": true,
+        "verts": [
+          [0,21],
+          [0,29],
+          [3,29],
+          [3,21]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "temperature": 253,
+        "concentration": 0.6,
+        "velocity": [30,0],
+        "transferVelocity": true,
+        "verts": [
+          [0,30],
+          [0,38],
+          [3,38],
+          [3,30]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "temperature": 253,
+        "concentration": 0.3,
+        "velocity": [30,0],
+        "transferVelocity": true,
+        "verts": [
+          [0,39],
+          [0,46],
+          [3,46],
+          [3,39]
         ]
       },
       {

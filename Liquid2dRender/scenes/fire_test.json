@@ -3,20 +3,20 @@
     "simType": "fire",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 50,
+    "resolution": 128,
     "fps": 30,
     "maxSubsteps": 10,
     "seed": 0,
     "particlesPerCell": 4,
     "picRatio": 0.03,
-    "cflNumber": 1,
+    "cflNumber": 5,
     "temperatureDecayRate": 1,
     "concentrationDecayRate": 0.2,
-    "burnRate": 2,
+    "burnRate": 1,
     "ignitionTemp": 250,
     "smokeEmission": 1,
     "heatEmission": 1000,
-    "billowing": 0.4,
+    "billowing": 10,
     "globalAcceleration": [9.8,0]
   },
   "solver": {
@@ -69,10 +69,10 @@
         "type": "sink",
         "divergence": -10,
         "verts": [
-          [3,40],
-          [3,47],
-          [8,47],
-          [8,40]
+          [3,21],
+          [3,28],
+          [8,28],
+          [8,21]
         ]
       },
       {

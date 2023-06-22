@@ -14,13 +14,11 @@ FlipSmokeSolver::FlipSmokeSolver(const SmokeSolverParameters* p):
     m_concentrationDecayRate(p->concentrationDecayRate)
 {
 
-
-
 }
 
 void FlipSmokeSolver::applyBodyForces()
 {
-    float alpha = 0.01f;
+    float alpha = 0.8f;
     float beta = 1.f/m_ambientTemperature;
     for (int i = 0; i < m_sizeI + 1; i++)
     {
@@ -28,18 +26,18 @@ void FlipSmokeSolver::applyBodyForces()
         {
             if(m_fluidVelocityGrid.velocityGridU().inBounds(i,j))
             {
-                float tempAt = m_temperature.interpolateAt(static_cast<float>(i)-0.5f,j);
+                float tempAt = m_temperature.lerpolateAt(static_cast<float>(i)-0.5f,j);
                 float tempDiff = tempAt - m_ambientTemperature;
-                float concentration = m_smokeConcentration.interpolateAt(static_cast<float>(i)-0.5f,j);
+                float concentration = m_smokeConcentration.lerpolateAt(static_cast<float>(i)-0.5f,j);
                 float accelerationU = (alpha * concentration - beta * tempDiff) *
                                         m_globalAcceleration.x() * m_stepDt;
                 m_fluidVelocityGrid.u(i,j) += accelerationU;
             }
             if(m_fluidVelocityGrid.velocityGridV().inBounds(i,j))
             {
-                float tempAt = m_temperature.interpolateAt(i,static_cast<float>(j)-0.5f);
+                float tempAt = m_temperature.lerpolateAt(i,static_cast<float>(j)-0.5f);
                 float tempDiff = tempAt - m_ambientTemperature;
-                float concentration = m_smokeConcentration.interpolateAt(i,static_cast<float>(j)-0.5f);
+                float concentration = m_smokeConcentration.lerpolateAt(i,static_cast<float>(j)-0.5f);
                 float accelerationV = (alpha * concentration - beta * tempDiff) *
                                         m_globalAcceleration.y() * m_stepDt;
                 m_fluidVelocityGrid.v(i,j) += accelerationV;
@@ -151,11 +149,11 @@ void FlipSmokeSolver::particleUpdate()
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-        p.temperature = m_temperature.interpolateAt(p.position);
+        p.temperature = m_temperature.lerpolateAt(p.position);
 //        p.temperature = m_ambientTemperature +
 //                (p.temperature - m_ambientTemperature) *
 //                std::exp(-m_temperatureDecayRate * m_stepDt);
-        p.smokeConcentrartion = m_smokeConcentration.interpolateAt(p.position);
+        p.smokeConcentrartion = m_smokeConcentration.lerpolateAt(p.position);
 //        p.smokeConcentrartion *= std::exp(-m_concentrationDecayRate * m_stepDt);
         p.testValue = p.smokeConcentrartion;
     }
@@ -181,6 +179,20 @@ void FlipSmokeSolver::afterTransfer()
 
 void FlipSmokeSolver::reseedParticles()
 {
+    for (int pIndex = 0; pIndex < m_markerParticles.size(); pIndex++)
+    {
+        int i = m_markerParticles[pIndex].position.x();
+        int j = m_markerParticles[pIndex].position.y();
+
+        if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+        {
+            m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
+            m_fluidParticleCounts.at(i,j) -= 1;
+            pIndex--;
+            continue;
+        }
+    }
+
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -198,15 +210,28 @@ void FlipSmokeSolver::reseedParticles()
             }
             if(m_materialGrid.isSource(i,j))
             {
+                int emitterId = m_emitterId.at(i,j);
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
                     //Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
-                    Vertex velocity = Vertex();
-                    int emitterId = m_emitterId.at(i,j);
+                    Vertex velocity = m_sources[emitterId].velocityTransfer()?
+                                          m_fluidVelocityGrid.velocityAt(pos) :Vertex();
                     float viscosity = m_sources[emitterId].viscosity();
                     float conc = m_sources[emitterId].concentrartion();
                     float temp = m_sources[emitterId].temperature();
+                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity,temp,conc});
+                }
+            }
+            else if(m_fluidSdf.at(i,j) < -1.f)
+            {
+                for(int p = 0; p < additionalParticles; p++)
+                {
+                    Vertex pos = jitteredPosInCell(i,j);
+                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    float viscosity = m_viscosityGrid.interpolateAt(pos);
+                    float conc = m_smokeConcentration.lerpolateAt(pos);
+                    float temp = m_temperature.lerpolateAt(pos);
                     addMarkerParticle(MarkerParticle{pos,velocity,viscosity,temp,conc});
                 }
             }
@@ -273,6 +298,38 @@ void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressur
     {
         std::cout << "NaN or inf in V vector!\n" << std::flush;
     }
+}
+
+LinearSolver::MatElementProvider FlipSmokeSolver::getPressureMatrixElementProvider()
+{
+    return std::bind(&FlipSmokeSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
+}
+
+LinearSolver::SparseMatRowElements FlipSmokeSolver::getMatFreeElementForLinIdx(unsigned int i)
+{
+    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
+    std::array<int,4> neighbors = immidiateNeighbors(static_cast<int>(i));
+    std::vector<FluidMaterial>& materials = m_materialGrid.data();
+
+    LinearSolver::SparseMatRowElements output;
+    output.fill(std::pair<int, double>(0,0.0));
+    output[4].first = i;
+
+    if(!solidTest(materials[i]))
+    {
+        for(unsigned int i = 0; i < neighbors.size(); i++)
+        {
+            if(neighbors[i] < 0 || neighbors[i] >= materials.size())
+            {
+                continue;
+            }
+            output[i].first = neighbors[i];
+            output[i].second = -scale * fluidTest(materials[neighbors[i]]);
+            output[4].second += scale * !solidTest(materials[neighbors[i]]);
+        }
+    }
+
+    return output;
 }
 
 DynamicUpperTriangularSparseMatrix FlipSmokeSolver::getPressureProjectionMatrix()

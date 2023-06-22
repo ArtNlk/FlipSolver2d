@@ -77,7 +77,7 @@ void FlipSolver::project()
 //    {
 //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
 //    }
-    auto provider = std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
+    auto provider = getPressureMatrixElementProvider();
 
     if(!m_pcgSolver.mfcgSolve(provider,m_pressures,m_rhs,m_pcgIterLimit))
     {
@@ -92,6 +92,11 @@ void FlipSolver::project()
     //debug() << "pressures = " << pressures;
 
     applyPressuresToVelocityField(m_pressures);
+}
+
+LinearSolver::MatElementProvider FlipSolver::getPressureMatrixElementProvider()
+{
+    return std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
 }
 
 LinearSolver::SparseMatRowElements FlipSolver::getMatFreeElementForLinIdx(unsigned int i)

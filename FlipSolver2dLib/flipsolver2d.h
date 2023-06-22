@@ -164,6 +164,8 @@ protected:
 
     virtual void project();
 
+    virtual LinearSolver::MatElementProvider getPressureMatrixElementProvider();
+
     LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
 
     void applyViscosity();

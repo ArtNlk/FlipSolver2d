@@ -35,6 +35,10 @@ protected:
 
     void applyPressuresToVelocityField(std::vector<double> &pressures) override;
 
+    LinearSolver::MatElementProvider getPressureMatrixElementProvider() override;
+
+    LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
+
     DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix() override;
 
 protected:

@@ -34,20 +34,26 @@ void FlipFireSolver::afterTransfer()
 
 void FlipFireSolver::combustionUpdate()
 {
-    float burnRate = m_burnRate;
-    float igninitonTemp = m_ignitionTemperature;
-    for(int i = 0; i < m_sizeI; i++)
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_fuel.data().size());
+
+    for(Range& range : ranges)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        ThreadPool::i()->enqueue(&FlipFireSolver::combustionUpdateThread,this,range);
+    }
+    ThreadPool::i()->wait();
+}
+
+void FlipFireSolver::combustionUpdateThread(Range range)
+{
+    for(int i = range.start; i < range.end; i++)
+    {
+        if(m_temperature.data().at(i) > m_ignitionTemperature && m_fuel.data().at(i) > 0.f)
         {
-            if(m_temperature.at(i,j) > igninitonTemp && m_fuel.at(i,j) > 0.f)
-            {
-                float burntFuel = std::min(m_stepDt * burnRate,m_fuel.at(i,j));
-                m_fuel.at(i,j) -= burntFuel;
-                m_smokeConcentration.at(i,j) += m_smokeProportion * burntFuel;
-                m_temperature.at(i,j) += m_heatProportion * burntFuel;
-                m_divergenceControl.at(i,j) -= m_divergenceProportion * burntFuel;
-            }
+            float burntFuel = std::min(m_stepDt * m_burnRate,m_fuel.data().at(i));
+            m_fuel.data().at(i) -= burntFuel;
+            m_smokeConcentration.data().at(i) += m_smokeProportion * burntFuel;
+            m_temperature.data().at(i) += m_heatProportion * burntFuel;
+            m_divergenceControl.data().at(i) -= m_divergenceProportion * burntFuel;
         }
     }
 }
@@ -103,6 +109,20 @@ void FlipFireSolver::centeredParamsToGrid()
 
 void FlipFireSolver::reseedParticles()
 {
+    for (int pIndex = 0; pIndex < m_markerParticles.size(); pIndex++)
+    {
+        int i = m_markerParticles[pIndex].position.x();
+        int j = m_markerParticles[pIndex].position.y();
+
+        if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+        {
+            m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
+            m_fluidParticleCounts.at(i,j) -= 1;
+            pIndex--;
+            continue;
+        }
+    }
+
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -143,6 +163,6 @@ void FlipFireSolver::particleUpdate()
     for(int i = m_markerParticles.size() - 1; i >= 0; i--)
     {
         MarkerParticle &p = m_markerParticles[i];
-        p.fuel = m_fuel.interpolateAt(p.position);
+        p.fuel = m_fuel.lerpolateAt(p.position);
     }
 }

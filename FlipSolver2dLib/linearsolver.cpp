@@ -133,7 +133,7 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
     //vec - b
     std::vector<double> residual = vec; //r
     std::vector<double> aux = vec; //z
-    applyMGPrecond(residual,aux);
+    //applyMGPrecond(residual,aux);
     std::vector<double> search = aux; //p
     double sigma = VOps::i().dot(aux,residual);
     double err = 0.0;
@@ -149,8 +149,8 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
             std::cout << "MFSolver done, iter = " << i << " err = " << err << '\n';
             return true;
         }
-        //aux = residual;
-        applyMGPrecond(residual,aux);
+        aux = residual;
+        //applyMGPrecond(residual,aux);
         double newSigma = VOps::i().dot(aux,residual);
         //std::cout << "New sigma:" << newSigma << std::endl;
         double beta = newSigma/(sigma);
