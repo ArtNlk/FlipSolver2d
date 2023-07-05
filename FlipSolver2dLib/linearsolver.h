@@ -26,11 +26,18 @@ public:
 
 protected:
     void nomatVMul(MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout);
+
     void nomatVMulThread(Range range, MatElementProvider elementProvider,
                          const std::vector<double> &vin, std::vector<double> &vout);
+
     void applyMGPrecond(std::vector<double> const &in, std::vector<double> &out);
+
     void applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
     DynamicUpperTriangularSparseMatrix calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix);
+
+    void applyIPPrecond(MatElementProvider p, const std::vector<double> &in, std::vector<double> &out);
+
+    double lowerTriangleMatMulIPP(MatElementProvider p, const std::vector<double> vec, int i);
 
     void updateSubgrids();
 

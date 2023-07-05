@@ -134,6 +134,7 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
     std::vector<double> residual = vec; //r
     std::vector<double> aux = vec; //z
     //applyMGPrecond(residual,aux);
+    applyIPPrecond(elementProvider,residual,aux);
     std::vector<double> search = aux; //p
     double sigma = VOps::i().dot(aux,residual);
     double err = 0.0;
@@ -149,8 +150,9 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
             std::cout << "MFSolver done, iter = " << i << " err = " << err << '\n';
             return true;
         }
-        aux = residual;
+        //aux = residual;
         //applyMGPrecond(residual,aux);
+        applyIPPrecond(elementProvider,residual,aux);
         double newSigma = VOps::i().dot(aux,residual);
         //std::cout << "New sigma:" << newSigma << std::endl;
         double beta = newSigma/(sigma);
@@ -308,6 +310,44 @@ DynamicUpperTriangularSparseMatrix LinearSolver::calcPrecond(const DynamicUpperT
     }
 
     return output;
+}
+
+void LinearSolver::applyIPPrecond(MatElementProvider p, const std::vector<double> &in, std::vector<double> &out)
+{
+//    out = in;
+//    return;
+    std::vector<double> temp(in.size(),0.0);
+    for(int i = 0; i < out.size(); i++)
+    {
+        SparseMatRowElements matElements = p(i);
+        if(std::abs(matElements[4].second) < 0.0001)
+        {
+            temp[i] = in[i];
+            continue;
+        }
+        temp[i] = in[i] - (in[matElements[1].first] * matElements[1].second
+                           + in[matElements[3].first] * matElements[3].second) / matElements[4].second;
+    }
+
+    for(int i = 0; i < out.size(); i++)
+    {
+        SparseMatRowElements matElements = p(i);
+        if(std::abs(matElements[4].second) < 0.0001)
+        {
+            out[i] = temp[i];
+            continue;
+        }
+        out[i] = temp[i] - (temp[matElements[0].first] * matElements[0].second
+                            + temp[matElements[2].first] * matElements[2].second) / matElements[4].second;;
+    }
+}
+
+double LinearSolver::lowerTriangleMatMulIPP(MatElementProvider p, const std::vector<double> vec, int i)
+{
+    SparseMatRowElements matElements = p(i);
+
+    return (vec[matElements[0].first] * matElements[0].second
+            + vec[matElements[2].first] * matElements[2].second) / matElements[4].second;
 }
 
 void LinearSolver::updateSubgrids()
