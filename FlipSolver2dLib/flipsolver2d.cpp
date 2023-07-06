@@ -72,17 +72,17 @@ void FlipSolver::project()
     }
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
-//    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-//    if(!m_pcgSolver.solve(mat,m_pressures,m_rhs,m_pcgIterLimit))
-//    {
-//        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
-//    }
-    auto provider = getPressureMatrixElementProvider();
-
-    if(!m_pcgSolver.mfcgSolve(provider,m_pressures,m_rhs,m_pcgIterLimit))
+    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
+    if(!m_pcgSolver.solve(mat,m_pressures,m_rhs,m_pcgIterLimit))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
+//    auto provider = getPressureMatrixElementProvider();
+
+//    if(!m_pcgSolver.mfcgSolve(provider,m_pressures,m_rhs,m_pcgIterLimit))
+//    {
+//        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
+//    }
 
     if(anyNanInf(m_pressures))
     {

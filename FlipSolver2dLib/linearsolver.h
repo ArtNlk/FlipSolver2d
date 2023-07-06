@@ -35,9 +35,22 @@ protected:
     void applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
     DynamicUpperTriangularSparseMatrix calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix);
 
-    void applyIPPrecond(MatElementProvider p, const std::vector<double> &in, std::vector<double> &out);
+    void applyIPPrecond(const UpperTriangularMatrix& p,
+                        const std::vector<double> &in, std::vector<double> &out);
 
-    double lowerTriangleMatMulIPP(MatElementProvider p, const std::vector<double> vec, int i);
+    static void firstStepIPPMatmulThread(Range r, LinearSolver* s,const UpperTriangularMatrix& p,
+                                           const std::vector<double> &in, std::vector<double> &out);
+
+    static void secondStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix& p,
+                                            const std::vector<double> &in, std::vector<double> &out);
+
+    void applyMfIPPrecond(MatElementProvider p, const std::vector<double> &in, std::vector<double> &out);
+
+    static void firstStepMfIPPMatmulThread(Range r, MatElementProvider p,
+                                         const std::vector<double> &in, std::vector<double> &out);
+
+    static void secondStepMfIPPMatmulThread(Range r, MatElementProvider p,
+                                         const std::vector<double> &in, std::vector<double> &out);
 
     void updateSubgrids();
 
