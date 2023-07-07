@@ -17,12 +17,11 @@ void VOps_sse42::addMulThread(Range range, std::vector<double> &output, const st
     for(unsigned int i = range.start; i < newEnd; i+=regSize)
     {
         //output[i] = vec1[i] + vec2[i]*value;
-        _temp = _mm_set_pd(vec2[i+1],vec2[i]);
+        _temp = _mm_loadu_pd(&vec2[i]);
         _temp = _mm_mul_pd(_temp,_val);
-        _res = _mm_set_pd(vec1[i+1],vec1[i]);
+        _res = _mm_loadu_pd(&vec1[i]);
         _res = _mm_add_pd(_res,_temp);
-        output[i] = _res[0];
-        output[i+1] = _res[1];
+        _mm_storeu_pd(&output[i],_res);
     }
 
     for(unsigned int i = newEnd; i < leftoverEnd; i++)

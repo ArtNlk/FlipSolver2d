@@ -3,7 +3,6 @@
 
 #include <emmintrin.h>
 #include <nmmintrin.h>
-#include <popcntintrin.h>
 #include <smmintrin.h>
 
 void LinearSolver_sse42::premaskPressuresThread(const Range range, const MaterialGrid& materials, std::vector<double>& pressures)
