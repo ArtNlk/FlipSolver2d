@@ -1,11 +1,11 @@
 {
   "settings": {
-    "simType": "nbflip",
+    "simType": "flip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
     "resolution": 128,
     "fps": 30,
-    "density": 1000,
+    "density": 0.5,
     "airDensity": 300,
     "maxSubsteps": 1,
     "pcgIterLimit": 500,

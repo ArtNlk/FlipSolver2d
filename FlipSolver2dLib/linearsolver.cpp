@@ -18,7 +18,7 @@
 
 #include "logger.h"
 
-const double LinearSolver::m_tol = 1.0e-6;
+const double LinearSolver::m_tol = 1.0e-3;
 
 LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     m_restrictionWeights({0}),
@@ -78,6 +78,7 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
     result.assign(result.size(),0);
     if (VOps::i().isZero(vec))
     {
+        std::cout << "Solver skipped zeros vector" << '\n';
         return true;
     }
     DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
@@ -348,8 +349,10 @@ void LinearSolver::firstStepIPPMatmulThread(Range r, LinearSolver* s, const Uppe
             out[i] = in[i];
             continue;
         }
-        out[i] = in[i] - (in[neighbors[1]] * p.getValue(i,neighbors[1])
-                           + in[neighbors[3]] * p.getValue(i,neighbors[3])) / diag;
+        double v1 = neighbors[1] >= 0 && neighbors[1] < in.size() ? in[neighbors[1]] : 0.0;
+        double v2 = neighbors[3] >= 0 && neighbors[3] < in.size() ? in[neighbors[3]] : 0.0;
+        out[i] = in[i] - (v1 * p.getValue(i,neighbors[1])
+                           + v2 * p.getValue(i,neighbors[3])) / diag;
     }
 }
 

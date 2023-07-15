@@ -1,6 +1,7 @@
 #ifndef LINEARINDEXABLE2D_H
 #define LINEARINDEXABLE2D_H
 
+#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -90,10 +91,10 @@ public:
     inline std::array<int,4> immidiateNeighbors(int linearIdx) const
     {
         std::array<int,4> output;
-        output[0] = linearIdxOfOffset(linearIdx,-1,0);
-        output[1] = linearIdxOfOffset(linearIdx,1,0);
-        output[2] = linearIdxOfOffset(linearIdx,0,-1);
-        output[3] = linearIdxOfOffset(linearIdx,0,1);
+        output[0] = std::clamp(linearIdxOfOffset(linearIdx,-1,0),0,m_sizeI*m_sizeJ - 1);
+        output[1] = std::clamp(linearIdxOfOffset(linearIdx,1,0),0,m_sizeI*m_sizeJ - 1);
+        output[2] = std::clamp(linearIdxOfOffset(linearIdx,0,-1),0,m_sizeI*m_sizeJ - 1);
+        output[3] = std::clamp(linearIdxOfOffset(linearIdx,0,1),0,m_sizeI*m_sizeJ - 1);
         return output;
     }
 

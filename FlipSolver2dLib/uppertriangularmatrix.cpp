@@ -33,7 +33,7 @@ UpperTriangularMatrix::UpperTriangularMatrix(const DynamicUpperTriangularSparseM
 
 double UpperTriangularMatrix::getValue(int row, int col) const
 {
-    if(row == -1 || col == -1) {return 0.0;}
+    if(row == -1 || col == -1 || !inBounds(row,col)) {return 0.0;}
     int rowStartIndex = m_rowStart[row];
     int rowEndIndex = m_rowStart[row+1];
     for(int i = rowStartIndex; i < rowEndIndex; i++)

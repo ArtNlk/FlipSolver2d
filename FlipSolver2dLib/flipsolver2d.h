@@ -172,6 +172,12 @@ protected:
 
     virtual void advect();
 
+    void densityCorrection();
+
+    void updateDensityGrid();
+
+    void adjustParticlesByDensity();
+
     void advectThread(Range range);
 
     virtual void particleUpdate();
@@ -183,6 +189,8 @@ protected:
     virtual void calcPressureRhs(std::vector<double> &rhs);
 
     void calcViscosityRhs(std::vector<double> &rhs);
+
+    void calcDensityCorrectionRhs(std::vector<double> &rhs);
 
     virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
 
@@ -257,9 +265,10 @@ protected:
     Grid2d<int> m_solidId;
     Grid2d<int> m_fluidParticleCounts;
     Grid2d<float> m_divergenceControl;
+    Grid2d<float> m_densityGrid;
     Grid2d<float> m_testGrid;
     std::vector<double> m_rhs;
-    std::vector<double> m_pressures;
+    Grid2d<double> m_pressures;
 
     LinearSolver m_pcgSolver;
 
