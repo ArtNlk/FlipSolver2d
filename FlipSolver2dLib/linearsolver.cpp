@@ -18,8 +18,6 @@
 
 #include "logger.h"
 
-const double LinearSolver::m_tol = 1.0e-3;
-
 LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     m_restrictionWeights({0}),
     m_prolongationWeights({0}),
@@ -73,7 +71,7 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     }
 }
 
-bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
+bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit, double tol)
 {
     result.assign(result.size(),0);
     if (VOps::i().isZero(vec))
@@ -104,7 +102,7 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
 //            std::cout << "Solver: " << i << " : " << err << "\n";
 //            debug() << "Solver: " << i << " : " << err;
 //        }
-        if (err <= m_tol)
+        if (err <= tol)
         {
             debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
             std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
@@ -124,7 +122,7 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
     return false;
 }
 
-bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit)
+bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit, double tol)
 {
     result.assign(result.size(),0);
     if (VOps::i().isZero(vec))
@@ -147,7 +145,7 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
         double alpha = sigma/(VOps::i().dot(aux,search));
         VOps::i().subMul(residual,residual,aux,alpha);
         err = VOps::i().maxAbs(residual);
-        if (err <= m_tol)
+        if (err <= tol)
         {
             //debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
             std::cout << "MFSolver done, iter = " << i << " err = " << err << '\n';
@@ -349,8 +347,8 @@ void LinearSolver::firstStepIPPMatmulThread(Range r, LinearSolver* s, const Uppe
             out[i] = in[i];
             continue;
         }
-        double v1 = neighbors[1] >= 0 && neighbors[1] < in.size() ? in[neighbors[1]] : 0.0;
-        double v2 = neighbors[3] >= 0 && neighbors[3] < in.size() ? in[neighbors[3]] : 0.0;
+        double v1 = in[neighbors[1]];
+        double v2 = in[neighbors[3]];
         out[i] = in[i] - (v1 * p.getValue(i,neighbors[1])
                            + v2 * p.getValue(i,neighbors[3])) / diag;
     }

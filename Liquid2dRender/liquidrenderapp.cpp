@@ -29,6 +29,11 @@ LiquidRenderApp::LiquidRenderApp() :
     LiquidRenderApp::GLFWCallbackWrapper::SetApplication(this);
 }
 
+LiquidRenderApp::~LiquidRenderApp()
+{
+    glfwTerminate();
+}
+
 void LiquidRenderApp::init()
 {
     glfwInit();
@@ -177,7 +182,6 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                             glfwPollEvents();
                             if(glfwWindowShouldClose(m_window))
                             {
-                                glfwTerminate();
                                 run = false;
                             }
                             if(!run) break;
@@ -210,7 +214,6 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                             glfwPollEvents();
                             if(glfwWindowShouldClose(m_window))
                             {
-                                glfwTerminate();
                                 run = false;
                             }
                             if(!run) break;
@@ -227,7 +230,6 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                             glfwPollEvents();
                             if(glfwWindowShouldClose(m_window))
                             {
-                                glfwTerminate();
                                 run = false;
                             }
                             if(!run) break;
@@ -313,6 +315,8 @@ void LiquidRenderApp::populateFlipSolverParamsFromJson(FlipSolverParameters *p, 
     p->dx =
     p->particlesPerCell = settingsJson["particlesPerCell"].get<int>();
     std::pair<float,float> v = tryGetValue(settingsJson,"globalAcceleration",std::pair(9.8,0.f));
+    v.first *= s;
+    v.second *= s;
     p->globalAcceleration = v;
     p->resolution = settingsJson["resolution"].get<int>();
     p->fps = settingsJson["fps"].get<int>();
@@ -321,8 +325,8 @@ void LiquidRenderApp::populateFlipSolverParamsFromJson(FlipSolverParameters *p, 
     p->cflNumber = tryGetValue(settingsJson,"cflNumber",10.f);
     p->particleScale = tryGetValue(settingsJson,"particleScale",0.8);
     p->pcgIterLimit = tryGetValue(settingsJson,"pcgIterLimit",200);
-    p->domainSizeI = settingsJson["domainSizeI"].get<float>();
-    p->domainSizeJ = settingsJson["domainSizeJ"].get<float>();
+    p->domainSizeI = settingsJson["domainSizeI"].get<float>() * s;
+    p->domainSizeJ = settingsJson["domainSizeJ"].get<float>() * s;
     p->sceneScale = s;
 
     if(p->domainSizeI > p->domainSizeJ)

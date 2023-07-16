@@ -178,6 +178,8 @@ protected:
 
     void adjustParticlesByDensity();
 
+    void adjustParticlesByDensityThread(Range r);
+
     void advectThread(Range range);
 
     virtual void particleUpdate();

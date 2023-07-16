@@ -76,13 +76,13 @@ void FlipSolver::project()
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
     DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit))
+    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit, 1e-2))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
 //    auto provider = getPressureMatrixElementProvider();
 
-//    if(!m_pcgSolver.mfcgSolve(provider,m_pressures,m_rhs,m_pcgIterLimit))
+//    if(!m_pcgSolver.mfcgSolve(provider,m_pressures.data(),m_rhs,m_pcgIterLimit,1e-2))
 //    {
 //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
 //    }
@@ -204,7 +204,7 @@ void FlipSolver::densityCorrection()
     calcDensityCorrectionRhs(m_rhs);
     //    //debug() << "Calculated rhs: " << rhs;
     DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit))
+    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit,1e-2))
     {
         std::cout << "PCG Solver density: Iteration limit exhaustion!\n";
     }
@@ -281,46 +281,39 @@ void FlipSolver::updateDensityGrid()
 
 void FlipSolver::adjustParticlesByDensity()
 {
-    Grid2d<float> dU(m_sizeI,m_sizeJ,0.f);
-    Grid2d<float> dV(m_sizeI,m_sizeJ,0.f);
-    for (int i = 0; i < m_sizeI; i++)
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_markerParticles.size());
+    for(Range& range : ranges)
     {
-        for (int j = 0; j < m_sizeJ; j++)
-        {
-            float pIp1 = m_materialGrid.isSolid(i+1,j)? m_pressures.getAt(i,j) : m_pressures.getAt(i+1,j);
-            float pJp1 = m_materialGrid.isSolid(i,j+1)? m_pressures.getAt(i,j) : m_pressures.getAt(i,j+1);
-            dU.at(i,j) = pIp1 - m_pressures.getAt(i,j);
-            dV.at(i,j) = pJp1 - m_pressures.getAt(i,j);
-        }
+        ThreadPool::i()->enqueue(&FlipSolver::adjustParticlesByDensityThread,this,range);
     }
-    const float scale = (m_stepDt * m_stepDt) / (m_fluidDensity * 1.f);
-    for(MarkerParticle& p : m_markerParticles)
+    ThreadPool::i()->wait();
+}
+
+void FlipSolver::adjustParticlesByDensityThread(Range r)
+{
+    const float scale = (m_stepDt * m_stepDt) / (m_fluidDensity * m_dx * m_dx);
+    for(int idx = r.start; idx < r.end; idx++)
     {
-        int i = p.position.x();
-        int j = p.position.y();
+        MarkerParticle& p = m_markerParticles[idx];
+        int i = p.position.x() - 0.5f;
+        int j = p.position.y() - 0.5f;
 
-        bool iPos = simmath::frac(p.position.x()) > 0.5f;
-        bool jPos = simmath::frac(p.position.y()) > 0.5f;
+        float pCurrent = m_pressures.getAt(i,j);
 
-        Index2d iNeighbor = Index2d(i + (iPos? 1 : -1),j);
-        Index2d jNeighbor = Index2d(i, j + (jPos? 1 : -1));
-
-        float pCurrent = m_pressures.at(i,j);
-
-        float pI = m_pressures.at(iNeighbor);
-        float pJ = m_pressures.at(jNeighbor);
-        if(m_materialGrid.isSolid(iNeighbor))
+        float pI = m_pressures.getAt(i+1,j);
+        float pJ = m_pressures.getAt(i,j+1);
+        if(m_materialGrid.isSolid(i+1,j) || m_materialGrid.isSolid(i,j))
         {
             pI = pCurrent;
         }
 
-        if(m_materialGrid.isSolid(jNeighbor))
+        if(m_materialGrid.isSolid(i,j+1) || m_materialGrid.isSolid(i,j))
         {
             pJ = pCurrent;
         }
 
-        float pgradU = (pI - pCurrent) * (iPos? 1.f: -1.f);
-        float pgradV = (pJ - pCurrent) * (jPos? 1.f: -1.f);
+        float pgradU = pI - pCurrent;
+        float pgradV = pJ - pCurrent;
 
         p.position.x() += pgradU*scale;
         p.position.y() += pgradV*scale;
@@ -647,8 +640,7 @@ void FlipSolver::reseedParticles()
                 std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
             }
             //std::cout << particleCount << " at " << i << " , " << j << std::endl;
-            int additionalParticles = m_particlesPerCell - particleCount;
-            additionalParticles = 0;
+            int additionalParticles = (m_particlesPerCell / 2) - particleCount;
             if(additionalParticles <= 0)
             {
                 continue;
@@ -667,16 +659,16 @@ void FlipSolver::reseedParticles()
                     addMarkerParticle(MarkerParticle{pos,velocity,viscosity,temp,conc});
                 }
             }
-            else if(m_fluidSdf.at(i,j) < -1.f)
-            {
-                for(int p = 0; p < additionalParticles; p++)
-                {
-                    Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
-                    float viscosity = m_viscosityGrid.interpolateAt(pos);
-                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
-                }
-            }
+//            else if(m_fluidSdf.at(i,j) < -1.f)
+//            {
+//                for(int p = 0; p < additionalParticles; p++)
+//                {
+//                    Vertex pos = jitteredPosInCell(i,j);
+//                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+//                    float viscosity = m_viscosityGrid.interpolateAt(pos);
+//                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
+//                }
+//            }
         }
     }
 }

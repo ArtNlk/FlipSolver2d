@@ -19,8 +19,8 @@ public:
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
     using MatElementProvider = std::function<SparseMatRowElements(int)>;
 
-    bool solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit = 20);
-    bool mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit = 20);
+    bool solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit = 20, double tol = 1e-6);
+    bool mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit = 20, double tol = 1e-6);
 
     friend class LinearSolver_sse42;
 
@@ -98,8 +98,6 @@ protected:
     std::array<float,4> getProlongationWeights(int finei, int finej);
 
     std::array<int,4> getCoarseProlongIdxs(const LinearIndexable2d &coarseGridIndexer, int finei, int finej);
-
-    static const double m_tol;
 
     std::array<float,16> m_restrictionWeights;
     std::array<float,16> m_prolongationWeights;

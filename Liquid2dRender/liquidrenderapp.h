@@ -25,6 +25,7 @@ class LiquidRenderApp
 {
 public:
     LiquidRenderApp();
+    ~LiquidRenderApp();
 
     void init();
     void run();
