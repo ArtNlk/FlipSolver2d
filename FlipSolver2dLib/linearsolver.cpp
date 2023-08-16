@@ -490,9 +490,9 @@ void LinearSolver::restrictGridThread(const Range range, const MaterialGrid &coa
     for(int idx = range.start; idx < range.end; idx++)
     {
         Index2d i2d = coarseMaterials.index2d(idx);
-        std::array<int,16> stencilCellIdxs = getFineGridStencilIdxs(fineGrid,i2d.m_i,i2d.m_j);
-        coarseGrid.at(i2d.m_i,i2d.m_j) = 0.f;
-        if(!coarseMaterials.isFluid(i2d.m_i,i2d.m_j))
+        std::array<int,16> stencilCellIdxs = getFineGridStencilIdxs(fineGrid,i2d.i,i2d.j);
+        coarseGrid.at(i2d.i,i2d.j) = 0.f;
+        if(!coarseMaterials.isFluid(i2d.i,i2d.j))
         {
             continue;
         }
@@ -505,7 +505,7 @@ void LinearSolver::restrictGridThread(const Range range, const MaterialGrid &coa
                 weightIdx++;
                 continue;
             }
-            coarseGrid.at(i2d.m_i,i2d.m_j) += fineGridData[idx] * m_restrictionWeights[weightIdx];
+            coarseGrid.at(i2d.i,i2d.j) += fineGridData[idx] * m_restrictionWeights[weightIdx];
             weightIdx++;
         }
     }
@@ -534,15 +534,15 @@ void LinearSolver::prolongateGridThread(const Range range, const MaterialGrid &f
         {
             continue;
         }
-        std::array<int, 4> coarseNeghbors = getCoarseProlongIdxs(coarseGrid,i2d.m_i,i2d.m_j);
-        std::array<float,4> coarseWeights = getProlongationWeights(i2d.m_i,i2d.m_j);
+        std::array<int, 4> coarseNeghbors = getCoarseProlongIdxs(coarseGrid,i2d.i,i2d.j);
+        std::array<float,4> coarseWeights = getProlongationWeights(i2d.i,i2d.j);
         for(int idx = 0; idx < 4; idx++)
         {
             if(idx < 0 || idx >= gridDataSize)
             {
                 continue;
             }
-            fineGridData[fineMaterials.linearIndex(i2d.m_i,i2d.m_j)] +=
+            fineGridData[fineMaterials.linearIndex(i2d.i,i2d.j)] +=
                 coarseGridData[coarseNeghbors[idx]] * coarseWeights[idx];
         }
     }

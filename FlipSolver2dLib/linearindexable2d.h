@@ -38,23 +38,28 @@ public:
 
     inline int linearIndex(Index2d index) const
     {
-        if(index.m_i < 0 || index.m_i >= m_sizeI || index.m_j < 0 || index.m_j >= m_sizeJ) return -1;
-        return index.m_i * m_sizeJ + index.m_j;
+        if(index.i < 0 || index.i >= m_sizeI || index.j < 0 || index.j >= m_sizeJ) return -1;
+        return index.i * m_sizeJ + index.j;
     }
 
     inline Index2d index2d(int linearIndex) const
     {
         ASSERT_BETWEEN(linearIndex,-1,m_sizeJ*m_sizeI);
         Index2d index;
-        index.m_i = linearIndex / m_sizeJ;
-        index.m_j = linearIndex - index.m_i*m_sizeJ;
+        index.i = linearIndex / m_sizeJ;
+        index.j = linearIndex - index.i*m_sizeJ;
 
         return index;
     }
 
+    inline std::vector<Index2d> getNeighborhood(int index, int radius = 1, bool vonNeumann = false)
+    {
+        return getNeighborhood(index2d(index), radius, vonNeumann);
+    }
+
     inline std::vector<Index2d> getNeighborhood(Index2d index, int radius = 1, bool vonNeumann = false)
     {
-        return getNeighborhood(index.m_i, index.m_j, radius, vonNeumann);
+        return getNeighborhood(index.i, index.j, radius, vonNeumann);
     }
 
     inline std::vector<Index2d> getNeighborhood(int i, int j, int radius = 1, bool vonNeumann = false)
@@ -68,7 +73,7 @@ public:
                 if(iOffset == 0 && jOffset == 0) continue;
                 if(std::abs(iOffset) + std::abs(jOffset) > radius && vonNeumann) continue;
                 Index2d index = Index2d(i + iOffset,j + jOffset);
-                if(index.m_i >= 0 && index.m_i < m_sizeI && index.m_j >= 0 && index.m_j < m_sizeJ)
+                if(index.i >= 0 && index.i < m_sizeI && index.j >= 0 && index.j < m_sizeJ)
                 {
                     output.push_back(index);
                 }
@@ -105,12 +110,17 @@ public:
 
     inline bool inBounds(Index2d index) const
     {
-        return (index.m_i >= 0 && index.m_i < m_sizeI && index.m_j >= 0 && index.m_j < m_sizeJ);
+        return (index.i >= 0 && index.i < m_sizeI && index.j >= 0 && index.j < m_sizeJ);
     }
 
     inline bool inBounds(int i, int j) const
     {
         return (i >= 0 && i < m_sizeI && j >= 0 && j < m_sizeJ);
+    }
+
+    size_t linearSize() const
+    {
+        return m_sizeI * m_sizeJ;
     }
 
 protected:

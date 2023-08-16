@@ -91,44 +91,44 @@ void NBFlipSolver::particleVelocityToGrid()
     m_fluidVelocityGrid.uSampleValidityGrid().fill(false);
     m_fluidVelocityGrid.vSampleValidityGrid().fill(false);
 
-    for(MarkerParticle &p : m_markerParticles)
-    {
-        int i = simmath::integr(p.position.x());
-        int j = simmath::integr(p.position.y());
-        //Run over all cells that this particle might affect
-        for (int iOffset = -3; iOffset < 3; iOffset++)
-        {
-            for (int jOffset = -3; jOffset < 3; jOffset++)
-            {
-                int iIdx = i+iOffset;
-                int jIdx = j+jOffset;
-                float weightU = simmath::quadraticBSpline(p.position.x() - (iIdx),
-                                                     p.position.y() - (static_cast<float>(jIdx) + 0.5f));
+//    for(MarkerParticle &p : m_markerParticles)
+//    {
+//        int i = simmath::integr(p.position.x());
+//        int j = simmath::integr(p.position.y());
+//        //Run over all cells that this particle might affect
+//        for (int iOffset = -3; iOffset < 3; iOffset++)
+//        {
+//            for (int jOffset = -3; jOffset < 3; jOffset++)
+//            {
+//                int iIdx = i+iOffset;
+//                int jIdx = j+jOffset;
+//                float weightU = simmath::quadraticBSpline(p.position.x() - (iIdx),
+//                                                     p.position.y() - (static_cast<float>(jIdx) + 0.5f));
 
-                float weightV = simmath::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
-                                                     p.position.y() - (jIdx));
-                if(m_uWeights.inBounds(iIdx,jIdx))
-                {
-                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
-                    {
-                        m_uWeights.at(iIdx,jIdx) += weightU;
-                        m_fluidVelocityGrid.u(iIdx,jIdx) += weightU * (p.velocity.x());
-                        m_fluidVelocityGrid.setUValidity(iIdx,jIdx,true);
-                    }
-                }
+//                float weightV = simmath::quadraticBSpline(p.position.x() - (static_cast<float>(iIdx) + 0.5f),
+//                                                     p.position.y() - (jIdx));
+//                if(m_uWeights.inBounds(iIdx,jIdx))
+//                {
+//                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
+//                    {
+//                        m_uWeights.at(iIdx,jIdx) += weightU;
+//                        m_fluidVelocityGrid.u(iIdx,jIdx) += weightU * (p.velocity.x());
+//                        m_fluidVelocityGrid.setUValidity(iIdx,jIdx,true);
+//                    }
+//                }
 
-                if(m_vWeights.inBounds(iIdx,jIdx))
-                {
-                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
-                    {
-                        m_vWeights.at(iIdx,jIdx) += weightV;
-                        m_fluidVelocityGrid.v(iIdx,jIdx) += weightV * (p.velocity.y());
-                        m_fluidVelocityGrid.setVValidity(iIdx,jIdx,true);
-                    }
-                }
-            }
-        }
-    }
+//                if(m_vWeights.inBounds(iIdx,jIdx))
+//                {
+//                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
+//                    {
+//                        m_vWeights.at(iIdx,jIdx) += weightV;
+//                        m_fluidVelocityGrid.v(iIdx,jIdx) += weightV * (p.velocity.y());
+//                        m_fluidVelocityGrid.setVValidity(iIdx,jIdx,true);
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     for (int i = 0; i < m_sizeI + 1; i++)
     {
@@ -148,62 +148,62 @@ void NBFlipSolver::particleVelocityToGrid()
 
 void NBFlipSolver::reseedParticles()
 {
-    for (int pIndex = 0; pIndex < m_markerParticles.size(); pIndex++)
-    {
-        float sdf = m_fluidSdf.interpolateAt(m_markerParticles[pIndex].position);
-        int i = m_markerParticles[pIndex].position.x();
-        int j = m_markerParticles[pIndex].position.y();
-        if(!m_materialGrid.isSource(i,j) && sdf < -3.f)
-        {
-            m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
-            m_fluidParticleCounts.at(i,j) -= 1;
-            pIndex--;
-            continue;
-        }
+//    for (int pIndex = 0; pIndex < m_markerParticles.size(); pIndex++)
+//    {
+//        float sdf = m_fluidSdf.interpolateAt(m_markerParticles[pIndex].position);
+//        int i = m_markerParticles[pIndex].position.x();
+//        int j = m_markerParticles[pIndex].position.y();
+//        if(!m_materialGrid.isSource(i,j) && sdf < -3.f)
+//        {
+//            m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
+//            m_fluidParticleCounts.at(i,j) -= 1;
+//            pIndex--;
+//            continue;
+//        }
 
-        if((m_materialGrid.isSource(i,j) || sdf < -1.f) && m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
-        {
-            m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
-            m_fluidParticleCounts.at(i,j) -= 1;
-            pIndex--;
-            continue;
-        }
-    }
+//        if((m_materialGrid.isSource(i,j) || sdf < -1.f) && m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+//        {
+//            m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
+//            m_fluidParticleCounts.at(i,j) -= 1;
+//            pIndex--;
+//            continue;
+//        }
+//    }
 
-    for (int i = 0; i < m_sizeI; i++)
-    {
-        for (int j = 0; j < m_sizeJ; j++)
-        {
-            //if(m_fluidSdf.at(i,j) < 0.f)
-            if(m_materialGrid.isSource(i,j) || (m_fluidSdf.at(i,j) < -1.f && m_fluidSdf.at(i,j) > -3.f))
-            {
-                int particleCount = m_fluidParticleCounts.at(i,j);
-                if(particleCount > 20)
-                {
-                    std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
-                }
-                int additionalParticles = m_particlesPerCell - particleCount;
-                if(additionalParticles <= 0)
-                {
-                    continue;
-                }
-                for(int p = 0; p < additionalParticles; p++)
-                {
-                    Vertex pos = jitteredPosInCell(i,j);
-                    float newSdf = m_fluidSdf.interpolateAt(pos);
-                    if((m_materialGrid.isSource(i,j) && m_fluidSdf.at(i,j) > -1.f)
-                        || newSdf < -3.f)
-                    {
-                        continue;
-                    }
-                    Vertex velocity = m_materialGrid.isSource(i,j) ?
-                                          Vertex() : m_fluidVelocityGrid.velocityAt(pos);
-                    float viscosity = m_viscosityGrid.interpolateAt(pos);
-                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
-                }
-            }
-        }
-    }
+//    for (int i = 0; i < m_sizeI; i++)
+//    {
+//        for (int j = 0; j < m_sizeJ; j++)
+//        {
+//            //if(m_fluidSdf.at(i,j) < 0.f)
+//            if(m_materialGrid.isSource(i,j) || (m_fluidSdf.at(i,j) < -1.f && m_fluidSdf.at(i,j) > -3.f))
+//            {
+//                int particleCount = m_fluidParticleCounts.at(i,j);
+//                if(particleCount > 20)
+//                {
+//                    std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
+//                }
+//                int additionalParticles = m_particlesPerCell - particleCount;
+//                if(additionalParticles <= 0)
+//                {
+//                    continue;
+//                }
+//                for(int p = 0; p < additionalParticles; p++)
+//                {
+//                    Vertex pos = jitteredPosInCell(i,j);
+//                    float newSdf = m_fluidSdf.interpolateAt(pos);
+//                    if((m_materialGrid.isSource(i,j) && m_fluidSdf.at(i,j) > -1.f)
+//                        || newSdf < -3.f)
+//                    {
+//                        continue;
+//                    }
+//                    Vertex velocity = m_materialGrid.isSource(i,j) ?
+//                                          Vertex() : m_fluidVelocityGrid.velocityAt(pos);
+//                    float viscosity = m_viscosityGrid.interpolateAt(pos);
+//                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
+//                }
+//            }
+//        }
+//    }
 }
 
 void NBFlipSolver::firstFrameInit()
@@ -219,7 +219,7 @@ void NBFlipSolver::eulerAdvectionThread(Range range, Vertex offset, const Grid2d
     for(int idx = range.start; idx < range.end; idx++)
     {
         Index2d i2d = outputGrid.index2d(idx);
-        Vertex currentPos = Vertex(i2d.m_i, i2d.m_j) + offset;
+        Vertex currentPos = Vertex(i2d.i, i2d.j) + offset;
         Vertex prevPos = inverseRk4Integrate(currentPos,m_fluidVelocityGrid);
         dataOut[idx] = inputGrid.interpolateAt(prevPos);
     }
@@ -227,38 +227,38 @@ void NBFlipSolver::eulerAdvectionThread(Range range, Vertex offset, const Grid2d
 
 void NBFlipSolver::initialFluidSeed()
 {
-    for (int i = 0; i < m_sizeI; i++)
-    {
-        for (int j = 0; j < m_sizeJ; j++)
-        {
-            //if(m_fluidSdf.at(i,j) < 0.f)
-            if(m_fluidSdf.at(i,j) < 0.f)
-            {
-                int particleCount = m_fluidParticleCounts.at(i,j);
-                if(particleCount > 20)
-                {
-                    std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
-                }
-                int additionalParticles = m_particlesPerCell - particleCount;
-                if(additionalParticles <= 0)
-                {
-                    continue;
-                }
-                for(int p = 0; p < additionalParticles; p++)
-                {
-                    Vertex pos = jitteredPosInCell(i,j);
-//                    float newSdf = m_fluidSdf.interpolateAt(pos);
-//                    if(newSdf > -1.f || newSdf < -3.f)
-//                    {
-//                        continue;
-//                    }
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
-                    float viscosity = m_viscosityGrid.interpolateAt(pos);
-                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
-                }
-            }
-        }
-    }
+//    for (int i = 0; i < m_sizeI; i++)
+//    {
+//        for (int j = 0; j < m_sizeJ; j++)
+//        {
+//            //if(m_fluidSdf.at(i,j) < 0.f)
+//            if(m_fluidSdf.at(i,j) < 0.f)
+//            {
+//                int particleCount = m_fluidParticleCounts.at(i,j);
+//                if(particleCount > 20)
+//                {
+//                    std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
+//                }
+//                int additionalParticles = m_particlesPerCell - particleCount;
+//                if(additionalParticles <= 0)
+//                {
+//                    continue;
+//                }
+//                for(int p = 0; p < additionalParticles; p++)
+//                {
+//                    Vertex pos = jitteredPosInCell(i,j);
+////                    float newSdf = m_fluidSdf.interpolateAt(pos);
+////                    if(newSdf > -1.f || newSdf < -3.f)
+////                    {
+////                        continue;
+////                    }
+//                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+//                    float viscosity = m_viscosityGrid.interpolateAt(pos);
+//                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity});
+//                }
+//            }
+//        }
+//    }
 }
 
 void NBFlipSolver::fluidSdfFromInitialFluid()

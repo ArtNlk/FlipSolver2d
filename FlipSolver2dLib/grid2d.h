@@ -80,8 +80,8 @@ public:
 
     typename std::vector<T>::reference at(Index2d index)
     {
-        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
-        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
+        ASSERT_BETWEEN(index.i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.j,-1,m_sizeJ);
         return m_data[linearIndex(index)];
     }
 
@@ -94,8 +94,8 @@ public:
 
     const typename std::vector<T>::const_reference at(Index2d index) const
     {
-        ASSERT_BETWEEN(index.m_i,-1,m_sizeI);
-        ASSERT_BETWEEN(index.m_j,-1,m_sizeJ);
+        ASSERT_BETWEEN(index.i,-1,m_sizeI);
+        ASSERT_BETWEEN(index.j,-1,m_sizeJ);
         return m_data[linearIndex(index)];
     }
 
@@ -113,7 +113,7 @@ public:
 
     T getAt(Index2d index) const
     {
-        return getAt(index.m_i, index.m_j);
+        return getAt(index.i, index.j);
     }
 
     T getAt(int i, int j) const
@@ -161,7 +161,7 @@ public:
 
     void fillRect(T value, Index2d topLeft, Index2d bottomRight)
     {
-        fillRect(value,topLeft.m_i,topLeft.m_j,bottomRight.m_i,bottomRight.m_j);
+        fillRect(value,topLeft.i,topLeft.j,bottomRight.i,bottomRight.j);
     }
 
     void fillRect(T value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
@@ -190,18 +190,18 @@ protected:
         j = std::clamp(j,0.f,static_cast<float>(grid->sizeJ() - 1));
         Index2d currentCell(simmath::integr(i),simmath::integr(j));
 
-        Index2d cell2(currentCell.m_i,
+        Index2d cell2(currentCell.i,
                       simmath::frac(j) >= 0.5f ?
-                            currentCell.m_j + 1 : currentCell.m_j - 1);
+                            currentCell.j + 1 : currentCell.j - 1);
 
         Index2d cell3(simmath::frac(i) >= 0.5f ?
-                            currentCell.m_i + 1 : currentCell.m_i - 1,
+                            currentCell.i + 1 : currentCell.i - 1,
                       simmath::frac(j) >= 0.5f ?
-                            currentCell.m_j + 1 : currentCell.m_j - 1);
+                            currentCell.j + 1 : currentCell.j - 1);
 
         Index2d cell4(simmath::frac(i) >= 0.5f ?
-                            currentCell.m_i + 1 : currentCell.m_i - 1,
-                      currentCell.m_j);
+                            currentCell.i + 1 : currentCell.i - 1,
+                      currentCell.j);
 
         float iLerpFactor = simmath::frac(i) < 0.5f ? 0.5f - simmath::frac(i) : simmath::frac(i) - 0.5f;
         float jLerpFactor = simmath::frac(j) < 0.5f ? 0.5f - simmath::frac(j) : simmath::frac(j) - 0.5f;

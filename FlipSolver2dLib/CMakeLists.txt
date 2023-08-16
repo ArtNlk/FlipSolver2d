@@ -23,7 +23,8 @@ set(HEADERS
     staggeredvelocitygrid.h
     flipfiresolver.h
     nbflipsolver.h
-    hwinfo.h)
+    hwinfo.h
+    markerparticlesystem.h)
 
 set(SOURCES
     linearindexable2d.cpp
@@ -46,7 +47,8 @@ set(SOURCES
     staggeredvelocitygrid.cpp
     flipfiresolver.cpp
     nbflipsolver.cpp
-    hwinfo.cpp)
+    hwinfo.cpp
+    markerparticlesystem.cpp)
 
 set(SSE42_HEADERS
     vops_sse42.h

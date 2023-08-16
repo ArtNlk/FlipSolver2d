@@ -58,11 +58,11 @@ float simmath::lerpUGrid(float i, float j, const Grid2d<float> &gridU)
     j = std::clamp(j,0.f,static_cast<float>(gridU.sizeJ() - 1));
     Index2d currentCell(simmath::integr(i),simmath::integr(j));
 
-    Index2d cell2(currentCell.m_i,simmath::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
+    Index2d cell2(currentCell.i,simmath::frac(j) >= 0.5f ? currentCell.j + 1 : currentCell.j - 1);
 
-    Index2d cell3(cell2.m_i + 1, cell2.m_j);
+    Index2d cell3(cell2.i + 1, cell2.j);
 
-    Index2d cell4(currentCell.m_i + 1, currentCell.m_j);
+    Index2d cell4(currentCell.i + 1, currentCell.j);
 
     float iLerpFactor = simmath::frac(i);
     float jLerpFactor = simmath::frac(j) < 0.5f ? 0.5f - simmath::frac(j) : simmath::frac(j) - 0.5f;
@@ -79,11 +79,11 @@ float simmath::lerpVGrid(float i, float j, const Grid2d<float> &gridV)
     j = std::clamp(j,0.f,static_cast<float>(gridV.sizeJ() - 1));
     Index2d currentCell(simmath::integr(i),simmath::integr(j));
 
-    Index2d cell2(simmath::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1,currentCell.m_j);
+    Index2d cell2(simmath::frac(i) >= 0.5f ? currentCell.i + 1 : currentCell.i - 1,currentCell.j);
 
-    Index2d cell3(cell2.m_i, cell2.m_j + 1);
+    Index2d cell3(cell2.i, cell2.j + 1);
 
-    Index2d cell4(currentCell.m_i, currentCell.m_j + 1);
+    Index2d cell4(currentCell.i, currentCell.j + 1);
 
     float iLerpFactor = simmath::frac(i) < 0.5f ? 0.5f - simmath::frac(i) : simmath::frac(i) - 0.5f;
     float jLerpFactor = simmath::frac(j);
@@ -358,11 +358,11 @@ float simmath::lerpCenteredGrid(float i, float j, const Grid2d<float> &grid, Ver
     j = std::clamp(j,0.f,static_cast<float>(grid.sizeJ() - 1));
     Index2d currentCell(simmath::integr(i),simmath::integr(j));
 
-    Index2d cell2(currentCell.m_i,simmath::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
+    Index2d cell2(currentCell.i,simmath::frac(j) >= 0.5f ? currentCell.j + 1 : currentCell.j - 1);
 
-    Index2d cell3(simmath::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1, simmath::frac(j) >= 0.5f ? currentCell.m_j + 1 : currentCell.m_j - 1);
+    Index2d cell3(simmath::frac(i) >= 0.5f ? currentCell.i + 1 : currentCell.i - 1, simmath::frac(j) >= 0.5f ? currentCell.j + 1 : currentCell.j - 1);
 
-    Index2d cell4(simmath::frac(i) >= 0.5f ? currentCell.m_i + 1 : currentCell.m_i - 1, currentCell.m_j);
+    Index2d cell4(simmath::frac(i) >= 0.5f ? currentCell.i + 1 : currentCell.i - 1, currentCell.j);
 
     float iLerpFactor = simmath::frac(i) < 0.5f ? 0.5f - simmath::frac(i) : simmath::frac(i) - 0.5f;
     float jLerpFactor = simmath::frac(j) < 0.5f ? 0.5f - simmath::frac(j) : simmath::frac(j) - 0.5f;

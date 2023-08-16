@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "linearindexable2d.h"
+#include "markerparticlesystem.h"
 #include "materialgrid.h"
 #include "obstacle.h"
 #include "linearsolver.h"
@@ -18,19 +19,6 @@
 #include "sink.h"
 
 enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_FIRE, SIMULATION_NBFLIP};
-
-struct MarkerParticle
-{
-    Vertex position;
-    Vertex velocity;
-    float viscosity;
-    float temperature;
-    float smokeConcentrartion;
-    float fuel;
-    FluidMaterial material = FluidMaterial::FLUID;
-    float testValue = 0.f;
-    bool markForDeath = false;
-};
 
 struct FlipSolverParameters
 {
@@ -72,7 +60,7 @@ public:
 
     virtual ~FlipSolver();
 
-    int particleCount();
+    size_t particleCount();
 
     int cellCount();
 
@@ -98,10 +86,6 @@ public:
 
     void addInitialFluid(Emitter& emitter);
 
-    void addMarkerParticle(Vertex particle);
-
-    void addMarkerParticle(MarkerParticle particle);
-
     int frameNumber();
 
     std::vector<Obstacle> &geometryObjects();
@@ -110,7 +94,7 @@ public:
 
     std::vector<Sink> &sinkObjects();
 
-    std::vector<MarkerParticle> &markerParticles();
+    MarkerParticleSystem &markerParticles();
 
     const MaterialGrid &materialGrid() const;
 
@@ -154,6 +138,8 @@ public:
 
     float avgFrameTime() const;
 
+    size_t testValuePropertyIndex();
+
 protected:
 
     virtual double divergenceAt(int i, int j);
@@ -175,6 +161,8 @@ protected:
     void densityCorrection();
 
     void updateDensityGrid();
+
+    void updateDensityGridThread(Range r, Grid2d<float>& centeredWeights);
 
     void adjustParticlesByDensity();
 
@@ -230,6 +218,8 @@ protected:
 
     virtual void particleVelocityToGrid();
 
+    void particleVelocityToGridThread(Range r, Grid2d<float>& uWeights, Grid2d<float>& vWeights);
+
     virtual void centeredParamsToGrid();
 
     void extrapolateLevelsetInside(SdfGrid& grid);
@@ -249,7 +239,7 @@ protected:
     int m_frameNumber;
     int m_validVVelocitySampleCount;
     int m_validUVelocitySampleCount;
-    std::vector<MarkerParticle> m_markerParticles;
+    MarkerParticleSystem m_markerParticles;
     std::mt19937 m_randEngine;
     std::vector<Obstacle> m_obstacles;
     std::vector<Emitter> m_sources;
@@ -292,6 +282,8 @@ protected:
     float m_domainSizeJ;
     float m_sceneScale;
     SimulationMethod m_simulationMethod;
+
+    size_t m_testValuePropertyIndex;
 
     float m_frameTime;
     float m_avgFrameMs;

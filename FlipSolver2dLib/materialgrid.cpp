@@ -8,32 +8,32 @@ MaterialGrid::MaterialGrid(int sizeI, int sizeJ, FluidMaterial oobMaterial) :
 
 bool MaterialGrid::isFluid(Index2d idx) const
 {
-    return isFluid(idx.m_i, idx.m_j);
+    return isFluid(idx.i, idx.j);
 }
 
 bool MaterialGrid::isStrictFluid(Index2d idx) const
 {
-    return isStrictFluid(idx.m_i, idx.m_j);
+    return isStrictFluid(idx.i, idx.j);
 }
 
 bool MaterialGrid::isSolid(Index2d idx) const
 {
-    return isSolid(idx.m_i, idx.m_j);
+    return isSolid(idx.i, idx.j);
 }
 
 bool MaterialGrid::isEmpty(Index2d idx) const
 {
-    return isEmpty(idx.m_i, idx.m_j);
+    return isEmpty(idx.i, idx.j);
 }
 
 bool MaterialGrid::isSource(Index2d idx) const
 {
-    return isSource(idx.m_i, idx.m_j);
+    return isSource(idx.i, idx.j);
 }
 
 bool MaterialGrid::isSink(Index2d idx) const
 {
-    return isSink(idx.m_i, idx.m_j);
+    return isSink(idx.i, idx.j);
 }
 
 bool MaterialGrid::isFluid(int i, int j) const

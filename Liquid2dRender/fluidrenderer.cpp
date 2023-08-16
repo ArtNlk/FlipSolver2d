@@ -653,7 +653,7 @@ void FluidRenderer::updateGridFromObstacleSdf()
 
 void FluidRenderer::updateGridFromFluidSdf()
 {
-    float max = std::max(m_solver->gridSizeI(),m_solver->gridSizeJ());
+    float max = std::max(m_solver->gridSizeI(),m_solver->gridSizeJ()) * 2;
 
     int gridHeight = m_solver->sizeI();
     int gridWidth = m_solver->sizeJ();
@@ -665,7 +665,7 @@ void FluidRenderer::updateGridFromFluidSdf()
             float brightness = std::pow(std::abs(dist) / max,0.4);
             if(brightness > 1.f)
             {
-                std::cout << "bad fluid sdf " << dist << " at " << i << ' ' << j << '\n';
+                //std::cout << "bad fluid sdf " << dist << " at " << i << ' ' << j << '\n';
             }
 //            if(dist < -1.f)
 //            {
@@ -834,11 +834,11 @@ void FluidRenderer::reloadParticlesSolid()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
-    for(MarkerParticle &particle : m_solver->markerParticles())
+    for(Vertex &pos : m_solver->markerParticles().positions())
     {
-        Color particleColor = particle.material == FluidMaterial::FLUID? m_markerParticleFluidColor :
-                                                                         m_markerParticleAirColor;
-        addParticle(particle.position,particleColor);
+//        Color particleColor = particle.material == FluidMaterial::FLUID? m_markerParticleFluidColor :
+//                                                                         m_markerParticleAirColor;
+        addParticle(pos,m_markerParticleFluidColor);
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {
@@ -854,9 +854,11 @@ void FluidRenderer::reloadParticlesVelocity()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
-    for(MarkerParticle &particle : m_solver->markerParticles())
+    for(size_t idx = 0; idx < m_solver->markerParticles().particleCount(); idx++)
     {
-        addParticle(particle.position,hueColorRamp(particle.velocity.distFromZero() / m_velocityRangeMax * m_solver->dx()));
+        Vertex position = m_solver->markerParticles().positions()[idx];
+        Vertex velocity = m_solver->markerParticles().velocities()[idx];
+        addParticle(position,hueColorRamp(velocity.distFromZero() / m_velocityRangeMax * m_solver->dx()));
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {
@@ -872,10 +874,13 @@ void FluidRenderer::reloadParticlesFromTestValue()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
-    for(MarkerParticle &particle : m_solver->markerParticles())
+    std::vector<float>& testValues = std::get<std::vector<float>>(
+        m_solver->markerParticles().getProperties(m_solver->testValuePropertyIndex()));
+    for(size_t idx = 0; idx < m_solver->markerParticles().particleCount(); idx++)
     {
-        Color pColor = Color(particle.testValue,particle.testValue,particle.testValue);
-        addParticle(particle.position,pColor);
+        Vertex position = m_solver->markerParticles().positions()[idx];
+        Color pColor = Color(testValues[idx],testValues[idx],testValues[idx]);
+        addParticle(position,pColor);
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {

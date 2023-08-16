@@ -85,52 +85,52 @@ void StaggeredVelocityGrid::setVValidity(int i, int j, bool vValidity)
 
 float &StaggeredVelocityGrid::u(Index2d idx)
 {
-    return u(idx.m_i, idx.m_j);
+    return u(idx.i, idx.j);
 }
 
 float &StaggeredVelocityGrid::v(Index2d idx)
 {
-    return v(idx.m_i, idx.m_j);
+    return v(idx.i, idx.j);
 }
 
 float StaggeredVelocityGrid::getU(Index2d idx) const
 {
-    return getU(idx.m_i, idx.m_j);
+    return getU(idx.i, idx.j);
 }
 
 float StaggeredVelocityGrid::getV(Index2d idx) const
 {
-    return getV(idx.m_i, idx.m_j);
+    return getV(idx.i, idx.j);
 }
 
 void StaggeredVelocityGrid::setU(Index2d idx, float u)
 {
-    setU(idx.m_i, idx.m_j,u);
+    setU(idx.i, idx.j,u);
 }
 
 void StaggeredVelocityGrid::setV(Index2d idx, float v)
 {
-    setV(idx.m_i, idx.m_j,v);
+    setV(idx.i, idx.j,v);
 }
 
 bool StaggeredVelocityGrid::getUValidity(Index2d idx)
 {
-    return getUValidity(idx.m_i, idx.m_j);
+    return getUValidity(idx.i, idx.j);
 }
 
 bool StaggeredVelocityGrid::getVValidity(Index2d idx)
 {
-    return getVValidity(idx.m_i, idx.m_j);
+    return getVValidity(idx.i, idx.j);
 }
 
 void StaggeredVelocityGrid::setUValidity(Index2d idx, bool uValidity)
 {
-    setUValidity(idx.m_i, idx.m_j, uValidity);
+    setUValidity(idx.i, idx.j, uValidity);
 }
 
 void StaggeredVelocityGrid::setVValidity(Index2d idx, bool vValidity)
 {
-    setVValidity(idx.m_i, idx.m_j, vValidity);
+    setVValidity(idx.i, idx.j, vValidity);
 }
 
 void StaggeredVelocityGrid::extrapolate(int extrapolationRadius)
