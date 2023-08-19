@@ -98,3 +98,8 @@ int ThreadPool::queueLength()
     int length = m_tasks.size();
     return length;
 }
+
+size_t ThreadPool::threadCount()
+{
+    return m_threads.size();
+}

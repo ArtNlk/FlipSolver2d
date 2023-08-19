@@ -206,7 +206,7 @@ void FlipSolver::densityCorrection()
     }
     //    auto provider = getPressureMatrixElementProvider();
 
-    //    if(!m_pcgSolver.mfcgSolve(provider,m_pressures,m_rhs,m_pcgIterLimit))
+    //    if(!m_pcgSolver.mfcgSolve(provider,m_pressures.data(),m_rhs,m_pcgIterLimit))
     //    {
     //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     //    }

@@ -11,6 +11,7 @@
 #include <iterator>
 #include <variant>
 #include <vector>
+#include <latch>
 
 struct MarkerParticle
 {
@@ -86,13 +87,15 @@ public:
 
     std::array<int,9> binsForGridCell(int i, int j);
 
+    std::array<int,9> rebinSetForBinIdx(Index2d idx);
+
     size_t particleCount() const;
 
     VariantVector& getProperties(size_t propertyIndex);
 
 protected:
 
-    void rebinParticlesThread(Range r);
+    void rebinParticlesThread(Range r, std::latch& sync);
 
     template<class T>
     inline void swapErase(std::vector<T>& v, size_t index)

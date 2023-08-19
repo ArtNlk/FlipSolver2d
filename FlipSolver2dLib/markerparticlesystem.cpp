@@ -1,5 +1,8 @@
 #include "markerparticlesystem.h"
+#include "threadpool.h"
+#include <algorithm>
 #include <cstddef>
+#include <latch>
 #include <variant>
 #include <vector>
 
@@ -44,10 +47,11 @@ MarkerParticleSystem::ParticleBin &MarkerParticleSystem::binForBinIdx(int linIdx
 void MarkerParticleSystem::rebinParticles()
 {
     std::vector<Range> ranges = ThreadPool::i()->splitRange(m_particleBins.linearSize());
+    std::latch sync(ThreadPool::i()->threadCount());
 
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&MarkerParticleSystem::rebinParticlesThread,this,range);
+        ThreadPool::i()->enqueue(&MarkerParticleSystem::rebinParticlesThread,this,range,std::ref(sync));
     }
     ThreadPool::i()->wait();
 }
@@ -172,6 +176,26 @@ std::array<int, 9> MarkerParticleSystem::binsForGridCell(int i, int j)
     return output;
 }
 
+std::array<int, 9> MarkerParticleSystem::rebinSetForBinIdx(Index2d idx)
+{
+    std::array<int,9> output({-1,-1,-1,-1,-1,-1,-1,-1,-1});
+    int outputIdx = 0;
+    for(int iOffset = -1; iOffset <= 1; iOffset++)
+    {
+        for(int jOffset = -1; jOffset <= 1; jOffset++)
+        {
+            if(m_particleBins.inBounds(idx.i + iOffset, idx.j + jOffset))
+            {
+                output[outputIdx] = m_particleBins.linearIndex(idx.i + iOffset,
+                                                               idx.j + jOffset);
+            }
+            outputIdx++;
+        }
+    }
+
+    return output;
+}
+
 size_t MarkerParticleSystem::particleCount() const
 {
     return m_particlePositions.size();
@@ -202,22 +226,45 @@ int MarkerParticleSystem::gridToBinIdx(int i, int j)
     return m_particleBins.linearIndex(binIdxForIdx(i,j));
 }
 
-void MarkerParticleSystem::rebinParticlesThread(Range r)
+void MarkerParticleSystem::rebinParticlesThread(Range r, std::latch &sync)
 {
+    std::vector<ParticleBin> rebinSets(r.end - r.start);
+    int rebinSetIdx = 0;
+    for(int binIdx = r.start; binIdx < r.end; binIdx++)
+    {
+        rebinSets[rebinSetIdx].reserve(100);
+        Index2d currentBinIdx = m_particleBins.index2d(binIdx);
+        for(int rebinIdx : rebinSetForBinIdx(currentBinIdx))
+        {
+            if(rebinIdx == -1)
+            {
+                continue;
+            }
+
+            rebinSets[rebinSetIdx].insert(rebinSets[rebinSetIdx].end(),
+                                         m_particleBins.data()[rebinIdx].begin(),
+                                         m_particleBins.data()[rebinIdx].end());
+        }
+        rebinSetIdx++;
+    }
+
+    sync.arrive_and_wait();
+
+    rebinSetIdx = 0;
     for(int binIdx = r.start; binIdx < r.end; binIdx++)
     {
         ParticleBin& currentBin = m_particleBins.data()[binIdx];
-        std::vector<float>& testValues = std::get<std::vector<float>>(m_properties[0]);
         currentBin.clear();
-        for(int particleIdx = 0; particleIdx < m_particlePositions.size(); particleIdx++)
+        ParticleBin& currentRebinningSet = rebinSets[rebinSetIdx];
+        for(size_t particleIdx : currentRebinningSet)
         {
             int idx = gridToBinIdx(m_particlePositions[particleIdx]);
             if(idx == binIdx)
             {
                 currentBin.push_back(particleIdx);
             }
-            testValues[particleIdx] = idx == 51;
         }
+        rebinSetIdx++;
     }
 }
 

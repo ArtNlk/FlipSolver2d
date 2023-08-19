@@ -54,6 +54,8 @@ public:
 
     int queueLength();
 
+    size_t threadCount();
+
 private:
     ThreadPool();
 
