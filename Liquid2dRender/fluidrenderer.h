@@ -114,6 +114,23 @@ public:
         return m_particlesEnabled;
     }
 
+    void increaseParticleSize()
+    {
+        m_particleRadius++;
+    }
+
+    void decreaseParticleSize()
+    {
+        if(m_particleRadius >= 0)
+        {
+            m_particleRadius--;
+        }
+        else
+        {
+            m_particleRadius = 0;
+        }
+    }
+
     static const Color &velocityVectorColor();
 
     unsigned int renderTexture();
@@ -230,6 +247,7 @@ protected:
     bool m_vectorsEnabled;
     bool m_geometryEnabled;
     bool m_particlesEnabled;
+    int m_particleRadius;
     SimulationMethod m_simMethod;
 
     std::shared_ptr<FlipSolver> m_solver;

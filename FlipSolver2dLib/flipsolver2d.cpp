@@ -189,7 +189,6 @@ void FlipSolver::advect()
     }
     ThreadPool::i()->wait();
 
-    m_markerParticles.pruneParticles();
     //std::cout << "Advection done in max " << maxSubsteps << " substeps" << std::endl;
 }
 
@@ -226,7 +225,7 @@ void FlipSolver::updateDensityGrid()
     Grid2d<float> centeredWeights(m_sizeI,m_sizeJ,1e-10f);
     m_densityGrid.fill(0.f);
 
-    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_densityGrid.linearSize());
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_densityGrid.linearSize(),1,8);
     for(Range& range : ranges)
     {
         ThreadPool::i()->enqueue(&FlipSolver::updateDensityGridThread,this,range,std::ref(centeredWeights));
@@ -252,6 +251,11 @@ void FlipSolver::updateDensityGridThread(Range r, Grid2d<float> &centeredWeights
 
             for(size_t particleIdx : bins.data()[binIdx])
             {
+                if(m_markerParticles.markedForDeath(particleIdx))
+                {
+                    continue;
+                }
+
                 Vertex p = m_markerParticles.particlePosition(particleIdx);
                 float weightCentered = simmath::bilinearHat(p.x() - static_cast<float>(cellIdx.i) - 0.5f,
                                                             p.y() - static_cast<float>(cellIdx.j) - 0.5f);
@@ -273,7 +277,7 @@ void FlipSolver::updateDensityGridThread(Range r, Grid2d<float> &centeredWeights
                                                 static_cast<float>(m_fluidDensity),
                                                 std::numeric_limits<float>::max());
         }
-        m_testGrid.at(cellIdx) = m_densityGrid.at(cellIdx);
+        //m_testGrid.at(cellIdx) = m_densityGrid.at(cellIdx);
     }
 }
 
@@ -292,7 +296,11 @@ void FlipSolver::adjustParticlesByDensityThread(Range r)
     const float scale = (m_stepDt * m_stepDt) / (m_fluidDensity * m_dx * m_dx);
     for(int idx = r.start; idx < r.end; idx++)
     {
-        Vertex& position = m_markerParticles.positions()[idx];
+        if(m_markerParticles.markedForDeath(idx))
+        {
+            continue;
+        }
+        Vertex& position = m_markerParticles.positions().at(idx);
         int i = position.x() - 0.5f;
         int j = position.y() - 0.5f;
 
@@ -399,6 +407,7 @@ void FlipSolver::step()
     advect();
     auto t2 = high_resolution_clock::now();
     densityCorrection();
+    m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
     particleToGrid();
 
@@ -1418,7 +1427,6 @@ void FlipSolver::updateSdfThread(Range range)
                 for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
                 {
                     //testValues[particleIdx] = binIdx >= 0;
-                    //m_testGrid.at(i2d) = 1;
                     Vertex position = m_markerParticles.particlePosition(particleIdx);
                     float diffX = position.x() - centerPoint.x();
                     float diffY = position.y() - centerPoint.y();
@@ -1445,7 +1453,7 @@ void FlipSolver::particleVelocityToGrid()
     m_fluidVelocityGrid.uSampleValidityGrid().fill(false);
     m_fluidVelocityGrid.vSampleValidityGrid().fill(false);
 
-    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_fluidVelocityGrid.linearSize());
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_fluidVelocityGrid.linearSize(),1,8);
 
     for(Range& range : ranges)
     {

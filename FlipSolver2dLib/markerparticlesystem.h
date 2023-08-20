@@ -61,6 +61,8 @@ public:
 
     void markForDeath(size_t particleIndex);
 
+    bool markedForDeath(size_t particleIdx);
+
     Grid2d<ParticleBin>& bins();
 
     template<class T>

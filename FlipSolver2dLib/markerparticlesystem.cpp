@@ -113,6 +113,11 @@ void MarkerParticleSystem::markForDeath(size_t particleIndex)
     m_markedForDeath[particleIndex] = true;
 }
 
+bool MarkerParticleSystem::markedForDeath(size_t particleIdx)
+{
+    return m_markedForDeath.at(particleIdx);
+}
+
 Grid2d<MarkerParticleSystem::ParticleBin>& MarkerParticleSystem::bins()
 {
     return m_particleBins;
@@ -120,7 +125,7 @@ Grid2d<MarkerParticleSystem::ParticleBin>& MarkerParticleSystem::bins()
 
 Vertex &MarkerParticleSystem::particlePosition(size_t index)
 {
-    return m_particlePositions[index];
+    return m_particlePositions.at(index);
 }
 
 Vertex &MarkerParticleSystem::particleVelocity(size_t index)
@@ -258,7 +263,11 @@ void MarkerParticleSystem::rebinParticlesThread(Range r, std::latch &sync)
         ParticleBin& currentRebinningSet = rebinSets[rebinSetIdx];
         for(size_t particleIdx : currentRebinningSet)
         {
-            int idx = gridToBinIdx(m_particlePositions[particleIdx]);
+            if(particleIdx >= m_particlePositions.size())
+            {
+                continue;
+            }
+            int idx = gridToBinIdx(m_particlePositions.at(particleIdx));
             if(idx == binIdx)
             {
                 currentBin.push_back(particleIdx);

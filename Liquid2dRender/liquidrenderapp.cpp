@@ -195,6 +195,16 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_fluidRenderer.dumpToTga("frame.png");
                 break;
 
+                case  GLFW_KEY_EQUAL:
+                    m_fluidRenderer.increaseParticleSize();
+                    render();
+                break;
+
+                case  GLFW_KEY_MINUS:
+                    m_fluidRenderer.decreaseParticleSize();
+                    render();
+                break;
+
                 case GLFW_KEY_SPACE:
                 {
                     if(mods & GLFW_MOD_SHIFT)

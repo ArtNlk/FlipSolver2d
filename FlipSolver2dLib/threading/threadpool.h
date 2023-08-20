@@ -4,6 +4,7 @@
 #include <atomic>
 #include <exception>
 #include <functional>
+#include <limits>
 #include <ostream>
 #include <queue>
 #include <thread>
@@ -14,10 +15,10 @@
 
 struct Range
 {
-    unsigned int start;
-    unsigned int end;
+    size_t start;
+    size_t end;
 
-    unsigned int size() const
+    size_t size() const
     {
         return end-start;
     }
@@ -44,9 +45,11 @@ public:
         m_cv.notify_one();
     }
 
-    std::vector<Range> splitRange(unsigned int length, unsigned int minSize = 1);
+    std::vector<Range> splitRange(size_t length,
+                                  size_t minSize = 1, size_t jobsPerThread = 1);
 
-    std::vector<Range> splitRange(unsigned int start, unsigned int end, unsigned int minSize);
+    std::vector<Range> splitRange(Range r,
+                                  size_t minSize = 1, size_t jobsPerThread = 1);
 
     void wait();
 

@@ -29,42 +29,42 @@ ThreadPool *ThreadPool::i()
     return &instance;
 }
 
-std::vector<Range> ThreadPool::splitRange(unsigned int length, unsigned int minSize)
+std::vector<Range> ThreadPool::splitRange(size_t length, size_t minSize, size_t jobsPerThread)
 {
-    return splitRange(0,length,minSize);
+    return splitRange(Range(0,length),minSize, jobsPerThread);
 }
 
-std::vector<Range> ThreadPool::splitRange(unsigned int start, unsigned int end, unsigned int minSize)
+std::vector<Range> ThreadPool::splitRange(Range r, size_t minSize, size_t jobsPerThread)
 {
-    if(start == end)
+    if(r.size() == 0)
     {
         return std::vector<Range>();
     }
-    unsigned int rangeSize = end - start;
-    unsigned int numParts = m_threads.size();
-    if(rangeSize < numParts)
+
+    size_t numParts = m_threads.size() * jobsPerThread;
+    if(r.size() < numParts)
     {
-        numParts = rangeSize;
+        numParts = r.size();
     }
     std::vector<Range> parts;
     parts.reserve(numParts);
-    unsigned int partSize = std::floor(rangeSize / numParts);
+    size_t partSize = std::floor(r.size() / numParts);
     partSize = std::max(minSize,partSize);
-    unsigned int remainder = 0;
-    if(partSize * numParts < rangeSize)
+    size_t remainder = 0;
+    if(partSize * numParts < r.size())
     {
-        remainder = rangeSize - (partSize * numParts);
+        remainder = r.size() - (partSize * numParts);
     }
-    unsigned int currentStart = start;
-    unsigned int currentEnd = start + partSize;
-    currentEnd = std::min(end,currentEnd);
-    for (unsigned int i = 0; i < numParts; i++) {
+    size_t currentStart = r.start;
+    size_t currentEnd = r.start + partSize;
+    currentEnd = std::min(r.end,currentEnd);
+    for (size_t i = 0; i < numParts; i++) {
         if (i < remainder) {
             currentEnd++;
         }
-        parts.emplace_back(Range{currentStart, currentEnd});
+        parts.emplace_back(currentStart, currentEnd);
         currentStart = currentEnd;
-        currentEnd = std::min(currentStart + partSize, end);
+        currentEnd = std::min(currentStart + partSize, r.end);
         if(currentEnd == currentStart) break;
     }
     parts.shrink_to_fit();

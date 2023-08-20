@@ -57,7 +57,8 @@ FluidRenderer::FluidRenderer(int textureWidth, int textureHeight) :
     m_vectorsEnabled(true),
     m_geometryEnabled(true),
     m_particlesEnabled(true),
-    m_solver(nullptr)
+    m_solver(nullptr),
+    m_particleRadius(1)
 {
 
 }
@@ -127,7 +128,7 @@ void FluidRenderer::render()
     }
     if(m_particlesEnabled)
     {
-        glPointSize(1);
+        glPointSize(m_particleRadius);
         glBindVertexArray(m_vao_particles);
         glDrawArrays(GL_POINTS,0,m_particleVerts.size() / m_vertexSize);
     }

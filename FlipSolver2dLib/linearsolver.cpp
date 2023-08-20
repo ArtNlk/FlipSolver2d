@@ -79,7 +79,7 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
         std::cout << "Solver skipped zeros vector" << '\n';
         return true;
     }
-    DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
+    //DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
     UpperTriangularMatrix matrix(matrixIn);
 
     //debug() << "mat=" << matrix;
