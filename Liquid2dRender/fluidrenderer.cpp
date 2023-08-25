@@ -54,11 +54,11 @@ FluidRenderer::FluidRenderer(int textureWidth, int textureHeight) :
     m_gridRenderMode(FluidRenderMode::RENDER_MATERIAL),
     m_vectorRenderMode(VectorRenderMode::VECTOR_RENDER_CENTER),
     m_particleRenderMode(ParticleRenderMode::PARTICLE_RENDER_VELOCITY),
-    m_vectorsEnabled(true),
+    m_vectorsEnabled(false),
     m_geometryEnabled(true),
     m_particlesEnabled(true),
-    m_solver(nullptr),
-    m_particleRadius(1)
+    m_particleRadius(1),
+    m_solver(nullptr)
 {
 
 }
