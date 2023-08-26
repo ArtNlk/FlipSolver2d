@@ -86,7 +86,7 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
     std::vector<double> residual = vec;
     std::vector<double> aux = vec;
     //applyICPrecond(precond,residual,aux);
-    applyIPPrecond(matrix,residual,aux);
+    applyIPPrecond(&matrix,&residual,&aux);
     std::vector<double> search = aux;
     double sigma = VOps::i().dot(aux,residual);
     double err = 0.0;
@@ -110,7 +110,7 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
         }
         //aux = residual;
         //applyICPrecond(precond,residual,aux);
-        applyIPPrecond(matrix,residual,aux);
+        applyIPPrecond(&matrix,&residual,&aux);
         double newSigma = VOps::i().dot(aux,residual);
         double beta = newSigma/(sigma);
         VOps::i().addMul(search,aux,search,beta);
@@ -313,16 +313,16 @@ DynamicUpperTriangularSparseMatrix LinearSolver::calcPrecond(const DynamicUpperT
     return output;
 }
 
-void LinearSolver::applyIPPrecond(const UpperTriangularMatrix& p, const std::vector<double> &in, std::vector<double> &out)
+void LinearSolver::applyIPPrecond(const UpperTriangularMatrix *p, const std::vector<double> *in, std::vector<double> *out)
 {
-    std::vector<double> temp(in.size(),0.0);
+    std::vector<double> temp(in->size(),0.0);
 
-    std::vector<Range> ranges = ThreadPool::i()->splitRange(in.size(),128);
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(in->size(),128);
 
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&LinearSolver::firstStepIPPMatmulThread,range,this,std::ref(p),
-                                 std::ref(in),std::ref(temp));
+        ThreadPool::i()->enqueue(&LinearSolver::firstStepIPPMatmulThread,range,this,p,
+                                 in,&temp);
         //nomatVMulThread(range,elementProvider,vin,vout);
     }
     ThreadPool::i()->wait();
@@ -330,43 +330,43 @@ void LinearSolver::applyIPPrecond(const UpperTriangularMatrix& p, const std::vec
     for(Range& range : ranges)
     {
         ThreadPool::i()->enqueue(&LinearSolver::secondStepIPPMatmulThread,range,this,p,
-                                 std::ref(temp),std::ref(out));
+                                 &temp,out);
         //nomatVMulThread(range,elementProvider,vin,vout);
     }
     ThreadPool::i()->wait();
 }
 
-void LinearSolver::firstStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix& p, const std::vector<double> &in, std::vector<double> &out)
+void LinearSolver::firstStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix* p, const std::vector<double> *in, std::vector<double> *out)
 {
     for(int i = r.start; i < r.end; i++)
     {
         auto neighbors = s->m_mainMaterialGrid.immidiateNeighbors(i);
-        double diag = p.getValue(i,i);
+        double diag = p->getValue(i,i);
         if(std::abs(diag) < 0.0001)
         {
-            out[i] = in[i];
+            out->data()[i] = in->data()[i];
             continue;
         }
-        double v1 = in[neighbors[1]];
-        double v2 = in[neighbors[3]];
-        out[i] = in[i] - (v1 * p.getValue(i,neighbors[1])
-                           + v2 * p.getValue(i,neighbors[3])) / diag;
+        double v1 = in->data()[neighbors[1]];
+        double v2 = in->data()[neighbors[3]];
+        out->data()[i] = in->data()[i] - (v1 * p->getValue(i,neighbors[1])
+                                          + v2 * p->getValue(i,neighbors[3])) / diag;
     }
 }
 
-void LinearSolver::secondStepIPPMatmulThread(Range r, LinearSolver *s, const UpperTriangularMatrix& p, const std::vector<double> &in, std::vector<double> &out)
+void LinearSolver::secondStepIPPMatmulThread(Range r, LinearSolver *s, const UpperTriangularMatrix* p, const std::vector<double> *in, std::vector<double> *out)
 {
     for(int i = r.start; i < r.end; i++)
     {
         auto neighbors = s->m_mainMaterialGrid.immidiateNeighbors(i);
-        double diag = p.getValue(i,i);
+        double diag = p->getValue(i,i);
         if(std::abs(diag) < 0.0001)
         {
-            out[i] = in[i];
+            out->data()[i] = in->data()[i];
             continue;
         }
-        out[i] = in[i] - (in[neighbors[0]] * p.getValue(i,neighbors[0])
-                            + in[neighbors[2]] * p.getValue(i,neighbors[2])) / diag;
+        out->data()[i] = in->data()[i] - (in->data()[neighbors[0]] * p->getValue(i,neighbors[0])
+                          + in->data()[neighbors[2]] * p->getValue(i,neighbors[2])) / diag;
     }
 }
 

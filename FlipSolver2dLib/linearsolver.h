@@ -35,14 +35,14 @@ protected:
     void applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
     DynamicUpperTriangularSparseMatrix calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix);
 
-    void applyIPPrecond(const UpperTriangularMatrix& p,
-                        const std::vector<double> &in, std::vector<double> &out);
+    void applyIPPrecond(const UpperTriangularMatrix* p,
+                        const std::vector<double> *in, std::vector<double> *out);
 
-    static void firstStepIPPMatmulThread(Range r, LinearSolver* s,const UpperTriangularMatrix& p,
-                                           const std::vector<double> &in, std::vector<double> &out);
+    static void firstStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix *p,
+                                           const std::vector<double> *in, std::vector<double> *out);
 
-    static void secondStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix& p,
-                                            const std::vector<double> &in, std::vector<double> &out);
+    static void secondStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix *p,
+                                            const std::vector<double> *in, std::vector<double> *out);
 
     void applyMfIPPrecond(MatElementProvider p, const std::vector<double> &in, std::vector<double> &out);
 
