@@ -24,6 +24,8 @@ protected:
 
     void particleVelocityToGrid() override;
 
+    void particleVelocityToGridThread(Range r, Grid2d<float>& uWeights, Grid2d<float>& vWeights);
+
     void reseedParticles() override;
 
     void firstFrameInit() override;
@@ -49,6 +51,10 @@ protected:
     SdfGrid m_advectedSdf;
     Grid2d<float> m_uWeights;
     Grid2d<float> m_vWeights;
+
+    float m_narrowBand;
+    float m_combinationBand;
+    float m_resamplingBand;
 };
 
 #endif // NBFLIPSOLVER_H

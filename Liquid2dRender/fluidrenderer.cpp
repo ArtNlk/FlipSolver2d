@@ -781,6 +781,7 @@ void FluidRenderer::updateVectorsCentered()
                                                         static_cast<float>(j) + 0.5);
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceVelocity.distFromZero() / m_solver->dx();
+            scaleFactor += 0.00001f;
             //float scaleFactor = 1;
             Vertex newVector = Vertex((gridspaceVelocity.y() / scaleFactor),
                                        (gridspaceVelocity.x() / scaleFactor));

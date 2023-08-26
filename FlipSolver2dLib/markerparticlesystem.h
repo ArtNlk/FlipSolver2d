@@ -102,13 +102,13 @@ protected:
     template<class T>
     inline void swapErase(std::vector<T>& v, size_t index)
     {
-        std::swap<T>(v[index],v[v.size()]);
+        std::swap<T>(v[index],v[v.size()-1]);
         v.pop_back();
     }
 
     inline void swapErase(std::vector<bool>& v, size_t index)
     {
-        std::vector<bool>::swap(v[index],v[v.size()]);
+        std::vector<bool>::swap(v[index],v[v.size()-1]);
         v.pop_back();
     }
 

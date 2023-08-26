@@ -1,10 +1,13 @@
+#include <fenv.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
-
+#ifdef __linux__
+#include <cfenv>
+#endif
 
 #include <iostream>
 
@@ -32,6 +35,7 @@ int main()
 {
 #ifdef __linux__
     signal(SIGSEGV, handler);
+    feenableexcept(FE_DIVBYZERO);
 #endif
     LiquidRenderApp app;
     app.init();

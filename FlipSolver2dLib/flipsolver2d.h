@@ -224,6 +224,8 @@ protected:
 
     void extrapolateLevelsetInside(SdfGrid& grid);
 
+    void extrapolateLevelsetOutside(SdfGrid& grid);
+
     void updateLinearFluidViscosityMapping();
 
     void updateValidULinearMapping();
@@ -235,6 +237,8 @@ protected:
     int linearViscosityVelocitySampleIndexV(int i, int j);
 
     float maxParticleVelocity();
+
+    float maxGridVelocity();
 
     int m_frameNumber;
     int m_validVVelocitySampleCount;

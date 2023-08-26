@@ -93,7 +93,7 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
     for (int i = 0; i < iterLimit; i++)
     {
         aux = matrix * search;
-        double alpha = sigma/(VOps::i().dot(aux,search));
+        double alpha = sigma/(VOps::i().dot(aux,search) + 1e-8);
         VOps::i().addMul(result,result,search,alpha);
         VOps::i().subMul(residual,residual,aux,alpha);
         err = VOps::i().maxAbs(residual);

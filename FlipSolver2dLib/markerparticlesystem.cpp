@@ -110,7 +110,7 @@ void MarkerParticleSystem::eraseMarkerParticle(size_t index)
 
 void MarkerParticleSystem::markForDeath(size_t particleIndex)
 {
-    m_markedForDeath[particleIndex] = true;
+    m_markedForDeath.at(particleIndex) = true;
 }
 
 bool MarkerParticleSystem::markedForDeath(size_t particleIdx)
@@ -130,7 +130,7 @@ Vertex &MarkerParticleSystem::particlePosition(size_t index)
 
 Vertex &MarkerParticleSystem::particleVelocity(size_t index)
 {
-    return m_velocities[index];
+    return m_velocities.at(index);
 }
 
 std::vector<Vertex> &MarkerParticleSystem::positions()

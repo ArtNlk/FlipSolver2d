@@ -80,7 +80,7 @@ void FlipSolver::project()
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
     DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit, 1e-2))
+    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit, 1e-6))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
@@ -623,7 +623,7 @@ void FlipSolver::reseedParticles()
         {
             m_markerParticles.markForDeath(pIndex);
             m_fluidParticleCounts.at(i,j) -= 1;
-            pIndex--;
+            //pIndex--;
             continue;
         }
     }
@@ -1428,6 +1428,7 @@ void FlipSolver::updateSdfThread(Range range)
                 {
                     //testValues[particleIdx] = binIdx >= 0;
                     Vertex position = m_markerParticles.particlePosition(particleIdx);
+                    //m_testGrid.at(position.x(), position.y()) = 1;
                     float diffX = position.x() - centerPoint.x();
                     float diffY = position.y() - centerPoint.y();
                     float newDistSqrd = diffX*diffX + diffY * diffY;
@@ -1614,6 +1615,68 @@ void FlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
     }
 }
 
+void FlipSolver::extrapolateLevelsetOutside(SdfGrid &grid)
+{
+    int sizeI = grid.sizeI();
+    int sizeJ = grid.sizeJ();
+    const float maxSdf = sizeI * sizeJ;
+    Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
+    std::queue<Index2d> wavefront;
+    for(int i = 0; i < sizeI; i++)
+    {
+        for(int j = 0; j < sizeJ; j++)
+        {
+            if(grid.at(i,j) < maxSdf)
+            {
+                markers.at(i,j) = 0;
+            }
+        }
+    }
+
+    for(int i = 0; i < sizeI; i++)
+    {
+        for(int j = 0; j < sizeJ; j++)
+        {
+            if(markers.at(i,j) != 0)
+            {
+                for(Index2d& neighborIndex : grid.getNeighborhood(i,j,1,false))
+                {
+                    if(markers.at(neighborIndex) == 0)
+                    {
+                        markers.at(i,j) = 1;
+                        wavefront.push(Index2d(i,j));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    while(!wavefront.empty())
+    {
+        Index2d index = wavefront.front();
+        std::vector<Index2d> neighbors = grid.getNeighborhood(index,1,false);
+        double avg = 0;
+        int count = 0;
+        for(Index2d& neighborIndex : neighbors)
+        {
+            if(markers.at(neighborIndex) < markers.at(index))
+            {
+                avg += grid.at(neighborIndex);
+                count++;
+            }
+            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= 1e6)
+            {
+                markers.at(neighborIndex) = markers.at(index) + 1;
+                wavefront.push(neighborIndex);
+            }
+        }
+        grid.at(index) = avg / count + 1.f;
+
+        wavefront.pop();
+    }
+}
+
 void FlipSolver::updateLinearFluidViscosityMapping()
 {
     updateValidULinearMapping();
@@ -1691,6 +1754,23 @@ float FlipSolver::maxParticleVelocity()
     {
         float velocitySqr = velocity.x()*velocity.x() + velocity.y()*velocity.y();
         if(velocitySqr > maxVelocitySqr) maxVelocitySqr = velocitySqr;
+    }
+
+    return std::sqrt(maxVelocitySqr);
+}
+
+float FlipSolver::maxGridVelocity()
+{
+    float maxVelocitySqr = std::numeric_limits<float>::min();
+    for(int i = 0; i < m_sizeI; i++)
+    {
+        for(int j = 0; j < m_sizeJ; j++)
+        {
+            float vU = m_fluidVelocityGrid.getU(i,j);
+            float vV = m_fluidVelocityGrid.getV(i,j);
+            float velocitySqr = vU*vU + vV*vV;
+            if(velocitySqr > maxVelocitySqr) maxVelocitySqr = velocitySqr;
+        }
     }
 
     return std::sqrt(maxVelocitySqr);
