@@ -20,6 +20,7 @@ void FlipSmokeSolver::applyBodyForces()
 {
     float alpha = 0.8f;
     float beta = 1.f/m_ambientTemperature;
+    const float factor = m_stepDt / m_dx;
     for (int i = 0; i < m_sizeI + 1; i++)
     {
         for (int j = 0; j < m_sizeJ + 1; j++)
@@ -30,7 +31,7 @@ void FlipSmokeSolver::applyBodyForces()
                 float tempDiff = tempAt - m_ambientTemperature;
                 float concentration = m_smokeConcentration.lerpolateAt(static_cast<float>(i)-0.5f,j);
                 float accelerationU = (alpha * concentration - beta * tempDiff) *
-                                        m_globalAcceleration.x() * m_stepDt;
+                                        m_globalAcceleration.x() * factor;
                 m_fluidVelocityGrid.u(i,j) += accelerationU;
             }
             if(m_fluidVelocityGrid.velocityGridV().inBounds(i,j))
@@ -39,7 +40,7 @@ void FlipSmokeSolver::applyBodyForces()
                 float tempDiff = tempAt - m_ambientTemperature;
                 float concentration = m_smokeConcentration.lerpolateAt(i,static_cast<float>(j)-0.5f);
                 float accelerationV = (alpha * concentration - beta * tempDiff) *
-                                        m_globalAcceleration.y() * m_stepDt;
+                                        m_globalAcceleration.y() * factor;
                 m_fluidVelocityGrid.v(i,j) += accelerationV;
             }
         }

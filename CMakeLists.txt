@@ -11,7 +11,7 @@ set(ALL_WARNINGS OFF)
 
 if(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic-errors")
-    if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         add_compile_options(-O3 -fno-tree-vectorize)
     elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
         #add_compile_options(-Og)

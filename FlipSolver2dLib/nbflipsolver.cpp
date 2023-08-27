@@ -14,10 +14,11 @@ NBFlipSolver::NBFlipSolver(const NBFlipParameters *p):
             m_fluidVelocityGrid.velocityGridU().sizeJ(),1e-10f),
     m_vWeights(m_fluidVelocityGrid.velocityGridV().sizeI(),
             m_fluidVelocityGrid.velocityGridV().sizeJ(),1e-10f),
-    m_narrowBand(-5.f),
-    m_combinationBand(-3.f),
+    m_narrowBand(-3.f),
+    m_combinationBand(-2.f),
     m_resamplingBand(-1.f)
 {
+    m_projectTolerance = 1e-6;
 }
 
 void NBFlipSolver::step()
@@ -399,11 +400,16 @@ void NBFlipSolver::combineVelocityGrid()
 
 Vertex NBFlipSolver::inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid &grid)
 {
-    float factor = m_stepDt / m_dx;
+    float factor = m_stepDt;
     Vertex k1 = factor*grid.velocityAt(newPosition);
     Vertex k2 = factor*grid.velocityAt(newPosition - 0.5f*k1);
     Vertex k3 = factor*grid.velocityAt(newPosition - 0.5f*k2);
     Vertex k4 = factor*grid.velocityAt(newPosition - k3);
 
     return newPosition - (1.0f/6.0f)*(k1 - 2.f*k2 - 2.f*k3 - k4);
+}
+
+const StaggeredVelocityGrid &NBFlipSolver::advectedVelocityGrid() const
+{
+    return m_advectedVelocity;
 }

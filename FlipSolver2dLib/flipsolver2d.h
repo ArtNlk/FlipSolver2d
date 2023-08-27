@@ -206,7 +206,7 @@ protected:
 
     void applyPressureThreadV(Range range,const std::vector<double> &pressures);
     
-    Vertex rk4Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid);
+    Vertex rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid);
 
     virtual void particleToGrid();
 
@@ -291,6 +291,7 @@ protected:
 
     float m_frameTime;
     float m_avgFrameMs;
+    double m_projectTolerance;
 
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;

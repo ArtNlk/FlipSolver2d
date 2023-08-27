@@ -46,6 +46,8 @@ protected:
     
     Vertex inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid& grid);
 
+    const StaggeredVelocityGrid &advectedVelocityGrid() const;
+
 protected:
     StaggeredVelocityGrid m_advectedVelocity;
     SdfGrid m_advectedSdf;

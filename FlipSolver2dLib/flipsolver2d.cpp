@@ -59,7 +59,8 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_domainSizeI(p->domainSizeI),
     m_domainSizeJ(p->domainSizeJ),
     m_sceneScale(p->sceneScale),
-    m_simulationMethod(p->simulationMethod)
+    m_simulationMethod(p->simulationMethod),
+    m_projectTolerance(1e-2)
 {
     m_randEngine = std::mt19937(p->seed);
     m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
@@ -80,7 +81,7 @@ void FlipSolver::project()
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
     DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit, 1e-6))
+    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit, 1e-2))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
@@ -331,7 +332,7 @@ void FlipSolver::advectThread(Range range)
     for(int i = range.start; i < range.end; i++)
     {
         Vertex& position = m_markerParticles.positions()[i];
-        position = rk4Integrate(position,m_stepDt, m_fluidVelocityGrid);
+        position = rk4Integrate(position, m_fluidVelocityGrid);
         if(m_solidSdf.interpolateAt(position.x(),position.y()) < 0.f)
         {
             position = m_solidSdf.closestSurfacePoint(position);
@@ -1337,13 +1338,13 @@ void FlipSolver::applyPressureThreadV(Range range, const std::vector<double> &pr
     }
 }
 
-Vertex FlipSolver::rk4Integrate(Vertex currentPosition, float dt, StaggeredVelocityGrid &grid)
+Vertex FlipSolver::rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid)
 {
-    float dxFactor = 1.f/m_dx;
-    Vertex k1 = dxFactor*dt*grid.velocityAt(currentPosition);
-    Vertex k2 = dxFactor*dt*grid.velocityAt(currentPosition + 0.5f*k1);
-    Vertex k3 = dxFactor*dt*grid.velocityAt(currentPosition + 0.5f*k2);
-    Vertex k4 = dxFactor*dt*grid.velocityAt(currentPosition + k3);
+    float factor = m_stepDt;
+    Vertex k1 = factor*grid.velocityAt(currentPosition);
+    Vertex k2 = factor*grid.velocityAt(currentPosition + 0.5f*k1);
+    Vertex k3 = factor*grid.velocityAt(currentPosition + 0.5f*k2);
+    Vertex k4 = factor*grid.velocityAt(currentPosition + k3);
 
     return currentPosition + (1.0f/6.0f)*(k1 + 2.f*k2 + 2.f*k3 + k4);
 }
@@ -1356,6 +1357,7 @@ void FlipSolver::particleToGrid()
 
 void FlipSolver::applyBodyForces()
 {
+    const float factor = m_stepDt / m_dx;
     for (int i = 0; i < m_sizeI + 1; i++)
     {
         for (int j = 0; j < m_sizeJ + 1; j++)
@@ -1363,12 +1365,12 @@ void FlipSolver::applyBodyForces()
             if(m_fluidVelocityGrid.velocityGridU().inBounds(i,j))
             {
                 m_fluidVelocityGrid.u(i,j) +=
-                        m_stepDt * m_globalAcceleration.x();
+                        factor * m_globalAcceleration.x();
             }
             if(m_fluidVelocityGrid.velocityGridV().inBounds(i,j))
             {
                 m_fluidVelocityGrid.v(i,j) +=
-                        m_stepDt * m_globalAcceleration.y();
+                        factor * m_globalAcceleration.y();
             }
         }
     }
