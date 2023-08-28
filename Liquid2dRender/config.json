@@ -1,7 +1,7 @@
 {
   "-scene": "./scenes/waterfall.json",
-  "scene": "./scenes/glass_pour.json",
-  "-scene": "./scenes/dam_break.json",
+  "-scene": "./scenes/glass_pour.json",
+  "scene": "./scenes/dam_break.json",
   "-scene": "./scenes/test_scene.json",
   "-scene": "./scenes/viscosity_test.json",
   "-scene": "./scenes/smoke_test.json",

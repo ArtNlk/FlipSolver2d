@@ -57,6 +57,7 @@ public:
     {
         //return simmath::lerpCenteredGrid(i, j, *this, m_gridOffset);
         return m_cubicInterpFunc(this,i, j);
+        //return lerpolateAt(i,j);
     }
 
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>

@@ -233,47 +233,23 @@ int MarkerParticleSystem::gridToBinIdx(int i, int j)
 
 void MarkerParticleSystem::rebinParticlesThread(Range r, std::latch &sync)
 {
-    std::vector<ParticleBin> rebinSets(r.end - r.start);
-    int rebinSetIdx = 0;
-    for(int binIdx = r.start; binIdx < r.end; binIdx++)
-    {
-        rebinSets[rebinSetIdx].reserve(100);
-        Index2d currentBinIdx = m_particleBins.index2d(binIdx);
-        for(int rebinIdx : rebinSetForBinIdx(currentBinIdx))
-        {
-            if(rebinIdx == -1)
-            {
-                continue;
-            }
+    std::vector<float>& testValues = std::get<std::vector<float>>(getProperties(0));
 
-            rebinSets[rebinSetIdx].insert(rebinSets[rebinSetIdx].end(),
-                                         m_particleBins.data()[rebinIdx].begin(),
-                                         m_particleBins.data()[rebinIdx].end());
-        }
-        rebinSetIdx++;
-    }
-
-    sync.arrive_and_wait();
-
-    rebinSetIdx = 0;
     for(int binIdx = r.start; binIdx < r.end; binIdx++)
     {
         ParticleBin& currentBin = m_particleBins.data()[binIdx];
+        std::vector<float>& testValues = std::get<std::vector<float>>(m_properties[0]);
         currentBin.clear();
-        ParticleBin& currentRebinningSet = rebinSets[rebinSetIdx];
-        for(size_t particleIdx : currentRebinningSet)
+        for(int particleIdx = 0; particleIdx < m_particlePositions.size(); particleIdx++)
         {
-            if(particleIdx >= m_particlePositions.size())
-            {
-                continue;
-            }
-            int idx = gridToBinIdx(m_particlePositions.at(particleIdx));
+            int idx = gridToBinIdx(m_particlePositions[particleIdx]);
+
             if(idx == binIdx)
             {
                 currentBin.push_back(particleIdx);
+                //testValues[particleIdx] = binIdx % 2 == 0;
             }
         }
-        rebinSetIdx++;
     }
 }
 
