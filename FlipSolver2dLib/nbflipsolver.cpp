@@ -84,7 +84,7 @@ void NBFlipSolver::advect()
 
 void NBFlipSolver::afterTransfer()
 {
-    //FlipSolver::afterTransfer();
+    FlipSolver::afterTransfer();
     updateSdfFromSources();
     combineAdvectedGrids();
 }

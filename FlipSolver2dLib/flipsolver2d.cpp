@@ -384,13 +384,13 @@ void FlipSolver::afterTransfer()
             {
                 int emitterId = m_emitterId.at(i,j);
                 m_viscosityGrid.at(i,j) = m_sources[emitterId].viscosity();
-                if(m_sources[emitterId].velocityTransfer())
-                {
+//                if(m_sources[emitterId].velocityTransfer())
+//                {
                     m_fluidVelocityGrid.setU(i,j,m_sources[emitterId].velocity().x() / m_dx);
                     m_fluidVelocityGrid.setV(i,j,m_sources[emitterId].velocity().y() / m_dx);
                     m_fluidVelocityGrid.setUValidity(i,j,true);
                     m_fluidVelocityGrid.setVValidity(i,j,true);
-                }
+//                }
             }
         }
     }
