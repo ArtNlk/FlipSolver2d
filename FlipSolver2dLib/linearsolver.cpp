@@ -315,6 +315,8 @@ DynamicUpperTriangularSparseMatrix LinearSolver::calcPrecond(const DynamicUpperT
 
 void LinearSolver::applyIPPrecond(const UpperTriangularMatrix *p, const std::vector<double> *in, std::vector<double> *out)
 {
+    out->assign(in->begin(),in->end());
+    return;
     std::vector<double> temp(in->size(),0.0);
 
     std::vector<Range> ranges = ThreadPool::i()->splitRange(in->size(),128);

@@ -68,7 +68,7 @@ void MarkerParticleSystem::pruneParticles()
     }
 }
 
-void MarkerParticleSystem::addMarkerParticle(Vertex position, Vertex velocity)
+size_t MarkerParticleSystem::addMarkerParticle(Vertex position, Vertex velocity)
 {
     m_particlePositions.push_back(position);
     binForGridPosition(m_particlePositions.back()).push_back(m_particlePositions.size() - 1);
@@ -87,6 +87,8 @@ void MarkerParticleSystem::addMarkerParticle(Vertex position, Vertex velocity)
             break;
         }
     }
+
+    return m_particlePositions.size() - 1;
 }
 
 void MarkerParticleSystem::eraseMarkerParticle(size_t index)
@@ -206,11 +208,6 @@ size_t MarkerParticleSystem::particleCount() const
     return m_particlePositions.size();
 }
 
-MarkerParticleSystem::VariantVector &MarkerParticleSystem::getProperties(size_t propertyIndex)
-{
-    return m_properties[propertyIndex];
-}
-
 int MarkerParticleSystem::gridToBinIdx(Index2d idx)
 {
     return gridToBinIdx(idx.i,idx.j);
@@ -233,7 +230,7 @@ int MarkerParticleSystem::gridToBinIdx(int i, int j)
 
 void MarkerParticleSystem::rebinParticlesThread(Range r, std::latch &sync)
 {
-    std::vector<float>& testValues = std::get<std::vector<float>>(getProperties(0));
+    std::vector<float>& testValues = particleProperties<float>(0);
 
     for(int binIdx = r.start; binIdx < r.end; binIdx++)
     {

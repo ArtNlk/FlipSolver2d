@@ -55,7 +55,7 @@ public:
 
     void pruneParticles();
 
-    void addMarkerParticle(Vertex position, Vertex velocity = Vertex());
+    size_t addMarkerParticle(Vertex position, Vertex velocity = Vertex());
 
     void eraseMarkerParticle(size_t index);
 
@@ -81,6 +81,12 @@ public:
 
     std::vector<Vertex>& velocities();
 
+    template<class T>
+    std::vector<T>& particleProperties(size_t propertyIndex)
+    {
+        return std::get<std::vector<T>>(m_properties.at(propertyIndex));
+    }
+
     Index2d binIdxForIdx(Index2d idx);
 
     Index2d binIdxForIdx(int i, int j);
@@ -92,8 +98,6 @@ public:
     std::array<int,9> rebinSetForBinIdx(Index2d idx);
 
     size_t particleCount() const;
-
-    VariantVector& getProperties(size_t propertyIndex);
 
 protected:
 

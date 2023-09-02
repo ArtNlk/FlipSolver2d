@@ -876,8 +876,8 @@ void FluidRenderer::reloadParticlesFromTestValue()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
-    std::vector<float>& testValues = std::get<std::vector<float>>(
-        m_solver->markerParticles().getProperties(m_solver->testValuePropertyIndex()));
+    std::vector<float>& testValues = m_solver->markerParticles().particleProperties<float>(
+        m_solver->testValuePropertyIndex());
     for(size_t idx = 0; idx < m_solver->markerParticles().particleCount(); idx++)
     {
         Vertex position = m_solver->markerParticles().positions()[idx];

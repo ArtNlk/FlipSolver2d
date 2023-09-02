@@ -3,7 +3,7 @@
     "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 75,
-    "resolution": 256,
+    "resolution": 128,
     "fps": 30,
     "scale": 1,
     "maxSubsteps": 10,

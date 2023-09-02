@@ -39,6 +39,7 @@ struct FlipSolverParameters
     int gridSizeI;
     int gridSizeJ;
     float sceneScale;
+    bool viscosityEnabled;
     SimulationMethod simulationMethod;
 };
 
@@ -142,6 +143,8 @@ public:
 
 protected:
 
+    virtual void initAdditionalParameters();
+
     virtual double divergenceAt(int i, int j);
 
     std::vector<int> validSolidNeighborIds(int i, int j);
@@ -226,16 +229,6 @@ protected:
 
     void extrapolateLevelsetOutside(SdfGrid& grid);
 
-    void updateLinearFluidViscosityMapping();
-
-    void updateValidULinearMapping();
-
-    void updateValidVLinearMapping();
-
-    int linearViscosityVelocitySampleIndexU(int i, int j);
-
-    int linearViscosityVelocitySampleIndexV(int i, int j);
-
     float maxParticleVelocity();
 
     float maxGridVelocity();
@@ -285,13 +278,15 @@ protected:
     float m_domainSizeI;
     float m_domainSizeJ;
     float m_sceneScale;
+    double m_projectTolerance;
+    bool m_viscosityEnabled;
     SimulationMethod m_simulationMethod;
 
     size_t m_testValuePropertyIndex;
+    size_t m_viscosityPropertyIndex;
 
     float m_frameTime;
     float m_avgFrameMs;
-    double m_projectTolerance;
 
     std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
     std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
