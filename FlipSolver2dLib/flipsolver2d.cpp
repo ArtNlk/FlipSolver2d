@@ -13,6 +13,7 @@
 #include "grid2d.h"
 #include "index2d.h"
 #include "linearindexable2d.h"
+#include "linearsolver.h"
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
 
@@ -20,6 +21,7 @@
 #include "logger.h"
 #include "mathfuncs.h"
 #include "threadpool.h"
+#include "uppertriangularmatrix.h"
 
 FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     LinearIndexable2d(p->gridSizeI, p->gridSizeJ),
@@ -65,7 +67,10 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
 {
     m_randEngine = std::mt19937(p->seed);
     m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
-    m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-2;
+    m_projectTolerance = m_viscosityEnabled? 1e-2 : 1e-2;
+    m_projectPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
+    m_densityPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
+    m_viscosityPreconditioner = std::make_shared<StubPreconditioner>();
 }
 
 FlipSolver::~FlipSolver()
@@ -82,8 +87,9 @@ void FlipSolver::project()
     }
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
-    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit, m_projectTolerance))
+    UpperTriangularMatrix mat = UpperTriangularMatrix(getPressureProjectionMatrix());
+    IPPreconditioner::IPPreconditionerData pd(mat);
+    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,&pd, m_pcgIterLimit, m_projectTolerance))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
@@ -140,11 +146,11 @@ void FlipSolver::applyViscosity()
     std::vector<double> result(m_fluidVelocityGrid.velocityGridU().linearSize() +
                                m_fluidVelocityGrid.velocityGridV().linearSize(), 0.0);
     calcViscosityRhs(rhs);
-    DynamicUpperTriangularSparseMatrix mat = getViscosityMatrix();
+    UpperTriangularMatrix mat = UpperTriangularMatrix(getViscosityMatrix());
     //debug() << "mat=" << mat;
     //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
-    if(!m_pcgSolver.solve(mat,result,rhs,200,1e-6))
+    if(!m_pcgSolver.solve(mat,result,rhs,m_viscosityPreconditioner,nullptr,200,1e-6))
     {
         std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
     }
@@ -196,8 +202,9 @@ void FlipSolver::densityCorrection()
 
     calcDensityCorrectionRhs(m_rhs);
     //    //debug() << "Calculated rhs: " << rhs;
-    DynamicUpperTriangularSparseMatrix mat = getPressureProjectionMatrix();
-    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_pcgIterLimit,1e-2))
+    UpperTriangularMatrix mat = UpperTriangularMatrix(getPressureProjectionMatrix());
+    IPPreconditioner::IPPreconditionerData pd(mat);
+    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_densityPreconditioner,&pd,m_pcgIterLimit,1e-2))
     {
         std::cout << "PCG Solver density: Iteration limit exhaustion!\n";
     }
@@ -275,7 +282,7 @@ void FlipSolver::updateDensityGridThread(Range r, Grid2d<float> &centeredWeights
                                                 static_cast<float>(m_fluidDensity),
                                                 std::numeric_limits<float>::max());
         }
-        //m_testGrid.at(cellIdx) = m_densityGrid.at(cellIdx);
+        m_testGrid.at(cellIdx) = m_densityGrid.at(cellIdx);
     }
 }
 
@@ -299,25 +306,28 @@ void FlipSolver::adjustParticlesByDensityThread(Range r)
             continue;
         }
         Vertex& position = m_markerParticles.positions().at(idx);
-        int i = position.x() - 0.5f;
-        int j = position.y() - 0.5f;
+        int iCorr = position.x() - 0.5f;
+        int jCorr = position.y() - 0.5f;
+        int i = position.x();
+        int j = position.y();
 
-        float pCurrent = m_pressures.getAt(i,j);
+        float pCurrentI = m_pressures.getAt(iCorr,j);
+        float pCurrentJ = m_pressures.getAt(i,jCorr);
 
-        float pI = m_pressures.getAt(i+1,j);
-        float pJ = m_pressures.getAt(i,j+1);
-        if(m_materialGrid.isSolid(i+1,j) || m_materialGrid.isSolid(i,j))
+        float pI = m_pressures.getAt(iCorr+1,j);
+        float pJ = m_pressures.getAt(i,jCorr+1);
+        if(m_materialGrid.isSolid(iCorr+1,j) || m_materialGrid.isSolid(iCorr,j))
         {
-            pI = pCurrent;
+            pI = pCurrentI;
         }
 
-        if(m_materialGrid.isSolid(i,j+1) || m_materialGrid.isSolid(i,j))
+        if(m_materialGrid.isSolid(i,jCorr+1) || m_materialGrid.isSolid(i,jCorr))
         {
-            pJ = pCurrent;
+            pJ = pCurrentJ;
         }
 
-        float pgradU = pI - pCurrent;
-        float pgradV = pJ - pCurrent;
+        float pgradU = pI - pCurrentI;
+        float pgradV = pJ - pCurrentJ;
 
         position.x() += pgradU*scale;
         position.y() += pgradV*scale;
@@ -404,10 +414,7 @@ void FlipSolver::step()
     auto t1 = high_resolution_clock::now();
     advect();
     auto t2 = high_resolution_clock::now();
-    if(!m_viscosityEnabled)
-    {
-        densityCorrection();
-    }
+    densityCorrection();
     m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
     particleToGrid();
@@ -1562,7 +1569,7 @@ void FlipSolver::centeredParamsToGrid()
                 if(m_knownCenteredParams.at(i,j))
                 {
                     m_viscosityGrid.at(i,j) /= centeredWeights.at(i,j);
-                    m_testGrid.at(i,j) = m_viscosityGrid.at(i,j);
+                    //m_testGrid.at(i,j) = m_viscosityGrid.at(i,j);
                 }
             }
         }

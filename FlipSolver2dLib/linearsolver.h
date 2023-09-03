@@ -7,10 +7,57 @@
 
 #include "linearindexable2d.h"
 #include "materialgrid.h"
-#include "hwinfo.h"
 #include "threadpool.h"
 #include "uppertriangularmatrix.h"
 
+class IPreconditioner
+{
+public:
+    struct PreconditionerData
+    {
+        virtual ~PreconditionerData() = default;
+    };
+
+    virtual void apply(std::vector<double> const &in, std::vector<double> &out,
+                       PreconditionerData* data = nullptr) = 0;
+    virtual ~IPreconditioner() = default;
+};
+
+class StubPreconditioner : public IPreconditioner
+{
+public:
+    void apply(std::vector<double> const &in, std::vector<double> &out,
+               PreconditionerData* data = nullptr) override;
+};
+
+class IPPreconditioner : public IPreconditioner
+{
+public:
+    IPPreconditioner(LinearIndexable2d indexer);
+
+    void apply(std::vector<double> const &in, std::vector<double> &out,
+               PreconditionerData* data = nullptr) override;
+
+    struct IPPreconditionerData : public PreconditionerData
+    {
+        IPPreconditionerData(UpperTriangularMatrix &m) :
+            m(m)
+        {
+
+        }
+
+        UpperTriangularMatrix &m;
+    };
+
+private:
+    void firstStepIPPMatmulThread(Range r, const std::vector<double> &in,
+                                  std::vector<double> &out, UpperTriangularMatrix& m);
+
+    void secondStepIPPMatmulThread(Range r, const std::vector<double> &in,
+                                   std::vector<double> &out, UpperTriangularMatrix& m);
+
+    LinearIndexable2d m_indexer;
+};
 
 class LinearSolver
 {
@@ -19,8 +66,12 @@ public:
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
     using MatElementProvider = std::function<SparseMatRowElements(int)>;
 
-    bool solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit = 20, double tol = 1e-6);
-    bool mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit = 20, double tol = 1e-6);
+    bool solve(const UpperTriangularMatrix &matrixIn, std::vector<double> &result,
+               const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data,
+               int iterLimit = 20, double tol = 1e-6);
+    bool mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result,
+                   const std::vector<double> &vec,std::shared_ptr<IPreconditioner> precond,
+                   int iterLimit = 20, double tol = 1e-6);
 
     friend class LinearSolver_sse42;
 
@@ -34,15 +85,6 @@ protected:
 
     void applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
     DynamicUpperTriangularSparseMatrix calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix);
-
-    void applyIPPrecond(const UpperTriangularMatrix* p,
-                        const std::vector<double> *in, std::vector<double> *out);
-
-    static void firstStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix *p,
-                                           const std::vector<double> *in, std::vector<double> *out);
-
-    static void secondStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix *p,
-                                            const std::vector<double> *in, std::vector<double> *out);
 
     void applyMfIPPrecond(MatElementProvider p, const std::vector<double> &in, std::vector<double> &out);
 

@@ -260,6 +260,9 @@ protected:
     Grid2d<double> m_pressures;
 
     LinearSolver m_pcgSolver;
+    std::shared_ptr<IPreconditioner> m_projectPreconditioner;
+    std::shared_ptr<IPreconditioner> m_densityPreconditioner;
+    std::shared_ptr<IPreconditioner> m_viscosityPreconditioner;
 
     float m_stepDt;
     float m_frameDt;

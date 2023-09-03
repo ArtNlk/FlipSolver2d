@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cmath>
+#include <future>
 #include <mutex>
 #include <sstream>
 #include <utility>
@@ -71,28 +72,33 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     }
 }
 
-bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, int iterLimit, double tol)
+bool LinearSolver::solve(const UpperTriangularMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data, int iterLimit, double tol)
 {
     result.assign(result.size(),0);
+    if(precond == nullptr)
+    {
+        return false;
+    }
     if (VOps::i().isZero(vec))
     {
         std::cout << "Solver skipped zeros vector" << '\n';
         return true;
     }
     //DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
-    UpperTriangularMatrix matrix(matrixIn);
+    //UpperTriangularMatrix matrix(matrixIn);
 
     //debug() << "mat=" << matrix;
     std::vector<double> residual = vec;
     std::vector<double> aux = vec;
     //applyICPrecond(precond,residual,aux);
-    applyIPPrecond(&matrix,&residual,&aux);
+    //applyIPPrecond(&matrix,&residual,&aux);
+    precond->apply(residual,aux,data);
     std::vector<double> search = aux;
     double sigma = VOps::i().dot(aux,residual);
     double err = 0.0;
     for (int i = 0; i < iterLimit; i++)
     {
-        aux = matrix * search;
+        aux = matrixIn * search;
         double alpha = sigma/(VOps::i().dot(aux,search) + 1e-8);
         VOps::i().addMul(result,result,search,alpha);
         VOps::i().subMul(residual,residual,aux,alpha);
@@ -110,7 +116,8 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
         }
         //aux = residual;
         //applyICPrecond(precond,residual,aux);
-        applyIPPrecond(&matrix,&residual,&aux);
+        //applyIPPrecond(&matrix,&residual,&aux);
+        precond->apply(residual,aux,data);
         double newSigma = VOps::i().dot(aux,residual);
         double beta = newSigma/(sigma);
         VOps::i().addMul(search,aux,search,beta);
@@ -122,9 +129,13 @@ bool LinearSolver::solve(const DynamicUpperTriangularSparseMatrix &matrixIn, std
     return false;
 }
 
-bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, int iterLimit, double tol)
+bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, int iterLimit, double tol)
 {
     result.assign(result.size(),0);
+    if(precond == nullptr)
+    {
+        return false;
+    }
     if (VOps::i().isZero(vec))
     {
         return true;
@@ -135,7 +146,8 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
     std::vector<double> residual = vec; //r
     std::vector<double> aux = vec; //z
     //applyMGPrecond(residual,aux);
-    applyMfIPPrecond(elementProvider,residual,aux);
+    //applyMfIPPrecond(elementProvider,residual,aux);
+    precond->apply(residual,aux);
     std::vector<double> search = aux; //p
     double sigma = VOps::i().dot(aux,residual);
     double err = 0.0;
@@ -153,7 +165,8 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
         }
         //aux = residual;
         //applyMGPrecond(residual,aux);
-        applyMfIPPrecond(elementProvider,residual,aux);
+        //applyMfIPPrecond(elementProvider,residual,aux);
+        precond->apply(residual,aux);
         double newSigma = VOps::i().dot(aux,residual);
         //std::cout << "New sigma:" << newSigma << std::endl;
         double beta = newSigma/(sigma);
@@ -311,65 +324,6 @@ DynamicUpperTriangularSparseMatrix LinearSolver::calcPrecond(const DynamicUpperT
     }
 
     return output;
-}
-
-void LinearSolver::applyIPPrecond(const UpperTriangularMatrix *p, const std::vector<double> *in, std::vector<double> *out)
-{
-    out->assign(in->begin(),in->end());
-    return;
-    std::vector<double> temp(in->size(),0.0);
-
-    std::vector<Range> ranges = ThreadPool::i()->splitRange(in->size(),128);
-
-    for(Range& range : ranges)
-    {
-        ThreadPool::i()->enqueue(&LinearSolver::firstStepIPPMatmulThread,range,this,p,
-                                 in,&temp);
-        //nomatVMulThread(range,elementProvider,vin,vout);
-    }
-    ThreadPool::i()->wait();
-
-    for(Range& range : ranges)
-    {
-        ThreadPool::i()->enqueue(&LinearSolver::secondStepIPPMatmulThread,range,this,p,
-                                 &temp,out);
-        //nomatVMulThread(range,elementProvider,vin,vout);
-    }
-    ThreadPool::i()->wait();
-}
-
-void LinearSolver::firstStepIPPMatmulThread(Range r, LinearSolver* s, const UpperTriangularMatrix* p, const std::vector<double> *in, std::vector<double> *out)
-{
-    for(int i = r.start; i < r.end; i++)
-    {
-        auto neighbors = s->m_mainMaterialGrid.immidiateNeighbors(i);
-        double diag = p->getValue(i,i);
-        if(std::abs(diag) < 0.0001)
-        {
-            out->data()[i] = in->data()[i];
-            continue;
-        }
-        double v1 = in->data()[neighbors[1]];
-        double v2 = in->data()[neighbors[3]];
-        out->data()[i] = in->data()[i] - (v1 * p->getValue(i,neighbors[1])
-                                          + v2 * p->getValue(i,neighbors[3])) / diag;
-    }
-}
-
-void LinearSolver::secondStepIPPMatmulThread(Range r, LinearSolver *s, const UpperTriangularMatrix* p, const std::vector<double> *in, std::vector<double> *out)
-{
-    for(int i = r.start; i < r.end; i++)
-    {
-        auto neighbors = s->m_mainMaterialGrid.immidiateNeighbors(i);
-        double diag = p->getValue(i,i);
-        if(std::abs(diag) < 0.0001)
-        {
-            out->data()[i] = in->data()[i];
-            continue;
-        }
-        out->data()[i] = in->data()[i] - (in->data()[neighbors[0]] * p->getValue(i,neighbors[0])
-                          + in->data()[neighbors[2]] * p->getValue(i,neighbors[2])) / diag;
-    }
 }
 
 void LinearSolver::applyMfIPPrecond(MatElementProvider p, const std::vector<double> &in, std::vector<double> &out)
@@ -833,4 +787,79 @@ std::array<int, 4> LinearSolver::getCoarseProlongIdxs(const LinearIndexable2d &c
     output[3] = coarseGridIndexer.linearIdxOfOffset(currentCellIdx,0,jOffset);
 
     return output;
+}
+
+void StubPreconditioner::apply(const std::vector<double> &in, std::vector<double> &out, PreconditionerData *data)
+{
+    out.assign(in.begin(),in.end());
+}
+
+IPPreconditioner::IPPreconditioner(LinearIndexable2d indexer) :
+    m_indexer(indexer)
+{
+
+}
+
+void IPPreconditioner::apply(const std::vector<double> &in, std::vector<double> &out, PreconditionerData *data)
+{
+    if(data == nullptr)
+    {
+        std::cout << "IPP data null!" << std::endl;
+        return;
+    }
+
+    IPPreconditionerData* ippData = dynamic_cast<IPPreconditionerData*>(data);
+    std::vector<double> temp(in.size(),0.0);
+
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(in.size(),128);
+
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&IPPreconditioner::firstStepIPPMatmulThread,this,range,
+                                 std::ref(in),std::ref(temp),std::ref(ippData->m));
+        //nomatVMulThread(range,elementProvider,vin,vout);
+    }
+    ThreadPool::i()->wait();
+
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&IPPreconditioner::secondStepIPPMatmulThread,this,range,
+                                 std::ref(temp),std::ref(out),std::ref(ippData->m));
+        //nomatVMulThread(range,elementProvider,vin,vout);
+    }
+    ThreadPool::i()->wait();
+}
+
+void IPPreconditioner::firstStepIPPMatmulThread(Range r, const std::vector<double> &in, std::vector<double> &out, UpperTriangularMatrix &m)
+{
+    for(int i = r.start; i < r.end; i++)
+    {
+        auto neighbors = m_indexer.immidiateNeighbors(i);
+        double diag = m.getValue(i,i);
+        if(std::abs(diag) < 0.0001)
+        {
+            out.data()[i] = in.data()[i];
+            continue;
+        }
+        double v1 = in.data()[neighbors[1]];
+        double v2 = in.data()[neighbors[3]];
+        out.data()[i] = in.data()[i] - (v1 * m.getValue(i,neighbors[1])
+                                          + v2 * m.getValue(i,neighbors[3])) / diag;
+    }
+}
+
+void IPPreconditioner::secondStepIPPMatmulThread(Range r, const std::vector<double> &in, std::vector<double> &out, UpperTriangularMatrix &m)
+{
+    for(int i = r.start; i < r.end; i++)
+    {
+        auto neighbors = m_indexer.immidiateNeighbors(i);
+        double diag = m.getValue(i,i);
+        if(std::abs(diag) < 0.0001)
+        {
+            out.data()[i] = in.data()[i];
+            continue;
+        }
+        out.data()[i] = in.data()[i] - (in.data()[neighbors[0]] * m.getValue(i,neighbors[0])
+                                          + in.data()[neighbors[2]] * m.getValue(i,neighbors[2])) / diag;
+    }
 }
