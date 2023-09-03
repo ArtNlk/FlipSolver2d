@@ -76,7 +76,7 @@
         "divergence": 0,
         "temperature": 1273,
         "concentration": 1,
-        "transferVelocity": false,
+        "velocity": [-3,0],
         "verts": [
           [40,20],
           [40,30],

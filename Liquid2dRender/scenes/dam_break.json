@@ -1,21 +1,21 @@
 {
   "settings": {
-    "simType": "flip",
+    "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 64,
+    "resolution": 256,
     "fps": 30,
     "density": 0.5,
     "airDensity": 0.001,
     "surfaceTensionFactor": 0.01,
     "maxSubsteps": 10,
-    "pcgIterLimit": 300,
+    "pcgIterLimit": 400,
     "seed": 0,
     "particlesPerCell": 8,
     "particleScale": 0.8,
     "picRatio": 0.03,
     "cflNumber": 5,
-    "viscosityEnabled": true,
+    "viscosityEnabled": false,
     "globalAcceleration": [9.8,0]
   },
   "solver": {

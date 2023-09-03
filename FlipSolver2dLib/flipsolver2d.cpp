@@ -357,7 +357,7 @@ void FlipSolver::particleUpdate()
 {
     Grid2d<float>& prevU = m_savedFluidVelocityGrid.velocityGridU();
     Grid2d<float>& prevV = m_savedFluidVelocityGrid.velocityGridV();
-    for(int i = m_markerParticles.particleCount() - 1; i >= 0; i--)
+    for(int i = 0; i < m_markerParticles.particleCount(); i++)
     {
         Vertex &position = m_markerParticles.particlePosition(i);
         Vertex &velocity = m_markerParticles.particleVelocity(i);
@@ -373,10 +373,6 @@ void FlipSolver::particleUpdate()
 //        {
             velocity = m_picRatio * newVelocity +
                     (1.f-m_picRatio) * (velocity + newVelocity - oldVelocity);
-//            p.temperature = SimSettings::ambientTemp() +
-//                    (p.temperature - SimSettings::ambientTemp()) *
-//                    std::exp(-SimSettings::tempDecayRate() * m_stepDt);
-//            p.smokeConcentrartion *= std::exp(-SimSettings::concentrartionDecayRate() * m_stepDt);
 //        }
     }
 }
@@ -414,7 +410,7 @@ void FlipSolver::step()
     auto t1 = high_resolution_clock::now();
     advect();
     auto t2 = high_resolution_clock::now();
-    densityCorrection();
+    //densityCorrection();
     m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
     particleToGrid();
@@ -662,12 +658,10 @@ void FlipSolver::reseedParticles()
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
-                    //Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
-                    Vertex velocity = Vertex();
+                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    //Vertex velocity = Vertex();
                     int emitterId = m_emitterId.at(i,j);
                     float viscosity = m_sources[emitterId].viscosity();
-                    float conc = m_sources[emitterId].concentrartion();
-                    float temp = m_sources[emitterId].temperature();
                     size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
                     particleViscosities[pIdx] = viscosity;
                 }

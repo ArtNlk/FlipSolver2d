@@ -21,6 +21,8 @@ public:
     const Grid2d<float> temperature() const;
 
 protected:
+    void initAdditionalParameters() override;
+
     void applyBodyForces() override;
 
     void centeredParamsToGrid() override;
@@ -33,7 +35,7 @@ protected:
 
     void reseedParticles() override;
 
-    void applyPressuresToVelocityField(std::vector<double> &pressures) override;
+    //void applyPressuresToVelocityField(std::vector<double> &pressures) override;
 
     LinearSolver::MatElementProvider getPressureMatrixElementProvider() override;
 
@@ -44,6 +46,9 @@ protected:
 protected:
     Grid2d<float> m_temperature;
     Grid2d<float> m_smokeConcentration;
+
+    size_t m_temperatureIndex;
+    size_t m_concentrationIndex;
 
     float m_ambientTemperature;
     float m_temperatureDecayRate;

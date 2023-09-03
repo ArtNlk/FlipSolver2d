@@ -18,7 +18,7 @@ NBFlipSolver::NBFlipSolver(const NBFlipParameters *p):
     m_combinationBand(-2.f),
     m_resamplingBand(-1.f)
 {
-    m_projectTolerance = 1e-2;
+    m_projectTolerance = 1e-6;
 }
 
 void NBFlipSolver::step()
