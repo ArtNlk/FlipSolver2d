@@ -421,7 +421,7 @@ void FlipSolver::step()
     updateMaterials();
     afterTransfer();
     extrapolateLevelsetInside(m_fluidSdf);
-    m_fluidVelocityGrid.extrapolate(10);
+    //m_fluidVelocityGrid.extrapolate(10);
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
@@ -434,7 +434,7 @@ void FlipSolver::step()
         applyViscosity();
         project();
     }
-    m_fluidVelocityGrid.extrapolate(10);
+    //m_fluidVelocityGrid.extrapolate(10);
     particleUpdate();
     countParticles();
     reseedParticles();

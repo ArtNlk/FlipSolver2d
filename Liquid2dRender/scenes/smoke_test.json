@@ -11,7 +11,9 @@
     "picRatio": 0.03,
     "cflNumber": 5,
     "temperatureDecayRate": 0.3,
-    "concentrationDecayRate": 0.2,
+    "concentrationDecayRate": 0.05,
+    "buoyancyFactor": 10,
+    "sootFactor": 0.0,
     "globalAcceleration": [9.8,0]
   },
   "solver": {

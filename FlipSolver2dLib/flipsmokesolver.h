@@ -9,6 +9,8 @@ struct SmokeSolverParameters : FlipSolverParameters
     float ambientTemperature;
     float temperatureDecayRate;
     float concentrationDecayRate;
+    float buoyancyFactor;
+    float sootFactor;
 };
 
 class FlipSmokeSolver : public FlipSolver
@@ -20,8 +22,9 @@ public:
 
     const Grid2d<float> temperature() const;
 
-protected:
     void initAdditionalParameters() override;
+
+protected:
 
     void applyBodyForces() override;
 
@@ -35,7 +38,7 @@ protected:
 
     void reseedParticles() override;
 
-    //void applyPressuresToVelocityField(std::vector<double> &pressures) override;
+    void applyPressuresToVelocityField(std::vector<double> &pressures) override;
 
     LinearSolver::MatElementProvider getPressureMatrixElementProvider() override;
 
@@ -53,6 +56,8 @@ protected:
     float m_ambientTemperature;
     float m_temperatureDecayRate;
     float m_concentrationDecayRate;
+    float m_buoyancyFactor;
+    float m_sootFactor;
 };
 
 #endif // FLIPSMOKESOLVER_H

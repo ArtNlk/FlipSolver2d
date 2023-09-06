@@ -141,9 +141,9 @@ public:
 
     size_t testValuePropertyIndex();
 
-protected:
-
     virtual void initAdditionalParameters();
+
+protected:
 
     virtual double divergenceAt(int i, int j);
 

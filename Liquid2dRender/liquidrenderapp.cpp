@@ -308,6 +308,7 @@ void LiquidRenderApp::loadJson(std::string fileName)
             break;
         }
 
+        m_solver->initAdditionalParameters();
         solverFromJson(sceneJson["solver"]);
     }
     catch (std::exception &e)
@@ -367,9 +368,11 @@ void LiquidRenderApp::populateNBFlipSolverParamsFromJson(NBFlipParameters *p, js
 
 void LiquidRenderApp::populateSmokeSolverParamsFromJson(SmokeSolverParameters *p, json settingsJson)
 {
-    p->ambientTemperature = tryGetValue(settingsJson,"ambientTemperature",273.0f);;
-    p->temperatureDecayRate = tryGetValue(settingsJson,"temperatureDecayRate",0.0);;
-    p->concentrationDecayRate = tryGetValue(settingsJson,"concentrationDecayRate",0.0);;
+    p->ambientTemperature = tryGetValue(settingsJson,"ambientTemperature",273.0f);
+    p->temperatureDecayRate = tryGetValue(settingsJson,"temperatureDecayRate",0.0);
+    p->concentrationDecayRate = tryGetValue(settingsJson,"concentrationDecayRate",0.0);
+    p->buoyancyFactor = tryGetValue(settingsJson,"buoyancyFactor",1.0);
+    p->sootFactor = tryGetValue(settingsJson,"sootFactor",1.0);
 }
 
 void LiquidRenderApp::populateFireSolverParamsFromJson(FireSolverParameters *p, json settingsJson)

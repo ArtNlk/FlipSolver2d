@@ -9,7 +9,11 @@
     "seed": 0,
     "particlesPerCell": 4,
     "picRatio": 0.03,
-    "cflNumber": 1,
+    "cflNumber": 5,
+    "temperatureDecayRate": 0.3,
+    "concentrationDecayRate": 0.05,
+    "buoyancyFactor": 10,
+    "sootFactor": 0.0,
     "globalAcceleration": [9.8,0]
   },
   "solver": {
@@ -17,8 +21,9 @@
       {
         "type": "source",
         "viscosity": 0,
-        "temperature": 300,
+        "temperature": 1000,
         "concentration": 1,
+        "velocty": [-5,0],
         "verts": [
           [140,20],
           [140,30],

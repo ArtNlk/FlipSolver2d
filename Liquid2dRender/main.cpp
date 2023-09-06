@@ -35,7 +35,7 @@ int main()
 {
 #ifdef __linux__
     signal(SIGSEGV, handler);
-    feenableexcept(FE_DIVBYZERO);
+//    feenableexcept(FE_DIVBYZERO);
 #endif
     LiquidRenderApp app;
     app.init();
