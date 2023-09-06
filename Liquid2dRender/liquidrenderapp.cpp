@@ -335,7 +335,7 @@ void LiquidRenderApp::populateFlipSolverParamsFromJson(FlipSolverParameters *p, 
     p->picRatio = tryGetValue(settingsJson,"picRatio",0.03);
     p->cflNumber = tryGetValue(settingsJson,"cflNumber",10.f);
     p->particleScale = tryGetValue(settingsJson,"particleScale",0.8);
-    p->pcgIterLimit = tryGetValue(settingsJson,"pcgIterLimit",200);
+    p->pcgIterLimit = tryGetValue(settingsJson,"pcgIterLimit",1000);
     p->viscosityEnabled = tryGetValue(settingsJson,"viscosityEnabled",false);
     p->domainSizeI = settingsJson["domainSizeI"].get<float>() * s;
     p->domainSizeJ = settingsJson["domainSizeJ"].get<float>() * s;

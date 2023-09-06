@@ -40,6 +40,10 @@ protected:
 
     void applyPressuresToVelocityField(std::vector<double> &pressures) override;
 
+    void step() override;
+
+    void advect() override;
+
     LinearSolver::MatElementProvider getPressureMatrixElementProvider() override;
 
     LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
@@ -47,8 +51,16 @@ protected:
     DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix() override;
 
 protected:
+    void eulerAdvectionThread(Range range, Vertex offset, const Grid2d<float>& inputGrid, Grid2d<float>& outputGrid);
+
+    Vertex inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid& grid);
+
+    void combineAdvectedGrids();
+
     Grid2d<float> m_temperature;
     Grid2d<float> m_smokeConcentration;
+
+    StaggeredVelocityGrid m_advectedVelocity;
 
     size_t m_temperatureIndex;
     size_t m_concentrationIndex;

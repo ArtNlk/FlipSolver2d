@@ -9,6 +9,7 @@ FlipSmokeSolver::FlipSmokeSolver(const SmokeSolverParameters* p):
     FlipSolver(p),
     m_temperature(p->gridSizeI, p->gridSizeJ, p->ambientTemperature, OOBStrategy::OOB_CONST, p->ambientTemperature),
     m_smokeConcentration(p->gridSizeI, p->gridSizeJ, 0.f, OOBStrategy::OOB_CONST, 0.f),
+    m_advectedVelocity(p->gridSizeI, p->gridSizeJ),
     m_ambientTemperature(p->ambientTemperature),
     m_temperatureDecayRate(p->temperatureDecayRate),
     m_concentrationDecayRate(p->concentrationDecayRate),
@@ -318,6 +319,68 @@ void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressur
     }
 }
 
+void FlipSmokeSolver::step()
+{
+    advect();
+    //densityCorrection();
+    m_markerParticles.pruneParticles();
+    m_markerParticles.rebinParticles();
+    particleToGrid();
+
+    updateSdf();
+    extrapolateLevelsetOutside(m_fluidSdf);
+    //updateLinearFluidViscosityMapping();
+    updateMaterials();
+    afterTransfer();
+    //m_fluidVelocityGrid.extrapolate(5);
+    extrapolateLevelsetOutside(m_fluidSdf);
+    combineAdvectedGrids();
+    m_savedFluidVelocityGrid = m_fluidVelocityGrid;
+    applyBodyForces();
+
+    project();
+
+    updateVelocityFromSolids();
+    if(m_viscosityEnabled)
+    {
+        applyViscosity();
+        project();
+    }
+    //m_fluidVelocityGrid.extrapolate(5);
+    particleUpdate();
+    countParticles();
+    reseedParticles();
+}
+
+void FlipSmokeSolver::advect()
+{
+    FlipSolver::advect();
+
+    Vertex offsetU(0.f,0.5f);
+    Vertex offsetV(0.5f,0.f);
+
+    Grid2d<float> advectedU(m_sizeI + 1, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetU);
+    Grid2d<float> advectedV(m_sizeI, m_sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetV);
+
+    std::vector<Range> rangesU = ThreadPool::i()->splitRange(advectedU.data().size());
+    std::vector<Range> rangesV = ThreadPool::i()->splitRange(advectedV.data().size());
+
+    for(Range r : rangesU)
+    {
+        ThreadPool::i()->enqueue(&FlipSmokeSolver::eulerAdvectionThread,this,r,
+                                 offsetU,std::ref(m_fluidVelocityGrid.velocityGridU()), std::ref(advectedU));
+    }
+    for(Range r : rangesV)
+    {
+        ThreadPool::i()->enqueue(&FlipSmokeSolver::eulerAdvectionThread,this,r,
+                                 offsetV,std::ref(m_fluidVelocityGrid.velocityGridV()), std::ref(advectedV));
+    }
+    ThreadPool::i()->wait();
+
+    m_advectedVelocity.velocityGridU() = advectedU;
+    m_advectedVelocity.velocityGridV() = advectedV;
+}
+
 LinearSolver::MatElementProvider FlipSmokeSolver::getPressureMatrixElementProvider()
 {
     return std::bind(&FlipSmokeSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
@@ -404,6 +467,73 @@ DynamicUpperTriangularSparseMatrix FlipSmokeSolver::getPressureProjectionMatrix(
     }
 
     return output;
+}
+
+void FlipSmokeSolver::eulerAdvectionThread(Range range, Vertex offset, const Grid2d<float> &inputGrid, Grid2d<float> &outputGrid)
+{
+    std::vector<float>& dataOut = outputGrid.data();
+    for(int idx = range.start; idx < range.end; idx++)
+    {
+        Index2d i2d = outputGrid.index2d(idx);
+        Vertex currentPos = Vertex(i2d.i, i2d.j) + offset;
+        Vertex prevPos = inverseRk4Integrate(currentPos,m_fluidVelocityGrid);
+        if(m_solidSdf.interpolateAt(prevPos) < 0.f)
+        {
+            prevPos = m_solidSdf.closestSurfacePoint(prevPos);
+        }
+        dataOut[idx] = inputGrid.interpolateAt(prevPos);
+    }
+}
+
+Vertex FlipSmokeSolver::inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid &grid)
+{
+    float factor = -m_stepDt;
+    Vertex k1 = factor*grid.velocityAt(newPosition);
+    Vertex k2 = factor*grid.velocityAt(newPosition + 0.5f*k1);
+    Vertex k3 = factor*grid.velocityAt(newPosition + 0.5f*k2);
+    Vertex k4 = factor*grid.velocityAt(newPosition + k3);
+
+    return newPosition + (1.0f/6.0f)*(k1 + 2.f*k2 + 2.f*k3 + k4);
+}
+
+void FlipSmokeSolver::combineAdvectedGrids()
+{
+    auto nbcombine = [this](float vAdvected, float vParticle, float sdf, Vertex pos)
+    {
+        //if(sdf < 1.f || m_solidSdf.interpolateAt(pos) < 2.f)
+        if(true)
+        {
+            return vParticle;
+        }
+        else
+        {
+            return vAdvected;
+        }
+    };
+
+    for (int i = 0; i < m_sizeI + 1; i++)
+    {
+        for (int j = 0; j < m_sizeJ; j++)
+        {
+            Vertex samplePosition = Vertex(i, 0.5f + j);
+            float advectedVelocity = m_advectedVelocity.getU(i,j);
+            float particleVelocity = m_fluidVelocityGrid.getU(i,j);
+            float sdf = m_fluidSdf.lerpolateAt(samplePosition);
+            m_fluidVelocityGrid.setU(i,j,nbcombine(advectedVelocity, particleVelocity, sdf, samplePosition));
+        }
+    }
+
+    for (int i = 0; i < m_sizeI; i++)
+    {
+        for (int j = 0; j < m_sizeJ + 1; j++)
+        {
+            Vertex samplePosition = Vertex(0.5f + i, j);
+            float advectedVelocity = m_advectedVelocity.getV(i,j);
+            float particleVelocity = m_fluidVelocityGrid.getV(i,j);
+            float sdf = m_fluidSdf.lerpolateAt(samplePosition);
+            m_fluidVelocityGrid.setV(i,j,nbcombine(advectedVelocity, particleVelocity, sdf, samplePosition));
+        }
+    }
 }
 
 const Grid2d<float> FlipSmokeSolver::smokeConcentration() const
