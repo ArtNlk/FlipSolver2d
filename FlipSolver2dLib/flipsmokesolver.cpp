@@ -156,7 +156,7 @@ void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
 
 void FlipSmokeSolver::particleUpdate()
 {
-
+    FlipSolver::particleUpdate();
     std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
                                                (m_temperatureIndex);
 
@@ -327,25 +327,23 @@ void FlipSmokeSolver::step()
     m_markerParticles.rebinParticles();
     particleToGrid();
 
+    m_savedFluidVelocityGrid = m_fluidVelocityGrid;
+
     updateSdf();
-    extrapolateLevelsetOutside(m_fluidSdf);
+    //extrapolateLevelsetOutside(m_fluidSdf);
     //updateLinearFluidViscosityMapping();
     updateMaterials();
     afterTransfer();
-    //m_fluidVelocityGrid.extrapolate(5);
+    m_fluidVelocityGrid.extrapolate(5);
     extrapolateLevelsetOutside(m_fluidSdf);
     combineAdvectedGrids();
-    m_savedFluidVelocityGrid = m_fluidVelocityGrid;
+
     applyBodyForces();
 
     project();
 
     updateVelocityFromSolids();
-    if(m_viscosityEnabled)
-    {
-        applyViscosity();
-        project();
-    }
+
     //m_fluidVelocityGrid.extrapolate(5);
     particleUpdate();
     countParticles();
@@ -477,10 +475,10 @@ void FlipSmokeSolver::eulerAdvectionThread(Range range, Vertex offset, const Gri
         Index2d i2d = outputGrid.index2d(idx);
         Vertex currentPos = Vertex(i2d.i, i2d.j) + offset;
         Vertex prevPos = inverseRk4Integrate(currentPos,m_fluidVelocityGrid);
-        if(m_solidSdf.interpolateAt(prevPos) < 0.f)
-        {
-            prevPos = m_solidSdf.closestSurfacePoint(prevPos);
-        }
+//        if(m_solidSdf.interpolateAt(prevPos) < 0.f)
+//        {
+//            prevPos = m_solidSdf.closestSurfacePoint(prevPos);
+//        }
         dataOut[idx] = inputGrid.interpolateAt(prevPos);
     }
 }

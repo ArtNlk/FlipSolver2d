@@ -23,7 +23,7 @@
         "viscosity": 0,
         "temperature": 1000,
         "concentration": 1,
-        "velocty": [-5,0],
+        "velocity": [-5,0],
         "verts": [
           [140,20],
           [140,30],
