@@ -155,7 +155,7 @@ void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
 
 void FlipSmokeSolver::particleUpdate()
 {
-
+    FlipSolver::particleUpdate();
     std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
                                                (m_temperatureIndex);
 

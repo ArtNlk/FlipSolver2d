@@ -12,8 +12,8 @@
     "cflNumber": 5,
     "temperatureDecayRate": 0.3,
     "concentrationDecayRate": 0.05,
-    "buoyancyFactor": 10,
-    "sootFactor": 0.0,
+    "buoyancyFactor": 1,
+    "sootFactor": 0.5,
     "globalAcceleration": [9.8,0]
   },
   "solver": {
