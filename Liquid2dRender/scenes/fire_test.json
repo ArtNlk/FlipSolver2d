@@ -10,12 +10,14 @@
     "particlesPerCell": 4,
     "picRatio": 0.03,
     "cflNumber": 5,
-    "temperatureDecayRate": 1,
+    "temperatureDecayRate": 0.5,
     "concentrationDecayRate": 0.2,
+    "buoyancyFactor": 1,
+    "sootFactor": 0.5,
     "burnRate": 1,
     "ignitionTemp": 250,
     "smokeEmission": 1,
-    "heatEmission": 1000,
+    "heatEmission": 500,
     "billowing": 10,
     "globalAcceleration": [9.8,0]
   },
@@ -69,20 +71,18 @@
         "type": "sink",
         "divergence": -10,
         "verts": [
-          [3,21],
-          [3,28],
-          [8,28],
-          [8,21]
+          [3,40],
+          [3,47],
+          [8,47],
+          [8,40]
         ]
       },
       {
         "type": "source",
-        "viscosity": 0,
-        "divergence": 0,
         "temperature": 1273,
         "fuel": 1,
         "concentration": 0,
-        "transferVelocity": false,
+        "velocity": [-5,0],
         "verts": [
           [40,20],
           [40,30],

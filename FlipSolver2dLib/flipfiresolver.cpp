@@ -29,12 +29,12 @@ void FlipFireSolver::afterTransfer()
             }
         }
     }
-    combustionUpdate();
+//    combustionUpdate();
 }
 
 void FlipFireSolver::combustionUpdate()
 {
-    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_fuel.data().size());
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_markerParticles.particleCount());
 
     for(Range& range : ranges)
     {
@@ -45,63 +45,96 @@ void FlipFireSolver::combustionUpdate()
 
 void FlipFireSolver::combustionUpdateThread(Range range)
 {
+    std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
+                                               (m_temperatureIndex);
+    std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
+                                                 (m_concentrationIndex);
+    std::vector<float>& particleFuels = m_markerParticles.particleProperties<float>
+                                        (m_fuelPropertyIndex);
+    std::vector<float>& testValues = m_markerParticles.particleProperties<float>
+                                        (m_testValuePropertyIndex);
+
     for(int i = range.start; i < range.end; i++)
     {
-        if(m_temperature.data().at(i) > m_ignitionTemperature && m_fuel.data().at(i) > 0.f)
+        if(particleTemperatures.at(i) > m_ignitionTemperature && particleFuels.at(i) > 0.f)
         {
-            float burntFuel = std::min(m_stepDt * m_burnRate,m_fuel.data().at(i));
-            m_fuel.data().at(i) -= burntFuel;
-            m_smokeConcentration.data().at(i) += m_smokeProportion * burntFuel;
-            m_temperature.data().at(i) += m_heatProportion * burntFuel;
-            m_divergenceControl.data().at(i) -= m_divergenceProportion * burntFuel;
+            float burntFuel = std::min(m_stepDt * m_burnRate,particleFuels.at(i));
+            particleFuels.at(i) -= burntFuel;
+            testValues.at(i) = particleFuels.at(i);
+            particleConcentrations.at(i) += m_smokeProportion * burntFuel;
+            particleTemperatures.at(i) += m_heatProportion * burntFuel;
+            //m_divergenceControl.data().at(i) -= m_divergenceProportion * burntFuel;
         }
     }
 }
 
 void FlipFireSolver::centeredParamsToGrid()
 {
-    FlipSmokeSolver::centeredParamsToGrid();
     Grid2d<float> centeredWeights(m_sizeI,m_sizeJ,1e-10f);
-
     m_fuel.fill(0.f);
+    m_smokeConcentration.fill(0.f);
+    m_temperature.fill(0.f);
+    m_divergenceControl.fill(0.f);
     m_knownCenteredParams.fill(false);
 
-//    for(MarkerParticle &p : m_markerParticles)
-//    {
-//        int i = simmath::integr(p.position.x());
-//        int j = simmath::integr(p.position.y());
-//        //Run over all cells that this particle might affect
-//        for (int iOffset = -3; iOffset < 3; iOffset++)
-//        {
-//            for (int jOffset = -3; jOffset < 3; jOffset++)
-//            {
-//                int iIdx = i+iOffset;
-//                int jIdx = j+jOffset;
-//                if(inBounds(iIdx,jIdx) && !m_materialGrid.isSource(i,j))
-//                {
-//                    float weightCentered = simmath::quadraticBSpline(p.position.x() - (iIdx + 0.5f),
-//                                                         p.position.y() - (jIdx + 0.5f));
-//                    if(std::abs(weightCentered) > 1e-6f)
-//                    {
-//                        centeredWeights.at(iIdx,jIdx) += weightCentered;
-//                        m_fuel.at(iIdx,jIdx) += weightCentered * p.fuel;
-//                        m_knownCenteredParams.at(iIdx,jIdx) = true;
-//                    }
-//                }
-//            }
-//        }
-//    }
+    std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
+                                               (m_temperatureIndex);
+
+    std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
+                                                 (m_concentrationIndex);
+
+    std::vector<float>& particleFuels = m_markerParticles.particleProperties<float>
+                                                 (m_fuelPropertyIndex);
+
+    for(size_t idx = 0; idx < m_fluidVelocityGrid.linearSize(); idx++)
+    {
+        Index2d i2d = m_fluidVelocityGrid.index2d(idx);
+        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        for(int binIdx : affectingBins)
+        {
+            if(binIdx >= 0)
+            {
+                for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
+                {
+                    Vertex position = m_markerParticles.particlePosition(particleIdx);
+                    float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
+                                                                     position.y() - (i2d.j));
+                    if(std::abs(weightCentered) > 1e-6f)
+                    {
+                        centeredWeights.at(i2d.i,i2d.j) += weightCentered;
+                        m_temperature.at(i2d.i,i2d.j) +=
+                            weightCentered * particleTemperatures.at(particleIdx);
+
+                        m_smokeConcentration.at(i2d.i,i2d.j) +=
+                            weightCentered * particleConcentrations.at(particleIdx);
+
+                        m_fuel.at(i2d.i,i2d.j) +=
+                            weightCentered * particleFuels.at(particleIdx);
+
+                        m_knownCenteredParams.at(i2d.i,i2d.j) = true;
+                    }
+                }
+            }
+        }
+    }
 
     for (int i = 0; i < m_sizeI + 1; i++)
     {
         for (int j = 0; j < m_sizeJ + 1; j++)
         {
-            if(centeredWeights.inBounds(i,j) && !m_materialGrid.isSource(i,j))
+            if(centeredWeights.inBounds(i,j))
             {
                 if(m_knownCenteredParams.at(i,j))
                 {
+                    m_temperature.at(i,j) /= centeredWeights.at(i,j);
+                    m_smokeConcentration.at(i,j) /= centeredWeights.at(i,j);
                     m_fuel.at(i,j) /= centeredWeights.at(i,j);
                 }
+                else
+                {
+                    m_temperature.at(i,j) = m_ambientTemperature;
+                }
+                //m_testGrid.at(i,j) = m_temperature.at(i,j) / 1000.f;
             }
         }
     }
@@ -109,60 +142,79 @@ void FlipFireSolver::centeredParamsToGrid()
 
 void FlipFireSolver::reseedParticles()
 {
-//    for (int pIndex = 0; pIndex < m_markerParticles.size(); pIndex++)
-//    {
-//        int i = m_markerParticles[pIndex].position.x();
-//        int j = m_markerParticles[pIndex].position.y();
+    for (int pIndex = 0; pIndex < m_markerParticles.particleCount(); pIndex++)
+    {
+        Vertex pos = m_markerParticles.particlePosition(pIndex);
+        int i = pos.x();
+        int j = pos.y();
 
-//        if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
-//        {
-//            m_markerParticles.erase(m_markerParticles.cbegin() + pIndex);
-//            m_fluidParticleCounts.at(i,j) -= 1;
-//            pIndex--;
-//            continue;
-//        }
-//    }
+        if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+        {
+            m_markerParticles.markForDeath(pIndex);
+            m_fluidParticleCounts.at(i,j) -= 1;
+            //pIndex--;
+            continue;
+        }
+    }
 
-//    for (int i = 0; i < m_sizeI; i++)
-//    {
-//        for (int j = 0; j < m_sizeJ; j++)
-//        {
-//            int particleCount = m_fluidParticleCounts.at(i,j);
-//            if(particleCount > 20)
-//            {
-//                std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
-//            }
-//            //std::cout << particleCount << " at " << i << " , " << j << std::endl;
-//            int additionalParticles = m_particlesPerCell - particleCount;
-//            if(additionalParticles <= 0)
-//            {
-//                continue;
-//            }
-//            if(m_materialGrid.isSource(i,j))
-//            {
-//                for(int p = 0; p < additionalParticles; p++)
-//                {
-//                    Vertex pos = jitteredPosInCell(i,j);
-//                    //Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
-//                    Vertex velocity = Vertex();
-//                    int emitterId = m_emitterId.at(i,j);
-//                    float viscosity = m_sources[emitterId].viscosity();
-//                    float conc = m_sources[emitterId].concentrartion();
-//                    float temp = m_sources[emitterId].temperature();
-//                    float fuel = m_sources[emitterId].fuel();
-//                    addMarkerParticle(MarkerParticle{pos,velocity,viscosity,temp,conc,fuel});
-//                }
-//            }
-//        }
-//    }
+    std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
+                                               (m_temperatureIndex);
+
+    std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
+                                                 (m_concentrationIndex);
+
+    std::vector<float>& particleFuels = m_markerParticles.particleProperties<float>
+                                        (m_fuelPropertyIndex);
+
+    for (int i = 0; i < m_sizeI; i++)
+    {
+        for (int j = 0; j < m_sizeJ; j++)
+        {
+            int particleCount = m_fluidParticleCounts.at(i,j);
+            if(particleCount > 20)
+            {
+                std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
+            }
+            //std::cout << particleCount << " at " << i << " , " << j << std::endl;
+            int additionalParticles = (m_particlesPerCell / 2) - particleCount;
+            if(additionalParticles <= 0)
+            {
+                continue;
+            }
+            if(m_materialGrid.isSource(i,j))
+            {
+                for(int p = 0; p < additionalParticles; p++)
+                {
+                    Vertex pos = jitteredPosInCell(i,j);
+                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    float conc = m_smokeConcentration.interpolateAt(pos);
+                    float temp = m_temperature.interpolateAt(pos);
+                    float fuel = m_fuel.interpolateAt(pos);
+                    size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
+                    particleTemperatures[pIdx] = temp;
+                    particleConcentrations[pIdx] = conc;
+                    particleFuels[pIdx] = fuel;
+                    //testValues[pIdx] = temp / 1000.f;
+                }
+            }
+        }
+    }
 }
 
 void FlipFireSolver::particleUpdate()
 {
     FlipSmokeSolver::particleUpdate();
+    combustionUpdate();
 //    for(int i = m_markerParticles.size() - 1; i >= 0; i--)
 //    {
 //        MarkerParticle &p = m_markerParticles[i];
 //        p.fuel = m_fuel.lerpolateAt(p.position);
-//    }
+    //    }
+}
+
+void FlipFireSolver::initAdditionalParameters()
+{
+    FlipSmokeSolver::initAdditionalParameters();
+
+    m_fuelPropertyIndex = m_markerParticles.addParticleProperty<float>();
 }

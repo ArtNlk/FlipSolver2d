@@ -25,8 +25,12 @@ protected:
     void reseedParticles() override;
     void particleUpdate() override;
 
+    void initAdditionalParameters() override;
+
     Grid2d<float> m_fuel;
     Grid2d<float> m_oxidizer;
+
+    size_t m_fuelPropertyIndex;
 
     float m_ignitionTemperature;
     float m_burnRate;

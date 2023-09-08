@@ -418,7 +418,6 @@ const Grid2d<float> FlipSmokeSolver::temperature() const
 
 void FlipSmokeSolver::initAdditionalParameters()
 {
-    m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
     m_concentrationIndex = m_markerParticles.addParticleProperty<float>();
     m_temperatureIndex = m_markerParticles.addParticleProperty<float>();
 }
