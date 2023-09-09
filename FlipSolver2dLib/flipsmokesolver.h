@@ -46,7 +46,8 @@ protected:
 
     DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix() override;
 
-protected:
+    void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
+
     Grid2d<float> m_temperature;
     Grid2d<float> m_smokeConcentration;
 

@@ -21,7 +21,6 @@ protected:
     void afterTransfer() override;
     void combustionUpdate();
     void combustionUpdateThread(Range range);
-    void centeredParamsToGrid() override;
     void reseedParticles() override;
     void particleUpdate() override;
 

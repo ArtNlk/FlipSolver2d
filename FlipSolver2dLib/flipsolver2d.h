@@ -225,6 +225,8 @@ protected:
 
     virtual void centeredParamsToGrid();
 
+    void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
+
     void extrapolateLevelsetInside(SdfGrid& grid);
 
     void extrapolateLevelsetOutside(SdfGrid& grid);

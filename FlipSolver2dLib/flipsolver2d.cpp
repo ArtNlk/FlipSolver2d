@@ -1527,10 +1527,22 @@ void FlipSolver::centeredParamsToGrid()
     m_divergenceControl.fill(0.f);
     m_knownCenteredParams.fill(false);
 
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_viscosityGrid.linearSize(),1,8);
+
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&FlipSolver::centeredParamsToGridThread,this,range,
+                                 std::ref(centeredWeights));
+    }
+    ThreadPool::i()->wait();
+}
+
+void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
+{
     std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
                                               (m_viscosityPropertyIndex);
 
-    for(size_t idx = 0; idx < m_fluidVelocityGrid.linearSize(); idx++)
+    for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
         std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
@@ -1542,29 +1554,23 @@ void FlipSolver::centeredParamsToGrid()
                 {
                     Vertex position = m_markerParticles.particlePosition(particleIdx);
                     float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
-                                                                    position.y() - (i2d.j));
+                                                                     position.y() - (i2d.j));
                     if(std::abs(weightCentered) > 1e-6f)
                     {
-                        centeredWeights.at(i2d.i,i2d.j) += weightCentered;
+                        cWeights.at(i2d.i,i2d.j) += weightCentered;
                         m_viscosityGrid.at(i2d.i,i2d.j) += weightCentered * particleViscosities.at(particleIdx);
                         m_knownCenteredParams.at(i2d.i,i2d.j) = true;
                     }
                 }
             }
         }
-    }
 
-    for (int i = 0; i < m_sizeI + 1; i++)
-    {
-        for (int j = 0; j < m_sizeJ + 1; j++)
+        if(m_knownCenteredParams.inBounds(i2d))
         {
-            if(centeredWeights.inBounds(i,j))
+            if(m_knownCenteredParams.at(i2d))
             {
-                if(m_knownCenteredParams.at(i,j))
-                {
-                    m_viscosityGrid.at(i,j) /= centeredWeights.at(i,j);
-                    //m_testGrid.at(i,j) = m_viscosityGrid.at(i,j);
-                }
+                m_viscosityGrid.at(i2d) /= cWeights.at(i2d);
+                //m_testGrid.at(i,j) = m_viscosityGrid.at(i,j);
             }
         }
     }

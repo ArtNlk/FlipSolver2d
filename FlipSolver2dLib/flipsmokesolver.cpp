@@ -59,64 +59,14 @@ void FlipSmokeSolver::centeredParamsToGrid()
     m_divergenceControl.fill(0.f);
     m_knownCenteredParams.fill(false);
 
-    std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
-                                              (m_temperatureIndex);
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_viscosityGrid.linearSize(),1,8);
 
-    std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
-                                               (m_concentrationIndex);
-
-    for(size_t idx = 0; idx < m_fluidVelocityGrid.linearSize(); idx++)
+    for(Range& range : ranges)
     {
-        Index2d i2d = m_fluidVelocityGrid.index2d(idx);
-        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
-        for(int binIdx : affectingBins)
-        {
-            if(binIdx >= 0)
-            {
-                for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
-                {
-                    Vertex position = m_markerParticles.particlePosition(particleIdx);
-                    float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
-                                                                     position.y() - (i2d.j));
-                    if(std::abs(weightCentered) > 1e-6f)
-                    {
-                        centeredWeights.at(i2d.i,i2d.j) += weightCentered;
-                        m_temperature.at(i2d.i,i2d.j) +=
-                            weightCentered * particleTemperatures.at(particleIdx);
-
-                        m_smokeConcentration.at(i2d.i,i2d.j) +=
-                            weightCentered * particleConcentrations.at(particleIdx);
-
-                        m_knownCenteredParams.at(i2d.i,i2d.j) = true;
-                    }
-                }
-            }
-        }
+        ThreadPool::i()->enqueue(&FlipSmokeSolver::centeredParamsToGridThread,this,range,
+                                 std::ref(centeredWeights));
     }
-
-    for (int i = 0; i < m_sizeI + 1; i++)
-    {
-        for (int j = 0; j < m_sizeJ + 1; j++)
-        {
-            if(centeredWeights.inBounds(i,j))
-            {
-                if(m_knownCenteredParams.at(i,j))
-                {
-                    m_temperature.at(i,j) /= centeredWeights.at(i,j);
-                    m_smokeConcentration.at(i,j) /= centeredWeights.at(i,j);
-//                    m_temperature.at(i,j) = m_ambientTemperature +
-//                                             (m_temperature.at(i,j) - m_ambientTemperature) *
-//                                                 std::exp(-m_temperatureDecayRate * m_stepDt);
-                    //m_smokeConcentration.at(i,j) *= std::exp(-m_concentrationDecayRate * m_stepDt);
-                }
-                else
-                {
-                    m_temperature.at(i,j) = m_ambientTemperature;
-                }
-                m_testGrid.at(i,j) = m_temperature.at(i,j) / 1000.f;
-            }
-        }
-    }
+    ThreadPool::i()->wait();
 }
 
 void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
@@ -404,6 +354,53 @@ DynamicUpperTriangularSparseMatrix FlipSmokeSolver::getPressureProjectionMatrix(
     }
 
     return output;
+}
+
+void FlipSmokeSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
+{
+    std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
+                                               (m_temperatureIndex);
+
+    std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
+                                                 (m_concentrationIndex);
+
+    for(size_t idx = r.start; idx < r.end; idx++)
+    {
+        Index2d i2d = m_fluidVelocityGrid.index2d(idx);
+        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        for(int binIdx : affectingBins)
+        {
+            if(binIdx >= 0)
+            {
+                for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
+                {
+                    Vertex position = m_markerParticles.particlePosition(particleIdx);
+                    float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
+                                                                     position.y() - (i2d.j));
+                    if(std::abs(weightCentered) > 1e-6f)
+                    {
+                        cWeights.at(i2d.i,i2d.j) += weightCentered;
+                        m_temperature.at(i2d.i,i2d.j) +=
+                            weightCentered * particleTemperatures.at(particleIdx);
+
+                        m_smokeConcentration.at(i2d.i,i2d.j) +=
+                            weightCentered * particleConcentrations.at(particleIdx);
+                        m_knownCenteredParams.at(i2d.i,i2d.j) = true;
+                    }
+                }
+            }
+        }
+
+        if(m_knownCenteredParams.inBounds(i2d))
+        {
+            if(m_knownCenteredParams.at(i2d))
+            {
+                m_temperature.at(i2d) /= cWeights.at(i2d);
+                m_smokeConcentration.at(i2d) /= cWeights.at(i2d);
+                //m_testGrid.at(i,j) = m_viscosityGrid.at(i,j);
+            }
+        }
+    }
 }
 
 const Grid2d<float> FlipSmokeSolver::smokeConcentration() const
