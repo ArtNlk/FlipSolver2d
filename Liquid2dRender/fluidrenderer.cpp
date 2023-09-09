@@ -57,6 +57,7 @@ FluidRenderer::FluidRenderer(int textureWidth, int textureHeight) :
     m_vectorsEnabled(false),
     m_geometryEnabled(true),
     m_particlesEnabled(true),
+    m_extrasEnabled(false),
     m_particleRadius(1),
     m_solver(nullptr)
 {
@@ -498,6 +499,24 @@ void FluidRenderer::updateGridFromMaterial()
                     setCellColor(i,j,m_emptyColor);
                 break;
 
+                case FluidMaterial::SOLID:
+                    setCellColor(i,j,m_solidColor);
+                    break;
+
+                case FluidMaterial::SOURCE:
+                    if(m_extrasEnabled)
+                    {
+                        setCellColor(i,j,m_sourceColor);
+                        break;
+                    }
+
+                case FluidMaterial::SINK:
+                    if(m_extrasEnabled)
+                    {
+                        setCellColor(i,j,m_sinkColor);
+                        break;
+                    }
+
                 case FluidMaterial::FLUID:
                     if(m_solver->simulationMethod() == SimulationMethod::SIMULATION_LIQUID
                     || m_solver->simulationMethod() == SimulationMethod::SIMULATION_NBFLIP)
@@ -516,18 +535,6 @@ void FluidRenderer::updateGridFromMaterial()
                         c = Color::lerp(m_emptyColor,c,opacity);
                         setCellColor(i,j,c);
                     }
-                break;
-
-                case FluidMaterial::SOLID:
-                    setCellColor(i,j,m_solidColor);
-                break;
-
-                case FluidMaterial::SOURCE:
-                    setCellColor(i,j,m_sourceColor);
-                break;
-
-                case FluidMaterial::SINK:
-                    setCellColor(i,j,m_sinkColor);
                 break;
 
                 default:

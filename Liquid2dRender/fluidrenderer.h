@@ -92,6 +92,17 @@ public:
         return m_vectorsEnabled;
     }
 
+    inline bool toggleExtras()
+    {
+        m_extrasEnabled = !m_extrasEnabled;
+        return m_extrasEnabled;
+    }
+
+    inline bool extrasEnabled()
+    {
+        return m_extrasEnabled;
+    }
+
     inline bool& geometryEnabled()
     {
         return m_geometryEnabled;
@@ -247,6 +258,7 @@ protected:
     bool m_vectorsEnabled;
     bool m_geometryEnabled;
     bool m_particlesEnabled;
+    bool m_extrasEnabled;
     int m_particleRadius;
     SimulationMethod m_simMethod;
 

@@ -137,6 +137,11 @@ void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int
                     m_fluidRenderer.update();
                 break;
 
+                case GLFW_KEY_E:
+                    m_fluidRenderer.toggleExtras();
+                    m_fluidRenderer.update();
+                break;
+
                 case GLFW_KEY_G:
                     m_fluidRenderer.toggleGeometry();
                     m_fluidRenderer.update();

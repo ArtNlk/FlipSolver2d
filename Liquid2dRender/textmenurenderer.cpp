@@ -240,6 +240,13 @@ void TextMenuRenderer::render()
                                 Color(255,255,255));
 
     currentTextPos += m_nextLineOffset;
+    m_textRenderer.renderText(m_fluidRenderer.extrasEnabled() ? "Extras on" : "Extras off",
+                              currentTextPos.x + widthBaseline,
+                              m_height - currentTextPos.y,
+                              1.0f,
+                              Color(255,255,255));
+
+    currentTextPos += m_nextLineOffset;
     m_textRenderer.renderText(m_particleRenderModeTexts[m_fluidRenderer.particlesEnabled() ? m_fluidRenderer.particleRenderMode() : ParticleRenderMode::PARTICLE_RENDER_ITER_END],
                                 currentTextPos.x + widthBaseline,
                                 m_height - currentTextPos.y,
