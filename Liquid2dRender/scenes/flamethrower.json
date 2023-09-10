@@ -1,0 +1,92 @@
+{
+  "settings": {
+    "simType": "fire",
+    "domainSizeI": 100,
+    "domainSizeJ": 100,
+    "resolution": 200,
+    "fps": 30,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "pcgIterLimit": 400,
+    "cflNumber": 5,
+    "temperatureDecayRate": 1,
+    "concentrationDecayRate": 0.5,
+    "buoyancyFactor": 1,
+    "sootFactor": 1,
+    "burnRate":2,
+    "ignitionTemp": 250,
+    "smokeEmission": 1,
+    "heatEmission": 2000,
+    "billowing": 10,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+        {
+          "type": "solid",
+          "enabled": true,
+          "verts": [
+            [97,0],
+            [97,100],
+            [100,100],
+            [100,0]
+          ]
+        },
+        {
+          "type": "solid",
+          "enabled": true,
+          "verts": [
+            [0,0],
+            [0,3],
+            [100,3],
+            [100,0]
+          ]
+        },
+            {
+          "type": "solid",
+          "enabled": true,
+          "verts": [
+            [0,0],
+            [0,100],
+            [3,100],
+            [3,0]
+          ]
+        },
+        {
+          "type": "solid",
+          "enabled": true,
+          "verts": [
+            [0,97],
+            [0,100],
+            [100,100],
+            [100,97]
+          ]
+        },
+        {
+        "type": "source",
+        "viscosity": 0,
+        "temperature": 300,
+        "concentration": 0,
+        "fuel": 1,
+        "velocity": [-50,0],
+        "verts": [
+          [85,49],
+          [85,51],
+          [95,51],
+          [95,49]
+        ]
+        },
+        {
+        "type": "sink",
+        "verts": [
+          [3,3],
+          [3,9],
+          [9,9],
+          [9,3]
+        ]
+        }
+    ]
+  }
+}
