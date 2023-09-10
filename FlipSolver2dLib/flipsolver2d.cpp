@@ -859,15 +859,15 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
             if(m_materialGrid.isFluid(i,j))
             {
                 //X Neighbors
-                if( m_materialGrid.isFluid(i-1,j))
+                if(m_materialGrid.isFluid(i-1,j))
                 {
-                    output.addToAdiag(i,j,scale,  indexer);
+                    output.addToAdiag(i,j,scale,indexer);
                 }else if(m_materialGrid.isEmpty(i-1,j))
                 {
                     output.addToAdiag(i,j,scale,  indexer);
                 }
 
-                if( m_materialGrid.isFluid(i+1,j))
+                if(m_materialGrid.isFluid(i+1,j))
                 {
                     output.addToAdiag(i,j,scale,  indexer);
                     output.setAx(i,j,-scale,  indexer);
@@ -877,7 +877,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
                 }
 
                 //Y Neighbors
-                if( m_materialGrid.isFluid(i,j-1))
+                if(m_materialGrid.isFluid(i,j-1))
                 {
                     output.addToAdiag(i,j,scale,  indexer);
                 }else if(m_materialGrid.isEmpty(i,j-1))
@@ -885,7 +885,7 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
                     output.addToAdiag(i,j,scale,  indexer);
                 }
 
-                if( m_materialGrid.isFluid(i,j+1))
+                if(m_materialGrid.isFluid(i,j+1))
                 {
                     output.addToAdiag(i,j,scale,  indexer);
                     output.setAy(i,j,-scale,  indexer);
@@ -1120,23 +1120,14 @@ void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
             {
                 rhs[linearIndex(i,j)] = -scale * divergenceAt(i,j);
 
-                if(m_materialGrid.isSolid(i-1,j))
-                {
-                    rhs[linearIndex(i,j)] -= scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0.f);
-                }
-                if(m_materialGrid.isSolid(i+1,j))
-                {
-                    rhs[linearIndex(i,j)] += scale * static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - 0.f);
-                }
-
-                if(m_materialGrid.isSolid(i,j-1))
-                {
-                    rhs[linearIndex(i,j)] -= scale * static_cast<double>(m_fluidVelocityGrid.v(i,j) - 0.f);
-                }
-                if(m_materialGrid.isSolid(i,j+1))
-                {
-                    rhs[linearIndex(i,j)] += scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0.f);
-                }
+                rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i-1,j) *
+                                          scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
+                rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i+1,j) *
+                                          scale * static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - 0);
+                rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i,j-1) *
+                                          scale * static_cast<double>(m_fluidVelocityGrid.v(i,j) - 0);
+                rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i,j+1) *
+                                          scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0);
             }
         }
     }

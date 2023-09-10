@@ -6,11 +6,11 @@
   "-scene": "./scenes/double_dam_break.json",
   "-scene": "./scenes/test_scene.json",
   "-scene": "./scenes/viscosity_test.json",
-  "-scene": "./scenes/smoke_test.json",
+  "scene": "./scenes/smoke_test.json",
   "-scene": "./scenes/smoke_test_empty.json",
   "-scene": "./scenes/drop.json",
   "-scene": "./scenes/vortex_shedding.json",
   "-scene": "./scenes/fire_test.json",
-  "scene": "./scenes/flamethrower.json",
+  "-scene": "./scenes/flamethrower.json",
   "-scene": "./scenes/point_fire.json"
 }

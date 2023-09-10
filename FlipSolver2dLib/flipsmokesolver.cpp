@@ -81,23 +81,14 @@ void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
             {
                 rhs[linearIndex(i,j)] = -scale * divergenceAt(i,j);
 
-                if(m_materialGrid.isSolid(i-1,j))
-                {
-                    rhs[linearIndex(i,j)] -= scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
-                }
-                if(m_materialGrid.isSolid(i+1,j))
-                {
-                    rhs[linearIndex(i,j)] += scale * static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - 0);
-                }
-
-                if(m_materialGrid.isSolid(i,j-1))
-                {
-                    rhs[linearIndex(i,j)] -= scale * static_cast<double>(m_fluidVelocityGrid.v(i,j) - 0);
-                }
-                if(m_materialGrid.isSolid(i,j+1))
-                {
-                    rhs[linearIndex(i,j)] += scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0);
-                }
+                rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i-1,j) *
+                                        scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
+                rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i+1,j) *
+                                        scale * static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - 0);
+                rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i,j-1) *
+                                        scale * static_cast<double>(m_fluidVelocityGrid.v(i,j) - 0);
+                rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i,j+1) *
+                                        scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0);
             }
         }
     }
