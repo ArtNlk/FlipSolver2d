@@ -24,7 +24,8 @@ set(HEADERS
     flipfiresolver.h
     nbflipsolver.h
     hwinfo.h
-    markerparticlesystem.h)
+    markerparticlesystem.h
+    npointstencilmatrix.h )
 
 set(SOURCES
     linearindexable2d.cpp

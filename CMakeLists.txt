@@ -14,7 +14,7 @@ if(UNIX)
     if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         add_compile_options(-O3 -fno-tree-vectorize)
     elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        #add_compile_options(-Og)
+        add_compile_options(-Og)
     endif()
 
     if(ALL_WARNINGS)

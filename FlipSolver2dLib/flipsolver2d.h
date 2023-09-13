@@ -8,6 +8,7 @@
 #include "linearindexable2d.h"
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
+#include "npointstencilmatrix.h"
 #include "obstacle.h"
 #include "linearsolver.h"
 #include "sdfgrid.h"
@@ -187,7 +188,7 @@ protected:
 
     virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
 
-    virtual DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
+    virtual NPointStencilMatrix<5> getPressureProjectionMatrix();
 
     DynamicUpperTriangularSparseMatrix getViscosityMatrix();
 

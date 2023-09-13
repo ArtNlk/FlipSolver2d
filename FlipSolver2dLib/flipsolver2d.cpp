@@ -844,9 +844,9 @@ void FlipSolver::extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool
     }
 }
 
-DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
+NPointStencilMatrix<5> FlipSolver::getPressureProjectionMatrix()
 {
-    DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(cellCount(),7);
+    NPointStencilMatrix<5> output = NPointStencilMatrix<5>(cellCount());
 
     double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
