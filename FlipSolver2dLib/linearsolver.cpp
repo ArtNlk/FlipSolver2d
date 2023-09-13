@@ -838,12 +838,12 @@ void IPPreconditioner::firstStepIPPMatmulThread(Range r, const std::vector<doubl
         double diag = m.getValue(i,i);
         if(std::abs(diag) < 0.0001)
         {
-            out.data()[i] = in.data()[i];
+            out[i] = in[i];
             continue;
         }
-        double v1 = in.data()[neighbors[1]];
-        double v2 = in.data()[neighbors[3]];
-        out.data()[i] = in.data()[i] - (v1 * m.getValue(i,neighbors[1])
+        double v1 = in[neighbors[1]];
+        double v2 = in[neighbors[3]];
+        out[i] = in[i] - (v1 * m.getValue(i,neighbors[1])
                                           + v2 * m.getValue(i,neighbors[3])) / diag;
     }
 }
@@ -856,10 +856,10 @@ void IPPreconditioner::secondStepIPPMatmulThread(Range r, const std::vector<doub
         double diag = m.getValue(i,i);
         if(std::abs(diag) < 0.0001)
         {
-            out.data()[i] = in.data()[i];
+            out[i] = in[i];
             continue;
         }
-        out.data()[i] = in.data()[i] - (in.data()[neighbors[0]] * m.getValue(i,neighbors[0])
-                                          + in.data()[neighbors[2]] * m.getValue(i,neighbors[2])) / diag;
+        out[i] = in[i] - (in[neighbors[0]] * m.getValue(i,neighbors[0])
+                                          + in[neighbors[2]] * m.getValue(i,neighbors[2])) / diag;
     }
 }
