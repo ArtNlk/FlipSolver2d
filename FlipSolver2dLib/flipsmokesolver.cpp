@@ -291,60 +291,60 @@ LinearSolver::SparseMatRowElements FlipSmokeSolver::getMatFreeElementForLinIdx(u
     return output;
 }
 
-DynamicUpperTriangularSparseMatrix FlipSmokeSolver::getPressureProjectionMatrix()
+PressureParameters FlipSmokeSolver::getPressureProjectionMatrix()
 {
-    DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(cellCount(),7);
+//    DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(cellCount(),7);
 
-    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
+//    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
-    LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
+//    LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 
-    for(int i = 0; i <  m_sizeI; i++)
-    {
-        for(int j = 0; j <  m_sizeJ; j++)
-        {
-            if(!m_materialGrid.isSolid(i,j))
-            {
-                //X Neighbors
-                if(m_materialGrid.isFluid(i-1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }else if(m_materialGrid.isEmpty(i-1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+//    for(int i = 0; i <  m_sizeI; i++)
+//    {
+//        for(int j = 0; j <  m_sizeJ; j++)
+//        {
+//            if(!m_materialGrid.isSolid(i,j))
+//            {
+//                //X Neighbors
+//                if(m_materialGrid.isFluid(i-1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }else if(m_materialGrid.isEmpty(i-1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
 
-                if(m_materialGrid.isFluid(i+1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                    output.setAx(i,j,-scale,  indexer);
-                } else if(m_materialGrid.isEmpty(i+1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+//                if(m_materialGrid.isFluid(i+1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                    output.setAx(i,j,-scale,  indexer);
+//                } else if(m_materialGrid.isEmpty(i+1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
 
-                //Y Neighbors
-                if(m_materialGrid.isFluid(i,j-1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }else if(m_materialGrid.isEmpty(i,j-1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+//                //Y Neighbors
+//                if(m_materialGrid.isFluid(i,j-1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }else if(m_materialGrid.isEmpty(i,j-1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
 
-                if(m_materialGrid.isFluid(i,j+1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                    output.setAy(i,j,-scale,  indexer);
-                } else if(m_materialGrid.isEmpty(i,j+1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
-            }
-        }
-    }
+//                if(m_materialGrid.isFluid(i,j+1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                    output.setAy(i,j,-scale,  indexer);
+//                } else if(m_materialGrid.isEmpty(i,j+1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
+//            }
+//        }
+//    }
 
-    return output;
+//    return output;
 }
 
 void FlipSmokeSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)

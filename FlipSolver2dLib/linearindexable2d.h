@@ -27,7 +27,7 @@ public:
         return m_sizeJ;
     }
 
-    inline int linearIndex(int i, int j) const
+    inline int64_t linearIndex(int i, int j) const
     {
         if(i < 0 || i >= m_sizeI || j < 0 || j >= m_sizeJ)
         {

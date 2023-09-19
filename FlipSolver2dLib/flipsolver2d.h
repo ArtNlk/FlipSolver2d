@@ -187,7 +187,7 @@ protected:
 
     virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
 
-    virtual DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
+    virtual PressureParameters getPressureProjectionMatrix();
 
     DynamicUpperTriangularSparseMatrix getViscosityMatrix();
 
@@ -289,6 +289,8 @@ protected:
 
     size_t m_testValuePropertyIndex;
     size_t m_viscosityPropertyIndex;
+
+    size_t m_fluidCellCount;
 
     float m_frameTime;
     float m_avgFrameMs;

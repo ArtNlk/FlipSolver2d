@@ -44,7 +44,7 @@ protected:
 
     LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
 
-    DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix() override;
+    PressureParameters getPressureProjectionMatrix() override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
 

@@ -72,7 +72,7 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     }
 }
 
-bool LinearSolver::solve(const UpperTriangularMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data, int iterLimit, double tol)
+bool LinearSolver::solve(const PressureParameters &matrixIn, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data, int iterLimit, double tol)
 {
     result.assign(result.size(),0);
     if(precond == nullptr)
@@ -862,4 +862,24 @@ void IPPreconditioner::secondStepIPPMatmulThread(Range r, const std::vector<doub
         out[i] = in[i] - (in[neighbors[0]] * m.getValue(i,neighbors[0])
                                           + in[neighbors[2]] * m.getValue(i,neighbors[2])) / diag;
     }
+}
+
+std::vector<double> PressureParameters::operator*(std::vector<double> &v) const
+{
+    std::vector<double> output(v.size(),0.0);
+
+    for(int i = 0; i < idxs.size(); i++)
+    {
+        const size_t currIdx = idxs[i];
+        double temp = 0.0;
+        if(iOffset <= currIdx) temp += v[currIdx - iOffset] * values[i*5 + 0];
+        if(currIdx + iOffset < v.size()) temp += v[currIdx + iOffset] * values[i*5 + 1];
+        if(jOffset <= currIdx) temp += v[currIdx - jOffset] * values[i*5 + 3];
+        if(currIdx + jOffset < v.size()) temp += v[currIdx + jOffset] * values[i*5 + 4];
+        temp += v[currIdx] * values[i*5 + 2];
+
+        output[currIdx] = temp;
+    }
+
+    return output;
 }

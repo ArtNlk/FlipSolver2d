@@ -67,8 +67,9 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
 {
     m_randEngine = std::mt19937(p->seed);
     m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
-    m_projectTolerance = m_viscosityEnabled? 1e-2 : 1e-2;
-    m_projectPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
+    m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-6;
+    //m_projectPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
+    m_projectPreconditioner = std::make_shared<StubPreconditioner>();
     m_densityPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
     m_viscosityPreconditioner = std::make_shared<StubPreconditioner>();
 }
@@ -87,9 +88,9 @@ void FlipSolver::project()
     }
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
-    UpperTriangularMatrix mat = UpperTriangularMatrix(getPressureProjectionMatrix());
-    IPPreconditioner::IPPreconditionerData pd(mat);
-    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,&pd, m_pcgIterLimit, m_projectTolerance))
+    PressureParameters mat = getPressureProjectionMatrix();
+    //IPPreconditioner::IPPreconditionerData pd(mat);
+    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,nullptr, m_pcgIterLimit, m_projectTolerance))
     {
         std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
     }
@@ -150,10 +151,10 @@ void FlipSolver::applyViscosity()
     //debug() << "mat=" << mat;
     //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
-    if(!m_pcgSolver.solve(mat,result,rhs,m_viscosityPreconditioner,nullptr,200,1e-6))
-    {
-        std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
-    }
+//    if(!m_pcgSolver.solve(mat,result,rhs,m_viscosityPreconditioner,nullptr,200,1e-6))
+//    {
+//        std::cout << "PCG Solver Viscosity: Iteration limit exhaustion!\n";
+//    }
 
     if(anyNanInf(result))
     {
@@ -202,12 +203,12 @@ void FlipSolver::densityCorrection()
 
     calcDensityCorrectionRhs(m_rhs);
     //    //debug() << "Calculated rhs: " << rhs;
-    UpperTriangularMatrix mat = UpperTriangularMatrix(getPressureProjectionMatrix());
-    IPPreconditioner::IPPreconditionerData pd(mat);
-    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_densityPreconditioner,&pd,m_pcgIterLimit,1e-2))
-    {
-        std::cout << "PCG Solver density: Iteration limit exhaustion!\n";
-    }
+//    UpperTriangularMatrix mat = UpperTriangularMatrix(getPressureProjectionMatrix());
+//    IPPreconditioner::IPPreconditionerData pd(mat);
+//    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_densityPreconditioner,&pd,m_pcgIterLimit,1e-2))
+//    {
+//        std::cout << "PCG Solver density: Iteration limit exhaustion!\n";
+//    }
     //    auto provider = getPressureMatrixElementProvider();
 
     //    if(!m_pcgSolver.mfcgSolve(provider,m_pressures.data(),m_rhs,m_pcgIterLimit))
@@ -844,55 +845,73 @@ void FlipSolver::extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool
     }
 }
 
-DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
+PressureParameters FlipSolver::getPressureProjectionMatrix()
 {
-    DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(cellCount(),7);
+    PressureParameters output = PressureParameters(linearSize(),m_sizeJ,1);
 
     double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
-    LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
-
+    size_t linearFluidIndex = 0;
     for(int i = 0; i <  m_sizeI; i++)
     {
         for(int j = 0; j <  m_sizeJ; j++)
         {
-            if(m_materialGrid.isFluid(i,j))
+            if(!m_materialGrid.isSolid(i,j))
             {
-                //X Neighbors
-                if(m_materialGrid.isFluid(i-1,j))
-                {
-                    output.addToAdiag(i,j,scale,indexer);
-                }else if(m_materialGrid.isEmpty(i-1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+                const size_t idx = linearIndex(i,j);
+                double im1 = 0.0;
+                double ip1 = 0.0;
+                double diag = 0.0;
+                double jm1 = 0.0;
+                double jp1 = 0.0;
 
-                if(m_materialGrid.isFluid(i+1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                    output.setAx(i,j,-scale,  indexer);
-                } else if(m_materialGrid.isEmpty(i+1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+                //X Neighbors
+//                if(m_materialGrid.isFluid(i-1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,indexer);
+//                }else if(m_materialGrid.isEmpty(i-1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
+                diag += scale * !m_materialGrid.isSolid(i-1,j);
+
+//                if(m_materialGrid.isFluid(i+1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                    output.setAx(i,j,-scale,  indexer);
+//                } else if(m_materialGrid.isEmpty(i+1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
+                diag += scale * !m_materialGrid.isSolid(i+1,j);
+                ip1 = -scale * m_materialGrid.isFluid(i+1,j);
+                im1 = -scale * m_materialGrid.isFluid(i-1,j);
 
                 //Y Neighbors
-                if(m_materialGrid.isFluid(i,j-1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }else if(m_materialGrid.isEmpty(i,j-1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+//                if(m_materialGrid.isFluid(i,j-1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }else if(m_materialGrid.isEmpty(i,j-1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
+                diag += scale * !m_materialGrid.isSolid(i,j-1);
 
-                if(m_materialGrid.isFluid(i,j+1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                    output.setAy(i,j,-scale,  indexer);
-                } else if(m_materialGrid.isEmpty(i,j+1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+//                if(m_materialGrid.isFluid(i,j+1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                    output.setAy(i,j,-scale,  indexer);
+//                } else if(m_materialGrid.isEmpty(i,j+1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
+                diag += scale * !m_materialGrid.isSolid(i,j+1);
+                jp1 = -scale * m_materialGrid.isFluid(i,j+1);
+                jm1 = -scale * m_materialGrid.isFluid(i,j-1);
+
+                output.setRow(linearFluidIndex,im1,ip1,diag,jm1,jp1);
+
+                linearFluidIndex++;
             }
         }
     }
@@ -1204,6 +1223,7 @@ void FlipSolver::countParticles()
 
 void FlipSolver::updateMaterials()
 {
+    m_fluidCellCount = 0;
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -1214,6 +1234,7 @@ void FlipSolver::updateMaterials()
                 {
                     m_materialGrid.at(i,j) = FluidMaterial::FLUID;
                 }
+                m_fluidCellCount++;
             }
             else
             {

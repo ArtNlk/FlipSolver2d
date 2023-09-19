@@ -10,6 +10,33 @@
 #include "threadpool.h"
 #include "uppertriangularmatrix.h"
 
+struct PressureParameters
+{
+    PressureParameters(size_t fluidCellCount, size_t iOffset, size_t jOffset) :
+    values(fluidCellCount*5,0.0),
+    idxs(fluidCellCount),
+    iOffset(iOffset),
+    jOffset(jOffset)
+    {
+    }
+
+    void setRow(size_t fluidIdx, double im1, double ip1, double diag, double jm1, double jp1)
+    {
+        values[fluidIdx*5 + 0] = im1;
+        values[fluidIdx*5 + 1] = ip1;
+        values[fluidIdx*5 + 2] = diag;
+        values[fluidIdx*5 + 3] = jm1;
+        values[fluidIdx*5 + 4] = jp1;
+    }
+
+    std::vector<double> operator*(std::vector<double> &v) const;
+
+    std::vector<double> values;
+    std::vector<size_t> idxs;
+    size_t iOffset;
+    size_t jOffset;
+};
+
 class IPreconditioner
 {
 public:
@@ -66,7 +93,7 @@ public:
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
     using MatElementProvider = std::function<SparseMatRowElements(int)>;
 
-    bool solve(const UpperTriangularMatrix &matrixIn, std::vector<double> &result,
+    bool solve(const PressureParameters &matrixIn, std::vector<double> &result,
                const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data,
                int iterLimit = 20, double tol = 1e-6);
     bool mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result,
