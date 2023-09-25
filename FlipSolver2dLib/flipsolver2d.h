@@ -13,7 +13,7 @@
 #include "sdfgrid.h"
 #include "staggeredvelocitygrid.h"
 #include "threadpool.h"
-#include "uppertriangularmatrix.h"
+#include "staticmatrix.h"
 #include "geometry2d.h"
 #include "emitter.h"
 #include "sink.h"
@@ -186,10 +186,10 @@ protected:
     void calcDensityCorrectionRhs(std::vector<double> &rhs);
 
     virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
-
-    virtual DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix();
-
-    DynamicUpperTriangularSparseMatrix getViscosityMatrix();
+    
+    virtual DynamicMatrix getPressureProjectionMatrix();
+    
+    DynamicMatrix getViscosityMatrix();
 
     Vertex jitteredPosInCell(int i, int j);
 

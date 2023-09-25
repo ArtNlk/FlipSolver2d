@@ -291,9 +291,9 @@ LinearSolver::SparseMatRowElements FlipSmokeSolver::getMatFreeElementForLinIdx(u
     return output;
 }
 
-DynamicUpperTriangularSparseMatrix FlipSmokeSolver::getPressureProjectionMatrix()
+DynamicMatrix FlipSmokeSolver::getPressureProjectionMatrix()
 {
-    DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(cellCount(),7);
+    DynamicMatrix output = DynamicMatrix(cellCount(),7);
 
     double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 

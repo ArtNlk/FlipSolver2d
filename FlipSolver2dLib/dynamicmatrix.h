@@ -1,29 +1,29 @@
-#ifndef DYNAMICUPPERTRIANGULARSPARSEMATRIX_H
-#define DYNAMICUPPERTRIANGULARSPARSEMATRIX_H
+#ifndef DYNAMICMATRIX_H
+#define DYNAMICMATRIX_H
 
 #include <vector>
 #include <utility>
 #include <sstream>
 
-#include "squarematrix.h"
+#include "linearindexable2d.h"
 
 class Logger;
 
 using SparseRowUnit = std::pair<int, double>;
 using SparseRow = std::vector<SparseRowUnit>;
 
-class DynamicUpperTriangularSparseMatrix : public SquareMatrix
+class DynamicMatrix
 {
 public:
     friend Logger;
-
-    DynamicUpperTriangularSparseMatrix(int size, int avgRowLength = 7);
-
-    DynamicUpperTriangularSparseMatrix(const DynamicUpperTriangularSparseMatrix &m) = default;
-
-    DynamicUpperTriangularSparseMatrix(DynamicUpperTriangularSparseMatrix &&m) = default;
-
-    void copyUpperTriangleTo(DynamicUpperTriangularSparseMatrix &m) const;
+    
+    DynamicMatrix(int size, int avgRowLength = 7);
+    
+    DynamicMatrix(const DynamicMatrix &m) = default;
+    
+    DynamicMatrix(DynamicMatrix &&m) = default;
+    
+    void copyUpperTriangleTo(DynamicMatrix &m) const;
 
     void setAdiag(int i, int j, double value, LinearIndexable2d &indexer);
 
@@ -39,7 +39,7 @@ public:
 
     void addToAy(int i, int j, double value, LinearIndexable2d &indexer);
 
-    int rowSize(int rowIndex) const override;
+    int rowSize(int rowIndex) const;
 
     bool isStored(int rowIdx, int colIdx);
 
@@ -47,17 +47,19 @@ public:
 
     std::vector<SparseRow>& data();
 
-    void setValue(int rowIndex, int columnIndex, double value) override;
-    double getValue(int rowIndex, int columnIndex) const override;
+    void setValue(int rowIndex, int columnIndex, double value);
+    double getValue(int rowIndex, int columnIndex) const;
 
     std::vector<double> operator*(std::vector<double> &v) const;
 
     std::string toString();
 
+    size_t size() const;
+
 protected:
     std::vector<SparseRow> m_rows;
-    int m_size;
+    size_t m_size;
     int m_elementCount;
 };
 
-#endif // DYNAMICUPPERTRIANGULARSPARSEMATRIX_H
+#endif // DYNAMICMATRIX_H

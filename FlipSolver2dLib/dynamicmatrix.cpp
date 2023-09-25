@@ -1,4 +1,4 @@
-#include "dynamicuppertriangularsparsematrix.h"
+#include "dynamicmatrix.h"
 
 #include <algorithm>
 #include <optional>
@@ -6,8 +6,7 @@
 #include "linearindexable2d.h"
 #include "mathfuncs.h"
 
-DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size, int avgRowLength) :
-    SquareMatrix(size),
+DynamicMatrix::DynamicMatrix(int size, int avgRowLength) :
     m_rows(size),
     m_size(size),
     m_elementCount(0)
@@ -18,7 +17,7 @@ DynamicUpperTriangularSparseMatrix::DynamicUpperTriangularSparseMatrix(int size,
     }
 }
 
-void DynamicUpperTriangularSparseMatrix::copyUpperTriangleTo(DynamicUpperTriangularSparseMatrix &m) const
+void DynamicMatrix::copyUpperTriangleTo(DynamicMatrix &m) const
 {
     ASSERT(m.size() == this->size());
     int size = m.size();
@@ -41,7 +40,7 @@ void DynamicUpperTriangularSparseMatrix::copyUpperTriangleTo(DynamicUpperTriangu
 }
 
 
-void DynamicUpperTriangularSparseMatrix::setAdiag(int i, int j, double value, LinearIndexable2d &indexer)
+void DynamicMatrix::setAdiag(int i, int j, double value, LinearIndexable2d &indexer)
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -49,7 +48,7 @@ void DynamicUpperTriangularSparseMatrix::setAdiag(int i, int j, double value, Li
     setValue(index, index, value);
 }
 
-void DynamicUpperTriangularSparseMatrix::setAx(int i, int j, double value, LinearIndexable2d &indexer)
+void DynamicMatrix::setAx(int i, int j, double value, LinearIndexable2d &indexer)
 {
     int rowIndex = indexer.linearIndex(i,j);
     int colIndex = indexer.linearIndex(i+1,j);
@@ -62,7 +61,7 @@ void DynamicUpperTriangularSparseMatrix::setAx(int i, int j, double value, Linea
     setValue(colIndex,rowIndex, value);
 }
 
-void DynamicUpperTriangularSparseMatrix::setAy(int i, int j, double value, LinearIndexable2d &indexer)
+void DynamicMatrix::setAy(int i, int j, double value, LinearIndexable2d &indexer)
 {
     int rowIndex = indexer.linearIndex(i,j);
     int colIndex = indexer.linearIndex(i,j+1);
@@ -75,7 +74,7 @@ void DynamicUpperTriangularSparseMatrix::setAy(int i, int j, double value, Linea
     setValue(colIndex,rowIndex, value);
 }
 
-void DynamicUpperTriangularSparseMatrix::addTo(int i, int j, double value)
+void DynamicMatrix::addTo(int i, int j, double value)
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -84,7 +83,7 @@ void DynamicUpperTriangularSparseMatrix::addTo(int i, int j, double value)
    // setValue(j,i, temp + value);
 }
 
-void DynamicUpperTriangularSparseMatrix::addToAdiag(int i, int j, double value, LinearIndexable2d &indexer)
+void DynamicMatrix::addToAdiag(int i, int j, double value, LinearIndexable2d &indexer)
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -92,7 +91,7 @@ void DynamicUpperTriangularSparseMatrix::addToAdiag(int i, int j, double value, 
     setValue(index, index, getValue(index,index) + value);
 }
 
-void DynamicUpperTriangularSparseMatrix::addToAx(int i, int j, double value, LinearIndexable2d &indexer)
+void DynamicMatrix::addToAx(int i, int j, double value, LinearIndexable2d &indexer)
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -102,7 +101,7 @@ void DynamicUpperTriangularSparseMatrix::addToAx(int i, int j, double value, Lin
     setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
 }
 
-void DynamicUpperTriangularSparseMatrix::addToAy(int i, int j, double value, LinearIndexable2d &indexer)
+void DynamicMatrix::addToAy(int i, int j, double value, LinearIndexable2d &indexer)
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -112,9 +111,9 @@ void DynamicUpperTriangularSparseMatrix::addToAy(int i, int j, double value, Lin
     return setValue(rowIndex,colIndex, getValue(rowIndex, colIndex) + value);
 }
 
-int DynamicUpperTriangularSparseMatrix::rowSize(int rowIndex) const { return m_rows[rowIndex].size();}
+int DynamicMatrix::rowSize(int rowIndex) const { return m_rows[rowIndex].size();}
 
-bool DynamicUpperTriangularSparseMatrix::isStored(int rowIdx, int colIdx)
+bool DynamicMatrix::isStored(int rowIdx, int colIdx)
 {
     ASSERT(inBounds(rowIdx,colIdx));
 
@@ -129,11 +128,11 @@ bool DynamicUpperTriangularSparseMatrix::isStored(int rowIdx, int colIdx)
     return std::binary_search(selectedRow.begin(),selectedRow.end(),searchValue,sparseRowUnitCmp);
 }
 
-int DynamicUpperTriangularSparseMatrix::elementCount() const { return m_elementCount;}
+int DynamicMatrix::elementCount() const { return m_elementCount;}
 
-std::vector<SparseRow>& DynamicUpperTriangularSparseMatrix::data() { return m_rows;}
+std::vector<SparseRow>& DynamicMatrix::data() { return m_rows;}
 
-void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex, double value)
+void DynamicMatrix::setValue(int rowIndex, int columnIndex, double value)
 {
     SparseRow &targetRow = m_rows[rowIndex];
     for(int i = 0; i < targetRow.size(); i++)
@@ -154,7 +153,7 @@ void DynamicUpperTriangularSparseMatrix::setValue(int rowIndex, int columnIndex,
     m_elementCount++;
 }
 
-double DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnIndex) const
+double DynamicMatrix::getValue(int rowIndex, int columnIndex) const
 {
     const SparseRow &targetRow = m_rows[rowIndex];
     for(const auto & column : targetRow)
@@ -168,7 +167,7 @@ double DynamicUpperTriangularSparseMatrix::getValue(int rowIndex, int columnInde
     return 0;
 }
 
-std::vector<double> DynamicUpperTriangularSparseMatrix::operator*(std::vector<double> &v) const
+std::vector<double> DynamicMatrix::operator*(std::vector<double> &v) const
 {
     std::vector<double> output(v.size());
     int rowIdx = 0;
@@ -186,13 +185,13 @@ std::vector<double> DynamicUpperTriangularSparseMatrix::operator*(std::vector<do
     return output;
 }
 
-std::string DynamicUpperTriangularSparseMatrix::toString()
+std::string DynamicMatrix::toString()
 {
     std::ostringstream output;
-    for(int i = 0; i < m_sizeI*m_sizeJ; i++)
+    for(int i = 0; i < m_size*m_size; i++)
     {
         output << "|";
-        for(int j = 0; j < m_sizeI*m_sizeJ; j++)
+        for(int j = 0; j < m_size*m_size; j++)
         {
             output << "\t" << getValue(i,j) << ",";
         }
@@ -200,4 +199,9 @@ std::string DynamicUpperTriangularSparseMatrix::toString()
     }
 
     return output.str();
+}
+
+size_t DynamicMatrix::size() const
+{
+    return m_size;
 }

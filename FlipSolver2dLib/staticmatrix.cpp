@@ -1,4 +1,4 @@
-#include "uppertriangularmatrix.h"
+#include "staticmatrix.h"
 #include "logger.h"
 
 #include "threadpool.h"
@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <vector>
 
-UpperTriangularMatrix::UpperTriangularMatrix(const DynamicUpperTriangularSparseMatrix &dynamicMatrix):
-    SquareMatrix(dynamicMatrix.size()),
-    m_rowStart(dynamicMatrix.size()+1)
+StaticMatrix::StaticMatrix(const DynamicMatrix &dynamicMatrix):
+    m_rowStart(dynamicMatrix.size()+1),
+    m_size(dynamicMatrix.size())
 {
     m_values.resize(dynamicMatrix.elementCount());
 
@@ -20,7 +20,7 @@ UpperTriangularMatrix::UpperTriangularMatrix(const DynamicUpperTriangularSparseM
     }
 
     int totalIndex = 0;
-    std::vector<SparseRow> rows = const_cast<DynamicUpperTriangularSparseMatrix&>(dynamicMatrix).data();
+    std::vector<SparseRow> rows = const_cast<DynamicMatrix&>(dynamicMatrix).data();
     for(int i = 0; i < size(); i++)
     {
         for(int j = 0; j < rows[i].size(); j++)
@@ -31,9 +31,9 @@ UpperTriangularMatrix::UpperTriangularMatrix(const DynamicUpperTriangularSparseM
     }
 }
 
-double UpperTriangularMatrix::getValue(int row, int col) const
+double StaticMatrix::getValue(int row, int col) const
 {
-    if(row == -1 || col == -1 || !inBounds(row,col)) {return 0.0;}
+    if(row == -1 || col == -1 || !(row<m_size && row>=0 && col<m_size && col >=0)) {return 0.0;}
     int rowStartIndex = m_rowStart[row];
     int rowEndIndex = m_rowStart[row+1];
     for(int i = rowStartIndex; i < rowEndIndex; i++)
@@ -47,17 +47,7 @@ double UpperTriangularMatrix::getValue(int row, int col) const
     return 0;
 }
 
-void UpperTriangularMatrix::setValue(int row, int col, double value)
-{
-    throw std::runtime_error("Set value is not supported in non-dynamic matrices");
-}
-
-int UpperTriangularMatrix::rowSize(int rowIndex) const
-{
-    throw std::runtime_error("Row size is not supported in non-dynamic matrices");
-}
-
-double UpperTriangularMatrix::Adiag(int i, int j, LinearIndexable2d &indexer) const
+double StaticMatrix::Adiag(int i, int j, LinearIndexable2d &indexer) const
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -69,7 +59,7 @@ double UpperTriangularMatrix::Adiag(int i, int j, LinearIndexable2d &indexer) co
     return getValue(index,index);
 }
 
-double UpperTriangularMatrix::Ax(int i, int j, LinearIndexable2d &indexer) const
+double StaticMatrix::Ax(int i, int j, LinearIndexable2d &indexer) const
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -83,7 +73,7 @@ double UpperTriangularMatrix::Ax(int i, int j, LinearIndexable2d &indexer) const
     return getValue(rowIndex,colIndex);
 }
 
-double UpperTriangularMatrix::Ay(int i, int j, LinearIndexable2d &indexer) const
+double StaticMatrix::Ay(int i, int j, LinearIndexable2d &indexer) const
 {
     ASSERT_BETWEEN(i,-2,m_sizeI);
     ASSERT_BETWEEN(j,-2,m_sizeJ);
@@ -97,7 +87,7 @@ double UpperTriangularMatrix::Ay(int i, int j, LinearIndexable2d &indexer) const
     return getValue(rowIndex,colIndex);
 }
 
-std::vector<double> UpperTriangularMatrix::operator*(std::vector<double> &v) const
+std::vector<double> StaticMatrix::operator*(std::vector<double> &v) const
 {
     std::vector<double> output(v.size(),0.0);
 
@@ -114,7 +104,7 @@ std::vector<double> UpperTriangularMatrix::operator*(std::vector<double> &v) con
 
     for(const Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&UpperTriangularMatrix::mulThread,this,range,
+        ThreadPool::i()->enqueue(&StaticMatrix::mulThread,this,range,
                                  std::ref(v),std::ref(output));
     }
     ThreadPool::i()->wait();
@@ -122,7 +112,7 @@ std::vector<double> UpperTriangularMatrix::operator*(std::vector<double> &v) con
     return output;
 }
 
-void UpperTriangularMatrix::mulThread(Range range, std::vector<double>& vin, std::vector<double> &vout) const
+void StaticMatrix::mulThread(Range range, std::vector<double>& vin, std::vector<double> &vout) const
 {
     for(int i = range.start; i < range.end; i++)
     {
@@ -134,13 +124,13 @@ void UpperTriangularMatrix::mulThread(Range range, std::vector<double>& vin, std
     }
 }
 
-std::string UpperTriangularMatrix::toString()
+std::string StaticMatrix::toString()
 {
     std::ostringstream output;
-    for(int i = 0; i < m_sizeI*m_sizeJ; i++)
+    for(int i = 0; i < m_size*m_size; i++)
     {
         output << "|";
-        for(int j = 0; j < m_sizeI*m_sizeJ; j++)
+        for(int j = 0; j < m_size*m_size; j++)
         {
             output << "\t" << getValue(i,j) << ",";
         }
@@ -148,4 +138,9 @@ std::string UpperTriangularMatrix::toString()
     }
 
     return output.str();
+}
+
+size_t StaticMatrix::size() const
+{
+    return m_size;
 }

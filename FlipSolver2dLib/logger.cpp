@@ -1,7 +1,7 @@
 #include "logger.h"
 
-#include "dynamicuppertriangularsparsematrix.h"
-#include "uppertriangularmatrix.h"
+#include "dynamicmatrix.h"
+#include "staticmatrix.h"
 
 Logger::Logger()
 {
@@ -26,7 +26,7 @@ void Logger::close()
     m_logFileStream.close();
 }
 
-Logger &operator<<(Logger &l,DynamicUpperTriangularSparseMatrix &m)
+Logger &operator<<(Logger &l,DynamicMatrix &m)
 {
 #ifdef NUMPY_LOGGING
     std::ofstream &s = l.stream();
@@ -59,21 +59,21 @@ Logger &operator<<(Logger &l,DynamicUpperTriangularSparseMatrix &m)
     return l;
 }
 
-Logger &operator<<(Logger &l, const UpperTriangularMatrix &m)
+Logger &operator<<(Logger &l, const StaticMatrix &m)
 {
     std::ofstream &s = l.stream();
 #ifdef NUMPY_LOGGING
     s << '[';
-    for(int i = 0; i < m.sizeI(); i++)
+    for(int i = 0; i < m.size(); i++)
     {
         s << '[';
-        for(int j = 0; j < m.sizeJ(); j++)
+        for(int j = 0; j < m.size(); j++)
         {
             s << m.getValue(i,j);
-            if(j != m.sizeJ() - 1) s << ',';
+            if(j != m.size() - 1) s << ',';
         }
         s << ']';
-        if(i != m.sizeI() - 1) s << ',';
+        if(i != m.size() - 1) s << ',';
     }
     s << ']';
 #else
@@ -201,13 +201,13 @@ Logger &operator<<(Logger &l, const char* str)
     return l;
 }
 
-void binDump(UpperTriangularMatrix &m, std::string path)
+void binDump(StaticMatrix &m, std::string path)
 {
     std::ofstream s;
     s.open(path, std::ios_base::binary);
-    for(int i = 0; i < m.sizeI(); i++)
+    for(int i = 0; i < m.size(); i++)
     {
-        for(int j = 0; j < m.sizeJ(); j++)
+        for(int j = 0; j < m.size(); j++)
         {
             s << m.getValue(i,j);
         }

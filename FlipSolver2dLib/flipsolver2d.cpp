@@ -17,11 +17,11 @@
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
 
-#include "dynamicuppertriangularsparsematrix.h"
+#include "dynamicmatrix.h"
 #include "logger.h"
 #include "mathfuncs.h"
 #include "threadpool.h"
-#include "uppertriangularmatrix.h"
+#include "staticmatrix.h"
 
 FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     LinearIndexable2d(p->gridSizeI, p->gridSizeJ),
@@ -87,7 +87,7 @@ void FlipSolver::project()
     }
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
-    UpperTriangularMatrix mat = UpperTriangularMatrix(getPressureProjectionMatrix());
+    StaticMatrix mat = StaticMatrix(getPressureProjectionMatrix());
     IPPreconditioner::IPPreconditionerData pd(mat);
     if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,&pd, m_pcgIterLimit, m_projectTolerance))
     {
@@ -146,7 +146,7 @@ void FlipSolver::applyViscosity()
     std::vector<double> result(m_fluidVelocityGrid.velocityGridU().linearSize() +
                                m_fluidVelocityGrid.velocityGridV().linearSize(), 0.0);
     calcViscosityRhs(rhs);
-    UpperTriangularMatrix mat = UpperTriangularMatrix(getViscosityMatrix());
+    StaticMatrix mat = StaticMatrix(getViscosityMatrix());
     //debug() << "mat=" << mat;
     //debug() << "vec=" << rhs;
     //binDump(mat,"test.bin");
@@ -202,7 +202,7 @@ void FlipSolver::densityCorrection()
 
     calcDensityCorrectionRhs(m_rhs);
     //    //debug() << "Calculated rhs: " << rhs;
-    UpperTriangularMatrix mat = UpperTriangularMatrix(getPressureProjectionMatrix());
+    StaticMatrix mat = StaticMatrix(getPressureProjectionMatrix());
     IPPreconditioner::IPPreconditionerData pd(mat);
     if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_densityPreconditioner,&pd,m_pcgIterLimit,1e-2))
     {
@@ -844,9 +844,9 @@ void FlipSolver::extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool
     }
 }
 
-DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
+DynamicMatrix FlipSolver::getPressureProjectionMatrix()
 {
-    DynamicUpperTriangularSparseMatrix output = DynamicUpperTriangularSparseMatrix(cellCount(),7);
+    DynamicMatrix output = DynamicMatrix(cellCount(),7);
 
     double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
@@ -900,9 +900,9 @@ DynamicUpperTriangularSparseMatrix FlipSolver::getPressureProjectionMatrix()
     return output;
 }
 
-DynamicUpperTriangularSparseMatrix FlipSolver::getViscosityMatrix()
+DynamicMatrix FlipSolver::getViscosityMatrix()
 {
-    DynamicUpperTriangularSparseMatrix output(m_fluidVelocityGrid.velocityGridU().linearSize() +
+    DynamicMatrix output(m_fluidVelocityGrid.velocityGridU().linearSize() +
                                               m_fluidVelocityGrid.velocityGridV().linearSize(),7);
 
     float scaleTwoDt = 2*m_stepDt / (m_dx * m_dx);

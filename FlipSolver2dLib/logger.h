@@ -7,9 +7,9 @@
 #include <vector>
 #include <string>
 
-class DynamicUpperTriangularSparseMatrix;
+class DynamicMatrix;
 
-class UpperTriangularMatrix;
+class StaticMatrix;
 
 class Logger
 {
@@ -37,11 +37,11 @@ protected:
     std::ofstream m_logFileStream;
 };
 
-void binDump(UpperTriangularMatrix & m, std::string path);
+void binDump(StaticMatrix & m, std::string path);
 
-Logger &operator<<(Logger &l, DynamicUpperTriangularSparseMatrix &m);
+Logger &operator<<(Logger &l, DynamicMatrix &m);
 
-Logger &operator<<(Logger &l, const UpperTriangularMatrix &m);
+Logger &operator<<(Logger &l, const StaticMatrix &m);
 
 Logger &operator<<(Logger &l, const std::vector<double> &v);
 

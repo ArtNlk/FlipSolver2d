@@ -8,7 +8,7 @@
 #include "linearindexable2d.h"
 #include "materialgrid.h"
 #include "threadpool.h"
-#include "uppertriangularmatrix.h"
+#include "staticmatrix.h"
 
 class IPreconditioner
 {
@@ -40,21 +40,21 @@ public:
 
     struct IPPreconditionerData : public PreconditionerData
     {
-        IPPreconditionerData(UpperTriangularMatrix &m) :
+        IPPreconditionerData(StaticMatrix &m) :
             m(m)
         {
 
         }
 
-        UpperTriangularMatrix &m;
+        StaticMatrix &m;
     };
 
 private:
     void firstStepIPPMatmulThread(Range r, const std::vector<double> &in,
-                                  std::vector<double> &out, UpperTriangularMatrix& m);
+                                  std::vector<double> &out, StaticMatrix& m);
 
     void secondStepIPPMatmulThread(Range r, const std::vector<double> &in,
-                                   std::vector<double> &out, UpperTriangularMatrix& m);
+                                   std::vector<double> &out, StaticMatrix& m);
 
     LinearIndexable2d m_indexer;
 };
@@ -66,7 +66,7 @@ public:
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
     using MatElementProvider = std::function<SparseMatRowElements(int)>;
 
-    bool solve(const UpperTriangularMatrix &matrixIn, std::vector<double> &result,
+    bool solve(const StaticMatrix &matrixIn, std::vector<double> &result,
                const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data,
                int iterLimit = 20, double tol = 1e-6);
     bool mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result,
@@ -82,9 +82,9 @@ protected:
                          const std::vector<double> &vin, std::vector<double> &vout);
 
     void applyMGPrecond(std::vector<double> const &in, std::vector<double> &out);
-
-    void applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
-    DynamicUpperTriangularSparseMatrix calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix);
+    
+    void applyICPrecond(const DynamicMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
+    DynamicMatrix calcPrecond(const DynamicMatrix &matrix);
 
     void applyMfIPPrecond(MatElementProvider p, const std::vector<double> &in, std::vector<double> &out);
 

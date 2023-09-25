@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "dynamicuppertriangularsparsematrix.h"
+#include "dynamicmatrix.h"
 #include "grid2d.h"
 #include "materialgrid.h"
 #include "hwinfo.h"
@@ -72,7 +72,7 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     }
 }
 
-bool LinearSolver::solve(const UpperTriangularMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data, int iterLimit, double tol)
+bool LinearSolver::solve(const StaticMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data, int iterLimit, double tol)
 {
     result.assign(result.size(),0);
     if(precond == nullptr)
@@ -229,11 +229,11 @@ void LinearSolver::applyMGPrecond(const std::vector<double> &in, std::vector<dou
     vCycle(out,in);
 }
 
-void LinearSolver::applyICPrecond(const DynamicUpperTriangularSparseMatrix &precond, const std::vector<double> &in, std::vector<double> &out)
+void LinearSolver::applyICPrecond(const DynamicMatrix &precond, const std::vector<double> &in, std::vector<double> &out)
 {
     out = in;
-
-    std::vector<SparseRow> &rows = const_cast<DynamicUpperTriangularSparseMatrix&>(precond).data();
+    
+    std::vector<SparseRow> &rows = const_cast<DynamicMatrix&>(precond).data();
 
     for(int i = 0; i < out.size(); i++)
     {
@@ -271,12 +271,12 @@ void LinearSolver::applyICPrecond(const DynamicUpperTriangularSparseMatrix &prec
     }
 }
 
-DynamicUpperTriangularSparseMatrix LinearSolver::calcPrecond(const DynamicUpperTriangularSparseMatrix &matrix)
+DynamicMatrix LinearSolver::calcPrecond(const DynamicMatrix &matrix)
 {
     float tuning = 0.97f;
     float safety = 0.25f;
     int n = matrix.size();
-    DynamicUpperTriangularSparseMatrix output(n);
+    DynamicMatrix output(n);
     matrix.copyUpperTriangleTo(output);
 
     std::vector<SparseRow> &rowArray = output.data();
@@ -830,7 +830,7 @@ void IPPreconditioner::apply(const std::vector<double> &in, std::vector<double> 
     ThreadPool::i()->wait();
 }
 
-void IPPreconditioner::firstStepIPPMatmulThread(Range r, const std::vector<double> &in, std::vector<double> &out, UpperTriangularMatrix &m)
+void IPPreconditioner::firstStepIPPMatmulThread(Range r, const std::vector<double> &in, std::vector<double> &out, StaticMatrix &m)
 {
     for(int i = r.start; i < r.end; i++)
     {
@@ -848,7 +848,7 @@ void IPPreconditioner::firstStepIPPMatmulThread(Range r, const std::vector<doubl
     }
 }
 
-void IPPreconditioner::secondStepIPPMatmulThread(Range r, const std::vector<double> &in, std::vector<double> &out, UpperTriangularMatrix &m)
+void IPPreconditioner::secondStepIPPMatmulThread(Range r, const std::vector<double> &in, std::vector<double> &out, StaticMatrix &m)
 {
     for(int i = r.start; i < r.end; i++)
     {

@@ -1,7 +1,7 @@
 #ifndef FLIPSMOKESOLVER_H
 #define FLIPSMOKESOLVER_H
 
-#include "dynamicuppertriangularsparsematrix.h"
+#include "dynamicmatrix.h"
 #include "flipsolver2d.h"
 
 struct SmokeSolverParameters : FlipSolverParameters
@@ -43,8 +43,8 @@ protected:
     LinearSolver::MatElementProvider getPressureMatrixElementProvider() override;
 
     LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
-
-    DynamicUpperTriangularSparseMatrix getPressureProjectionMatrix() override;
+    
+    DynamicMatrix getPressureProjectionMatrix() override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
 

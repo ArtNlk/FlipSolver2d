@@ -9,12 +9,11 @@ set(HEADERS
     sdfgrid.h
     linearsolver.h
     vmath.h
-    uppertriangularmatrix.h
-    dynamicuppertriangularsparsematrix.h
+    staticmatrix.h
+    dynamicmatrix.h
     logger.h
     geometry2d.h
     mathfuncs.h
-    squarematrix.h
     emitter.h
     obstacle.h
     flipsolver2d.h
@@ -34,8 +33,8 @@ set(SOURCES
     sdfgrid.cpp
     linearsolver.cpp
     vmath.cpp
-    uppertriangularmatrix.cpp
-    dynamicuppertriangularsparsematrix.cpp
+    staticmatrix.cpp
+    dynamicmatrix.cpp
     logger.cpp
     geometry2d.cpp
     mathfuncs.cpp
