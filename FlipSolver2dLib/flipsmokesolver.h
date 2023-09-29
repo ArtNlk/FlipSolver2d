@@ -40,6 +40,8 @@ protected:
 
     void applyPressuresToVelocityField(std::vector<double> &pressures) override;
 
+    void seedInitialFluid() override;
+
     LinearSolver::MatElementProvider getPressureMatrixElementProvider() override;
 
     LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);

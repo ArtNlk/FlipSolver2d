@@ -49,8 +49,8 @@ double StaticMatrix::getValue(int row, int col) const
 
 double StaticMatrix::Adiag(int i, int j, LinearIndexable2d &indexer) const
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_size);
+    ASSERT_BETWEEN(j,-2,m_size);
     if(i < 0 || j < 0)
     {
         return 0.0;
@@ -61,8 +61,8 @@ double StaticMatrix::Adiag(int i, int j, LinearIndexable2d &indexer) const
 
 double StaticMatrix::Ax(int i, int j, LinearIndexable2d &indexer) const
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_size);
+    ASSERT_BETWEEN(j,-2,m_size);
     if(i < 0 || j < 0)
     {
         return 0.0;
@@ -75,8 +75,8 @@ double StaticMatrix::Ax(int i, int j, LinearIndexable2d &indexer) const
 
 double StaticMatrix::Ay(int i, int j, LinearIndexable2d &indexer) const
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_size);
+    ASSERT_BETWEEN(j,-2,m_size);
     if(i < 0 || j < 0)
     {
         return 0.0;

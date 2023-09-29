@@ -42,8 +42,8 @@ void DynamicMatrix::copyUpperTriangleTo(DynamicMatrix &m) const
 
 void DynamicMatrix::setAdiag(int i, int j, double value, LinearIndexable2d &indexer)
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_size);
+    ASSERT_BETWEEN(j,-2,m_size);
     int index = indexer.linearIndex(i,j);
     setValue(index, index, value);
 }
@@ -76,8 +76,8 @@ void DynamicMatrix::setAy(int i, int j, double value, LinearIndexable2d &indexer
 
 void DynamicMatrix::addTo(int i, int j, double value)
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_size);
+    ASSERT_BETWEEN(j,-2,m_size);
     double temp = getValue(i,j);
     setValue(i,j, temp + value);
    // setValue(j,i, temp + value);
@@ -85,16 +85,16 @@ void DynamicMatrix::addTo(int i, int j, double value)
 
 void DynamicMatrix::addToAdiag(int i, int j, double value, LinearIndexable2d &indexer)
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_size);
+    ASSERT_BETWEEN(j,-2,m_size);
     int index = indexer.linearIndex(i,j);
     setValue(index, index, getValue(index,index) + value);
 }
 
 void DynamicMatrix::addToAx(int i, int j, double value, LinearIndexable2d &indexer)
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_size);
+    ASSERT_BETWEEN(j,-2,m_size);
     int rowIndex = indexer.linearIndex(i,j);
     int colIndex = indexer.linearIndex(i+1,j);
 
@@ -103,8 +103,8 @@ void DynamicMatrix::addToAx(int i, int j, double value, LinearIndexable2d &index
 
 void DynamicMatrix::addToAy(int i, int j, double value, LinearIndexable2d &indexer)
 {
-    ASSERT_BETWEEN(i,-2,m_sizeI);
-    ASSERT_BETWEEN(j,-2,m_sizeJ);
+    ASSERT_BETWEEN(i,-2,m_size);
+    ASSERT_BETWEEN(j,-2,m_size);
     int rowIndex = indexer.linearIndex(i,j);
     int colIndex = indexer.linearIndex(i,j+1);
 
@@ -115,7 +115,8 @@ int DynamicMatrix::rowSize(int rowIndex) const { return m_rows[rowIndex].size();
 
 bool DynamicMatrix::isStored(int rowIdx, int colIdx)
 {
-    ASSERT(inBounds(rowIdx,colIdx));
+    ASSERT_BETWEEN(rowIdx, -1, m_size);
+    ASSERT_BETWEEN(colIdx, -1, m_size);
 
     auto sparseRowUnitCmp = [](const SparseRowUnit &a, const SparseRowUnit &b){
         return a.first < b.first;

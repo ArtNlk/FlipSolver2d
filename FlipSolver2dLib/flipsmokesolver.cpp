@@ -259,6 +259,32 @@ void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressur
     }
 }
 
+void FlipSmokeSolver::seedInitialFluid()
+{
+    std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float> (m_concentrationIndex);
+    std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>(m_temperatureIndex);
+
+    for (int i = 0; i < m_sizeI; i++)
+    {
+        for (int j = 0; j < m_sizeJ; j++)
+        {
+            if (m_materialGrid.isStrictFluid(i, j))
+            {
+                for (int p = 0; p < m_particlesPerCell; p++)
+                {
+                    Vertex pos = jitteredPosInCell(i, j);
+                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    float conc = m_smokeConcentration.interpolateAt(pos);
+                    float temp = m_temperature.interpolateAt(pos);
+                    size_t pIdx = m_markerParticles.addMarkerParticle(pos, velocity);
+                    particleConcentrations.at(pIdx) = conc;
+                    particleTemperatures.at(pIdx) = temp;
+                }
+            }
+        }
+    }
+}
+
 LinearSolver::MatElementProvider FlipSmokeSolver::getPressureMatrixElementProvider()
 {
     return std::bind(&FlipSmokeSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);

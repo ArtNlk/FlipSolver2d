@@ -33,6 +33,7 @@ if(UNIX)
 elseif(MSVC)
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(/O2)
+        add_compile_options(/std:c++20)
     endif()
 endif()
 

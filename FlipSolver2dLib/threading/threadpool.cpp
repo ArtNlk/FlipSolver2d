@@ -21,6 +21,10 @@ ThreadPool::~ThreadPool()
 {
     m_running = false;
     m_cv.notify_all();
+    for (std::thread& t : m_threads)
+    {
+        t.join();
+    }
 }
 
 ThreadPool *ThreadPool::i()

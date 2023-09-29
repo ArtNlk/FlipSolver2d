@@ -529,7 +529,7 @@ void FluidRenderer::updateGridFromMaterial()
                         float smokeConcentration = solver->smokeConcentration().at(i,j);
                         float opacity = simmath::lerp(0.01f,1.f,smokeConcentration);
                         float temp = solver->temperature().at(i,j);
-                        float intensity = std::clamp((std::clamp(temp, 773.f,temp) - 773.f) / 277.f, 0.f, 1.f);
+                        float intensity = std::clamp((std::min(temp, 773.f) - 773.f) / 277.f, 0.f, 1.f);
                         Color c = getBlackbodyColor(temp);
                         c = c*intensity;
                         c = Color::lerp(m_emptyColor,c,opacity);
