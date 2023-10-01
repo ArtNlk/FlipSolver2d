@@ -27,6 +27,28 @@ LiquidRenderApp::LiquidRenderApp() :
     m_windowWidth = m_startWindowWidth;
     m_windowHeight = m_startWindowHeight;
     LiquidRenderApp::GLFWCallbackWrapper::SetApplication(this);
+
+    switch(HwInfo::i().getSimdLevel())
+    {
+    case SIMD_LEVEL_NONE:
+        std::cout << "SIMD not detected\n";
+        break;
+    case SIMD_LEVEL_SSE42:
+        std::cout << "SIMD SSE4.2\n";
+        break;
+    case SIMD_LEVEL_SSE42_FMA3:
+        std::cout << "SIMD SSE4A XOP FMA\n";
+        break;
+    case SIMD_LEVEL_AVX:
+        std::cout << "SIMD AVX\n";
+        break;
+    case SIMD_LEVEL_AVX2:
+        std::cout << "SIMD AVX2\n";
+        break;
+    case SIMD_LEVEL_AVX512:
+        std::cout << "SIMD AVX512\n";
+        break;
+    }
 }
 
 LiquidRenderApp::~LiquidRenderApp()

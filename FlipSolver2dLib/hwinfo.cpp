@@ -79,9 +79,9 @@ SIMDFeatureMask HwInfo::simdFeatures()
         cpuid(info,0x80000001);
         //if((info[3] & ((int)1 << 29)) != 0) output |= SIMD_x64;
         //if((info[2] & ((int)1 <<  5)) != 0) output |= SIMD_ABM;
-        if((info[2] & ((int)1 <<  6)) != 0) output |= SIMD_FEATURE_SSE4a;
-        if((info[2] & ((int)1 << 16)) != 0) output |= SIMD_FEATURE_FMA4;
-        if((info[2] & ((int)1 << 11)) != 0) output |= SIMD_FEATURE_XOP;
+        //if((info[2] & ((int)1 <<  6)) != 0) output |= SIMD_FEATURE_SSE4a;
+        //if((info[2] & ((int)1 << 16)) != 0) output |= SIMD_FEATURE_FMA4;
+        //if((info[2] & ((int)1 << 11)) != 0) output |= SIMD_FEATURE_XOP;
     }
 
     return output;
@@ -100,14 +100,14 @@ SIMDLevel HwInfo::simdLevel()
     }
     output = SIMD_LEVEL_SSE42;
 
-    for(int i = 6; i <= 9; i++)
+    for(int i = 6; i <= 6; i++)
     {
         if((m_featureMask & (1u << i)) == 0)
         {
             return output;
         }
     }
-    output = SIMD_LEVEL_SSE4a_XOP_FMA;
+    output = SIMD_LEVEL_SSE42_FMA3;
 
     if((m_featureMask & SIMD_FEATURE_AVX) == 0)
     {
@@ -121,7 +121,7 @@ SIMDLevel HwInfo::simdLevel()
     }
     output = SIMD_LEVEL_AVX2;
 
-    for(int i = 12; i <= 20; i++)
+    for(int i = 9; i <= 17; i++)
     {
         if((m_featureMask & (1u << i)) == 0)
         {

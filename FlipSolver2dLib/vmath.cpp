@@ -1,6 +1,7 @@
 #include "vmath.h"
 #include "hwinfo.h"
 #include "vops_sse42.h"
+#include "vops_avx.h"
 
 void VOps::dotThread(Range range, std::vector<double> &v1, std::vector<double> &v2, double &output)
 {
@@ -145,9 +146,11 @@ VOps::VOps() :
     case SIMD_LEVEL_SSE42:
         m_addMulThread = &VOps_sse42::addMulThread;
         break;
-    case SIMD_LEVEL_SSE4a_XOP_FMA:
+    case SIMD_LEVEL_SSE42_FMA3:
     case SIMD_LEVEL_AVX:
     case SIMD_LEVEL_AVX2:
+        m_addMulThread = &VOps_avx::addMulThread;
+        break;
     case SIMD_LEVEL_AVX512:
         break;
     }

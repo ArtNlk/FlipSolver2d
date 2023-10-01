@@ -32,7 +32,7 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     case SIMD_LEVEL_SSE42:
         m_premaskPressuresThread = &LinearSolver_sse42::premaskPressuresThread;
         break;
-    case SIMD_LEVEL_SSE4a_XOP_FMA:
+    case SIMD_LEVEL_SSE42_FMA3:
     case SIMD_LEVEL_AVX:
     case SIMD_LEVEL_AVX2:
     case SIMD_LEVEL_AVX512:

@@ -271,7 +271,7 @@ protected:
         case SIMD_LEVEL_SSE42:
             m_cubicInterpFunc = &Grid_sse42::cubicInterpF;
             break;
-        case SIMD_LEVEL_SSE4a_XOP_FMA:
+        case SIMD_LEVEL_SSE42_FMA3:
         case SIMD_LEVEL_AVX:
         case SIMD_LEVEL_AVX2:
         case SIMD_LEVEL_AVX512:
@@ -290,7 +290,7 @@ protected:
         case SIMD_LEVEL_SSE42:
             //m_cubicInterpFunc = &Grid_sse42::cubicInterpD;
             break;
-        case SIMD_LEVEL_SSE4a_XOP_FMA:
+        case SIMD_LEVEL_SSE42_FMA3:
         case SIMD_LEVEL_AVX:
         case SIMD_LEVEL_AVX2:
         case SIMD_LEVEL_AVX512:
