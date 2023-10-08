@@ -59,8 +59,20 @@ set(SSE42_SOURCES
     linearsolver_sse42.cpp
     grid_sse42.cpp)
 
+set(AVX_HEADERS
+    vops_avx.h)
+
+set(AVX_SOURCES
+    vops_avx.cpp)
+
 if(UNIX)
     set_source_files_properties(${SSE42_SOURCES} PROPERTIES COMPILE_FLAGS "-mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4.1 -msse4.2")
+elseif(MSVC)
+
+endif()
+
+if(UNIX)
+    set_source_files_properties(${AVX_SOURCES} PROPERTIES COMPILE_FLAGS "-mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4.1 -msse4.2 -mavx -mavx2")
 elseif(MSVC)
 
 endif()
@@ -72,6 +84,8 @@ add_library(FlipSolver2d STATIC
   ${SOURCES}
   ${SSE42_HEADERS}
   ${SSE42_SOURCES}
+  ${AVX_HEADERS}
+  ${AVX_SOURCES}
 )
 target_include_directories(FlipSolver2d PUBLIC "./threading/")
 target_link_libraries(FlipSolver2d SimThreadTools)
