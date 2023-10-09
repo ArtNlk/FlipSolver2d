@@ -1,4 +1,4 @@
-#include "vops_avx.h"
+#include "vops_avx2.h"
 
 void VOps_avx::addMulThread(Range range, std::vector<double> &output, const std::vector<double> &vec1, const std::vector<double> &vec2, double value)
 {

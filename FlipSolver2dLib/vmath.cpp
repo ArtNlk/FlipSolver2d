@@ -1,7 +1,9 @@
 #include "vmath.h"
-#include "hwinfo.h"
+#ifdef FLUID_SSE
 #include "vops_sse42.h"
-#include "vops_avx.h"
+#elif defined FLUID_AVX2
+#include "vops_avx2.h"
+#endif
 
 void VOps::dotThread(Range range, std::vector<double> &v1, std::vector<double> &v2, double &output)
 {
@@ -139,19 +141,9 @@ VOps::VOps() :
     m_subMulThread(&VOps::subMulThread),
     m_maxAbsThread(&VOps::maxAbsThread)
 {
-    switch(HwInfo::i().getSimdLevel())
-    {
-    case SIMD_LEVEL_NONE:
-        break;
-    case SIMD_LEVEL_SSE42:
+#ifdef FLUID_SSE
         m_addMulThread = &VOps_sse42::addMulThread;
-        break;
-    case SIMD_LEVEL_SSE42_FMA3:
-    case SIMD_LEVEL_AVX:
-    case SIMD_LEVEL_AVX2:
+#elif defined FLUID_AVX
         m_addMulThread = &VOps_avx::addMulThread;
-        break;
-    case SIMD_LEVEL_AVX512:
-        break;
-    }
+#endif
 }

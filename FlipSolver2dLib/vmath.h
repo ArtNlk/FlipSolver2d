@@ -1,7 +1,6 @@
 #ifndef VMATH_H
 #define VMATH_H
 
-#include "hwinfo.h"
 #include "threadpool.h"
 #include <limits>
 #include <vector>

@@ -22,7 +22,6 @@ set(HEADERS
     staggeredvelocitygrid.h
     flipfiresolver.h
     nbflipsolver.h
-    hwinfo.h
     markerparticlesystem.h)
 
 set(SOURCES
@@ -46,7 +45,6 @@ set(SOURCES
     staggeredvelocitygrid.cpp
     flipfiresolver.cpp
     nbflipsolver.cpp
-    hwinfo.cpp
     markerparticlesystem.cpp)
 
 set(SSE42_HEADERS
@@ -59,20 +57,26 @@ set(SSE42_SOURCES
     linearsolver_sse42.cpp
     grid_sse42.cpp)
 
-set(AVX_HEADERS
-    vops_avx.h)
+set(AVX2_HEADERS
+    vops_avx2.h)
 
-set(AVX_SOURCES
-    vops_avx.cpp)
+set(AVX2_SOURCES
+    vops_avx2.cpp)
 
-if(UNIX)
-    set_source_files_properties(${SSE42_SOURCES} PROPERTIES COMPILE_FLAGS "-mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4.1 -msse4.2")
-elseif(MSVC)
-
+if(FLUID_ACCEL STREQUAL "sse")
+    set(SOURCES ${SOURCES} ${SSE42_SOURCES})
+    set(SOURCES ${SOURCES} ${SSE42_HEADERS})
+elseif(FLUID_ACCEL STREQUAL "avx")
+    message("No avx sources")
+elseif(FLUID_ACCEL STREQUAL "avx2")
+    set(SOURCES ${SOURCES} ${AVX2_SOURCES})
+    set(SOURCES ${SOURCES} ${AVX2_HEADERS})
+elseif(FLUID_ACCEL STREQUAL "avx512")
+    message("No avx512 sources")
 endif()
 
 if(UNIX)
-    set_source_files_properties(${AVX_SOURCES} PROPERTIES COMPILE_FLAGS "-mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4.1 -msse4.2 -mavx -mavx2")
+
 elseif(MSVC)
 
 endif()

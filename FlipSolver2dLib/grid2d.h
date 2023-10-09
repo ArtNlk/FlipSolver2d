@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "geometry2d.h"
-#include "hwinfo.h"
 #include "linearindexable2d.h"
 #include "mathfuncs.h"
 #include "grid_sse42.h"
@@ -264,38 +263,16 @@ protected:
     template<class U = T, typename std::enable_if<std::is_same<U,float>::value>::type* = nullptr>
     void initSimdPtrs()
     {
-        switch(HwInfo::i().getSimdLevel())
-        {
-        case SIMD_LEVEL_NONE:
-            break;
-        case SIMD_LEVEL_SSE42:
-            m_cubicInterpFunc = &Grid_sse42::cubicInterpF;
-            break;
-        case SIMD_LEVEL_SSE42_FMA3:
-        case SIMD_LEVEL_AVX:
-        case SIMD_LEVEL_AVX2:
-        case SIMD_LEVEL_AVX512:
-            break;
-        }
+#ifdef FLUID_SSE
+        m_cubicInterpFunc = &Grid_sse42::cubicInterpF;
+#endif
     }
 
     //Simds for double
     template<class U = T, typename std::enable_if<std::is_same<U,double>::value>::type* = nullptr>
     void initSimdPtrs()
     {
-        switch(HwInfo::i().getSimdLevel())
-        {
-        case SIMD_LEVEL_NONE:
-            break;
-        case SIMD_LEVEL_SSE42:
-            //m_cubicInterpFunc = &Grid_sse42::cubicInterpD;
-            break;
-        case SIMD_LEVEL_SSE42_FMA3:
-        case SIMD_LEVEL_AVX:
-        case SIMD_LEVEL_AVX2:
-        case SIMD_LEVEL_AVX512:
-            break;
-        }
+
     }
 
     //Cubic interp placeholder for non-float types
@@ -308,7 +285,7 @@ protected:
     template<class U = T, typename std::enable_if<!std::is_floating_point<U>::value>::type* = nullptr>
     void initSimdPtrs()
     {
-        return;
+
     }
 
 protected:

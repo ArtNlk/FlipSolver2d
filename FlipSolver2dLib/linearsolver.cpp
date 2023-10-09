@@ -13,7 +13,6 @@
 #include "dynamicmatrix.h"
 #include "grid2d.h"
 #include "materialgrid.h"
-#include "hwinfo.h"
 #include "vmath.h"
 #include "linearsolver_sse42.h"
 
@@ -25,19 +24,9 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
     m_mainMaterialGrid(materialGrid),
     m_premaskPressuresThread(&LinearSolver::premaskPressuresThread)
 {
-    switch(HwInfo::i().getSimdLevel())
-    {
-    case SIMD_LEVEL_NONE:
-        break;
-    case SIMD_LEVEL_SSE42:
+#ifdef FLUID_SSE
         m_premaskPressuresThread = &LinearSolver_sse42::premaskPressuresThread;
-        break;
-    case SIMD_LEVEL_SSE42_FMA3:
-    case SIMD_LEVEL_AVX:
-    case SIMD_LEVEL_AVX2:
-    case SIMD_LEVEL_AVX512:
-        break;
-    }
+#endif
 
     int sizeI = materialGrid.sizeI();
     int sizeJ = materialGrid.sizeJ();
