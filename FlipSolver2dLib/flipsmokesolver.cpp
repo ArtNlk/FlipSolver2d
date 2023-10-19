@@ -317,8 +317,8 @@ LinearSolver::SparseMatRowElements FlipSmokeSolver::getMatFreeElementForLinIdx(u
     return output;
 }
 
-Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSmokeSolver::getPressureProjectionMatrix()
-{
+//Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSmokeSolver::getPressureProjectionMatrix()
+//{
 //    DynamicMatrix output = DynamicMatrix(cellCount(),7);
 
 //    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
@@ -371,7 +371,7 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSmokeSolver::getPressureProjecti
 //    }
 
 //    return output;
-}
+//}
 
 void FlipSmokeSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
 {

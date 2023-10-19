@@ -12,6 +12,7 @@
 
 #include "Eigen/src/Core/Matrix.h"
 #include "Eigen/src/Core/util/Constants.h"
+#include "Eigen/src/IterativeLinearSolvers/ConjugateGradient.h"
 #include "Eigen/src/IterativeLinearSolvers/IncompleteCholesky.h"
 #include "grid2d.h"
 #include "index2d.h"
@@ -74,7 +75,7 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     Eigen::setNbThreads(ThreadPool::i()->threadCount());
     m_randEngine = std::mt19937(p->seed);
     m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
-    m_projectTolerance = m_viscosityEnabled? 1e-2 : 1e-2;
+    m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-6;
     m_projectPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
     m_densityPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
     m_viscosityPreconditioner = std::make_shared<StubPreconditioner>();
@@ -89,11 +90,14 @@ FlipSolver::~FlipSolver()
 
 void FlipSolver::project()
 {
-    using precond = Eigen::IncompleteLUT<double>;
+    //using precond = Eigen::IncompleteLUT<double>;
+    using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
-    Eigen::SparseMatrix<double,Eigen::RowMajor> mat = getPressureProjectionMatrix();
-    Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> mat(getPressureProjectionMatrix());
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> solver;
+    //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
+    solver.setTolerance(m_projectTolerance);
     solver.compute(mat);
     if(solver.info()!=Eigen::Success) {
         std::cout << "Pressure solver decomposition failed!\n";
@@ -105,6 +109,7 @@ void FlipSolver::project()
         std::cout << "Pressure solver solving failed!\n";
         return;
     }
+    std::cout << "Pressure done with " << solver.iterations() << " iterations\n";
 //    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,&pd, m_pcgIterLimit, m_projectTolerance))
 //    {
 //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
@@ -864,7 +869,7 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSolver::getPressureProjectionMat
 {
     Eigen::SparseMatrix<double,Eigen::RowMajor> output = Eigen::SparseMatrix<double>();
     output.resize(cellCount(),cellCount());
-    output.reserve(5);
+    output.reserve(Eigen::VectorXi::Constant(cellCount(),6));
 
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 

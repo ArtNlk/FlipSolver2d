@@ -115,7 +115,7 @@ bool LinearSolver::solve(const StaticMatrix &matrixIn, std::vector<double> &resu
 
 //    debug() << "Solver iter exhaustion, err = " << err;
 //    std::cout << "Solver iter exhaustion, err = " << err << '\n';
-//    return false;
+    return false;
 }
 
 bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, int iterLimit, double tol)
@@ -166,7 +166,7 @@ bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<dou
 
 //    //debug() << "Solver iter exhaustion, err = " << err;
 //    //std::cout << "Solver iter exhaustion, err = " << err << '\n';
-//    return false;
+    return false;
 }
 
 void LinearSolver::nomatVMul(MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout)
