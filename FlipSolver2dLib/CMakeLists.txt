@@ -80,6 +80,8 @@ add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 find_package(OpenMP REQUIRED)
 
 include(FetchContent)
+
+#Eigen3
 FetchContent_Declare(
   Eigen3
   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git

@@ -5,6 +5,7 @@ project(FlipSolver2d)
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
         cmake_policy(SET CMP0135 NEW)
 endif()
+set(FETCHCONTENT_QUIET FALSE)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -13,14 +14,14 @@ set(MEMORY_SANITIZE OFF)
 set(THREAD_SANITIZE OFF)
 set(ALL_WARNINGS OFF)
 
-set(FLUID_ACCEL "sse") #sse, avx, avx2, avx512
-add_compile_options(-march=native)
+set(FLUID_ACCEL "avx2") #sse, avx, avx2, avx512
+
 if(FLUID_ACCEL STREQUAL "sse")
     add_compile_definitions(FLUID_SSE)
     if(UNIX)
         add_compile_options(-msse4.2)
     elseif(MSVC)
-        #no sse flag for mavc
+        #no sse flag for msvc
     endif()
 elseif(FLUID_ACCEL STREQUAL "avx")
     add_compile_definitions(FLUID_AVX)

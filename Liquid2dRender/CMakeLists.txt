@@ -11,6 +11,8 @@ FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw
         GIT_TAG 7482de6071d21db77a7236155da44c172a7f6c9e
+        GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
 )
 FetchContent_GetProperties(glfw)
 if(NOT glfw_POPULATED)
@@ -24,6 +26,7 @@ if(NOT glfw_POPULATED)
     add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
 
+message(Fetching freetype)
 #FREETYPE
 FetchContent_Declare(
   freetype
@@ -47,6 +50,8 @@ FetchContent_Declare(
         glm
         GIT_REPOSITORY https://github.com/g-truc/glm.git
         GIT_TAG bf71a834948186f4097caa076cd2663c69a10e1e
+        GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
 )
 FetchContent_GetProperties(glm)
 if(NOT glm_POPULATED)
@@ -59,6 +64,8 @@ FetchContent_Declare(
         nlohmann_json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
         GIT_TAG bc889afb4c5bf1c0d8ee29ef35eaaf4c8bef8a5d
+        GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
 )
 FetchContent_GetProperties(nlohmann_json)
 if(NOT nlohmann_json_POPULATED)
