@@ -11,7 +11,7 @@ void VOps_sse42::addMulThread(Range range, std::vector<double> &output, const st
     const unsigned int leftoverEnd = newEnd + leftover;
 
     __m128d _temp, _res, _val;
-    __m128d _temp1, _res1, _val1;
+    __m128d _temp1, _res1;
 
     _val = _mm_set1_pd(value);
 

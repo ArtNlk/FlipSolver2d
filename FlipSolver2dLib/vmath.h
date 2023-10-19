@@ -14,7 +14,7 @@ public:
     VOps(VOps &other) = delete;
     void operator=(const VOps &) = delete;
 
-    double dot(std::vector<double> &v1, std::vector<double> &v2);
+    double dot(std::vector<double>& v1, std::vector<double>& v2);
 
     bool isZero(const std::vector<double> &v1,const double eps = 1.0e-15);
 

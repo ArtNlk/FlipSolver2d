@@ -22,7 +22,7 @@ VOps &VOps::i()
     return instance;
 }
 
-double VOps::dot(std::vector<double> &v1, std::vector<double> &v2) {
+double VOps::dot(std::vector<double>& v1, std::vector<double>& v2) {
     ASSERT(v1.size() == v2.size());
 
     double result = 0;

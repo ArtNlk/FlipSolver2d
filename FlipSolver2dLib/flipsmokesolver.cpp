@@ -69,29 +69,29 @@ void FlipSmokeSolver::centeredParamsToGrid()
     ThreadPool::i()->wait();
 }
 
-void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
+void FlipSmokeSolver::calcPressureRhs(Eigen::VectorXd &rhs)
 {
     double scale = 1/m_dx;
 
-    for (int i = 0; i < m_sizeI; i++)
-    {
-        for (int j = 0; j < m_sizeJ; j++)
-        {
-            if (!m_materialGrid.isSolid(i,j))
-            {
-                rhs[linearIndex(i,j)] = -scale * divergenceAt(i,j);
+//    for (int i = 0; i < m_sizeI; i++)
+//    {
+//        for (int j = 0; j < m_sizeJ; j++)
+//        {
+//            if (!m_materialGrid.isSolid(i,j))
+//            {
+//                rhs[linearIndex(i,j)] = -scale * divergenceAt(i,j);
 
-                rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i-1,j) *
-                                        scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
-                rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i+1,j) *
-                                        scale * static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - 0);
-                rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i,j-1) *
-                                        scale * static_cast<double>(m_fluidVelocityGrid.v(i,j) - 0);
-                rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i,j+1) *
-                                        scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0);
-            }
-        }
-    }
+//                rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i-1,j) *
+//                                        scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
+//                rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i+1,j) *
+//                                        scale * static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - 0);
+//                rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i,j-1) *
+//                                        scale * static_cast<double>(m_fluidVelocityGrid.v(i,j) - 0);
+//                rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i,j+1) *
+//                                        scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0);
+//            }
+//        }
+//    }
 }
 
 void FlipSmokeSolver::particleUpdate()
@@ -194,7 +194,7 @@ void FlipSmokeSolver::reseedParticles()
     }
 }
 
-void FlipSmokeSolver::applyPressuresToVelocityField(std::vector<double> &pressures)
+void FlipSmokeSolver::applyPressuresToVelocityField(Eigen::VectorXd &pressures)
 {
     double scale = m_stepDt / (m_fluidDensity * m_dx);
 
@@ -317,60 +317,60 @@ LinearSolver::SparseMatRowElements FlipSmokeSolver::getMatFreeElementForLinIdx(u
     return output;
 }
 
-DynamicMatrix FlipSmokeSolver::getPressureProjectionMatrix()
+Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSmokeSolver::getPressureProjectionMatrix()
 {
-    DynamicMatrix output = DynamicMatrix(cellCount(),7);
+//    DynamicMatrix output = DynamicMatrix(cellCount(),7);
 
-    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
+//    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
-    LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
+//    LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 
-    for(int i = 0; i <  m_sizeI; i++)
-    {
-        for(int j = 0; j <  m_sizeJ; j++)
-        {
-            if(!m_materialGrid.isSolid(i,j))
-            {
-                //X Neighbors
-                if(m_materialGrid.isFluid(i-1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }else if(m_materialGrid.isEmpty(i-1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+//    for(int i = 0; i <  m_sizeI; i++)
+//    {
+//        for(int j = 0; j <  m_sizeJ; j++)
+//        {
+//            if(!m_materialGrid.isSolid(i,j))
+//            {
+//                //X Neighbors
+//                if(m_materialGrid.isFluid(i-1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }else if(m_materialGrid.isEmpty(i-1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
 
-                if(m_materialGrid.isFluid(i+1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                    output.setAx(i,j,-scale,  indexer);
-                } else if(m_materialGrid.isEmpty(i+1,j))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+//                if(m_materialGrid.isFluid(i+1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                    output.setAx(i,j,-scale,  indexer);
+//                } else if(m_materialGrid.isEmpty(i+1,j))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
 
-                //Y Neighbors
-                if(m_materialGrid.isFluid(i,j-1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }else if(m_materialGrid.isEmpty(i,j-1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
+//                //Y Neighbors
+//                if(m_materialGrid.isFluid(i,j-1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }else if(m_materialGrid.isEmpty(i,j-1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
 
-                if(m_materialGrid.isFluid(i,j+1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                    output.setAy(i,j,-scale,  indexer);
-                } else if(m_materialGrid.isEmpty(i,j+1))
-                {
-                    output.addToAdiag(i,j,scale,  indexer);
-                }
-            }
-        }
-    }
+//                if(m_materialGrid.isFluid(i,j+1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                    output.setAy(i,j,-scale,  indexer);
+//                } else if(m_materialGrid.isEmpty(i,j+1))
+//                {
+//                    output.addToAdiag(i,j,scale,  indexer);
+//                }
+//            }
+//        }
+//    }
 
-    return output;
+//    return output;
 }
 
 void FlipSmokeSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)

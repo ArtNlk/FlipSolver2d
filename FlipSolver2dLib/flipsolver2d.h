@@ -18,6 +18,8 @@
 #include "emitter.h"
 #include "sink.h"
 
+#include <Eigen/Sparse>
+
 enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_FIRE, SIMULATION_NBFLIP};
 
 struct FlipSolverParameters
@@ -179,7 +181,7 @@ protected:
 
     virtual void step();
 
-    virtual void calcPressureRhs(std::vector<double> &rhs);
+    virtual void calcPressureRhs(Eigen::VectorXd &rhs);
 
     void calcViscosityRhs(std::vector<double> &rhs);
 
@@ -187,7 +189,7 @@ protected:
 
     virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
     
-    virtual DynamicMatrix getPressureProjectionMatrix();
+    virtual Eigen::SparseMatrix<double, Eigen::RowMajor> getPressureProjectionMatrix();
     
     DynamicMatrix getViscosityMatrix();
 
@@ -203,11 +205,11 @@ protected:
 
     void updateVelocityFromSolids();
 
-    virtual void applyPressuresToVelocityField(std::vector<double> &pressures);
+    virtual void applyPressuresToVelocityField(Eigen::VectorXd &pressures);
 
-    void applyPressureThreadU(Range range, const std::vector<double> &pressures);
+    void applyPressureThreadU(Range range, const Eigen::VectorXd &pressures);
 
-    void applyPressureThreadV(Range range,const std::vector<double> &pressures);
+    void applyPressureThreadV(Range range,const Eigen::VectorXd &pressures);
     
     Vertex rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid);
 
@@ -258,8 +260,8 @@ protected:
     Grid2d<float> m_divergenceControl;
     Grid2d<float> m_densityGrid;
     Grid2d<float> m_testGrid;
-    std::vector<double> m_rhs;
-    Grid2d<double> m_pressures;
+    Eigen::VectorXd m_rhs;
+    Eigen::VectorXd m_pressures;
 
     LinearSolver m_pcgSolver;
     std::shared_ptr<IPreconditioner> m_projectPreconditioner;

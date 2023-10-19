@@ -75,13 +75,25 @@ elseif(FLUID_ACCEL STREQUAL "avx512")
     message("No avx512 sources")
 endif()
 
-if(UNIX)
-
-elseif(MSVC)
-
-endif()
-
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
+
+find_package(OpenMP REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(
+  Eigen3
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG 3.4.0
+  GIT_SHALLOW TRUE
+  GIT_PROGRESS TRUE)
+set(EIGEN_BUILD_DOC OFF)
+# note: To disable eigen tests,
+# you should put this code in a add_subdirectory to avoid to change
+# BUILD_TESTING for your own project too since variables are directory
+# scoped
+set(BUILD_TESTING OFF)
+set(EIGEN_BUILD_PKGCONFIG OFF)
+FetchContent_MakeAvailable(Eigen3)
 
 add_library(FlipSolver2d STATIC
   ${HEADERS}
@@ -92,4 +104,7 @@ add_library(FlipSolver2d STATIC
   ${AVX_SOURCES}
 )
 target_include_directories(FlipSolver2d PUBLIC "./threading/")
-target_link_libraries(FlipSolver2d SimThreadTools)
+target_include_directories(FlipSolver2d PUBLIC ${Eigen3_SOURCE_DIR})
+target_link_libraries(FlipSolver2d PRIVATE SimThreadTools)
+target_link_libraries(FlipSolver2d PRIVATE Eigen3::Eigen)
+target_link_libraries(FlipSolver2d PRIVATE OpenMP::OpenMP_CXX)

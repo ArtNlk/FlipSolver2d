@@ -63,110 +63,110 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth) :
 
 bool LinearSolver::solve(const StaticMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data, int iterLimit, double tol)
 {
-    result.assign(result.size(),0);
-    if(precond == nullptr)
-    {
-        return false;
-    }
-    if (VOps::i().isZero(vec))
-    {
-        std::cout << "Solver skipped zeros vector" << '\n';
-        return true;
-    }
-    //DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
-    //UpperTriangularMatrix matrix(matrixIn);
+//    result.assign(result.size(),0);
+//    if(precond == nullptr)
+//    {
+//        return false;
+//    }
+//    if (VOps::i().isZero(vec))
+//    {
+//        std::cout << "Solver skipped zeros vector" << '\n';
+//        return true;
+//    }
+//    //DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
+//    //UpperTriangularMatrix matrix(matrixIn);
 
-    //debug() << "mat=" << matrix;
-    std::vector<double> residual = vec;
-    std::vector<double> aux = vec;
-    //applyICPrecond(precond,residual,aux);
-    //applyIPPrecond(&matrix,&residual,&aux);
-    precond->apply(residual,aux,data);
-    std::vector<double> search = aux;
-    double sigma = VOps::i().dot(aux,residual);
-    double err = 0.0;
-    for (int i = 0; i < iterLimit; i++)
-    {
-        aux = matrixIn * search;
-        double alpha = sigma/(VOps::i().dot(aux,search) + 1e-8);
-        VOps::i().addMul(result,result,search,alpha);
-        VOps::i().subMul(residual,residual,aux,alpha);
-        err = VOps::i().maxAbs(residual);
-//        if(i % 5 == 0)
+//    //debug() << "mat=" << matrix;
+//    Eigen::VectorXd residual(vec.data());
+//    Eigen::VectorXd aux = residual;
+//    //applyICPrecond(precond,residual,aux);
+//    //applyIPPrecond(&matrix,&residual,&aux);
+//    //precond->apply(residual,aux,data);
+//    Eigen::VectorXd search = aux;
+//    double sigma = VOps::i().dot(aux,residual);
+//    double err = 0.0;
+//    for (int i = 0; i < iterLimit; i++)
+//    {
+//        aux = matrixIn * search;
+//        double alpha = sigma/(VOps::i().dot(aux,search) + 1e-8);
+//        VOps::i().addMul(result,result,search,alpha);
+//        VOps::i().subMul(residual,residual,aux,alpha);
+//        err = VOps::i().maxAbs(residual);
+////        if(i % 5 == 0)
+////        {
+////            std::cout << "Solver: " << i << " : " << err << "\n";
+////            debug() << "Solver: " << i << " : " << err;
+////        }
+//        if (err <= tol)
 //        {
-//            std::cout << "Solver: " << i << " : " << err << "\n";
-//            debug() << "Solver: " << i << " : " << err;
+//            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
+//            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+//            return true;
 //        }
-        if (err <= tol)
-        {
-            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
-            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
-            return true;
-        }
-        //aux = residual;
-        //applyICPrecond(precond,residual,aux);
-        //applyIPPrecond(&matrix,&residual,&aux);
-        precond->apply(residual,aux,data);
-        double newSigma = VOps::i().dot(aux,residual);
-        double beta = newSigma/(sigma);
-        VOps::i().addMul(search,aux,search,beta);
-        sigma = newSigma;
-    }
+//        //aux = residual;
+//        //applyICPrecond(precond,residual,aux);
+//        //applyIPPrecond(&matrix,&residual,&aux);
+//        precond->apply(residual,aux,data);
+//        double newSigma = VOps::i().dot(aux,residual);
+//        double beta = newSigma/(sigma);
+//        VOps::i().addMul(search,aux,search,beta);
+//        sigma = newSigma;
+//    }
 
-    debug() << "Solver iter exhaustion, err = " << err;
-    std::cout << "Solver iter exhaustion, err = " << err << '\n';
-    return false;
+//    debug() << "Solver iter exhaustion, err = " << err;
+//    std::cout << "Solver iter exhaustion, err = " << err << '\n';
+//    return false;
 }
 
 bool LinearSolver::mfcgSolve(MatElementProvider elementProvider, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, int iterLimit, double tol)
 {
-    result.assign(result.size(),0);
-    if(precond == nullptr)
-    {
-        return false;
-    }
-    if (VOps::i().isZero(vec))
-    {
-        return true;
-    }
-    updateSubgrids();
+//    result.assign(result.size(),0);
+//    if(precond == nullptr)
+//    {
+//        return false;
+//    }
+//    if (VOps::i().isZero(vec))
+//    {
+//        return true;
+//    }
+//    updateSubgrids();
 
-    //vec - b
-    std::vector<double> residual = vec; //r
-    std::vector<double> aux = vec; //z
-    //applyMGPrecond(residual,aux);
-    //applyMfIPPrecond(elementProvider,residual,aux);
-    precond->apply(residual,aux);
-    std::vector<double> search = aux; //p
-    double sigma = VOps::i().dot(aux,residual);
-    double err = 0.0;
-    for (int i = 0; i < iterLimit; i++)
-    {
-        nomatVMul(elementProvider,search,aux);
-        double alpha = sigma/(VOps::i().dot(aux,search));
-        VOps::i().subMul(residual,residual,aux,alpha);
-        err = VOps::i().maxAbs(residual);
-        if (err <= tol)
-        {
-            //debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
-            std::cout << "MFSolver done, iter = " << i << " err = " << err << '\n';
-            return true;
-        }
-        //aux = residual;
-        //applyMGPrecond(residual,aux);
-        //applyMfIPPrecond(elementProvider,residual,aux);
-        precond->apply(residual,aux);
-        double newSigma = VOps::i().dot(aux,residual);
-        //std::cout << "New sigma:" << newSigma << std::endl;
-        double beta = newSigma/(sigma);
-        VOps::i().addMul(result,result,search,alpha);
-        VOps::i().addMul(search,aux,search,beta);
-        sigma = newSigma;
-    }
+//    //vec - b
+//    std::vector<double> residual = vec; //r
+//    std::vector<double> aux = vec; //z
+//    //applyMGPrecond(residual,aux);
+//    //applyMfIPPrecond(elementProvider,residual,aux);
+//    precond->apply(residual,aux);
+//    std::vector<double> search = aux; //p
+//    double sigma = VOps::i().dot(aux,residual);
+//    double err = 0.0;
+//    for (int i = 0; i < iterLimit; i++)
+//    {
+//        nomatVMul(elementProvider,search,aux);
+//        double alpha = sigma/(VOps::i().dot(aux,search));
+//        VOps::i().subMul(residual,residual,aux,alpha);
+//        err = VOps::i().maxAbs(residual);
+//        if (err <= tol)
+//        {
+//            //debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
+//            std::cout << "MFSolver done, iter = " << i << " err = " << err << '\n';
+//            return true;
+//        }
+//        //aux = residual;
+//        //applyMGPrecond(residual,aux);
+//        //applyMfIPPrecond(elementProvider,residual,aux);
+//        precond->apply(residual,aux);
+//        double newSigma = VOps::i().dot(aux,residual);
+//        //std::cout << "New sigma:" << newSigma << std::endl;
+//        double beta = newSigma/(sigma);
+//        VOps::i().addMul(result,result,search,alpha);
+//        VOps::i().addMul(search,aux,search,beta);
+//        sigma = newSigma;
+//    }
 
-    //debug() << "Solver iter exhaustion, err = " << err;
-    //std::cout << "Solver iter exhaustion, err = " << err << '\n';
-    return false;
+//    //debug() << "Solver iter exhaustion, err = " << err;
+//    //std::cout << "Solver iter exhaustion, err = " << err << '\n';
+//    return false;
 }
 
 void LinearSolver::nomatVMul(MatElementProvider elementProvider, const std::vector<double> &vin, std::vector<double> &vout)

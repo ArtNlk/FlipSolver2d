@@ -62,11 +62,15 @@ if(UNIX)
         add_compile_options(-fsanitize=thread -fno-omit-frame-pointer)
         ADD_LINK_OPTIONS(-fsanitize=thread -rdynamic)
     endif()
+    add_compile_options(-fopenmp)
+
 elseif(MSVC)
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(/O2)
         add_compile_options(/std:c++20)
     endif()
+
+    add_compile_options(/openmp)
 endif()
 
 set(USE_NUMPY_LOGGING ON)

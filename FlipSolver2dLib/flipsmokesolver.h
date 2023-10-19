@@ -1,6 +1,7 @@
 #ifndef FLIPSMOKESOLVER_H
 #define FLIPSMOKESOLVER_H
 
+#include <Eigen/Dense>
 #include "dynamicmatrix.h"
 #include "flipsolver2d.h"
 
@@ -30,7 +31,7 @@ protected:
 
     void centeredParamsToGrid() override;
 
-    void calcPressureRhs(std::vector<double> &rhs) override;
+    void calcPressureRhs(Eigen::VectorXd &rhs) override;
 
     void particleUpdate() override;
 
@@ -38,7 +39,7 @@ protected:
 
     void reseedParticles() override;
 
-    void applyPressuresToVelocityField(std::vector<double> &pressures) override;
+    void applyPressuresToVelocityField(Eigen::VectorXd &pressures) override;
 
     void seedInitialFluid() override;
 
@@ -46,7 +47,7 @@ protected:
 
     LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
     
-    DynamicMatrix getPressureProjectionMatrix() override;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> getPressureProjectionMatrix() override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
 

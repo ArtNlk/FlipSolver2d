@@ -118,6 +118,11 @@ public:
         return (i >= 0 && i < m_sizeI && j >= 0 && j < m_sizeJ);
     }
 
+    inline bool inBounds(int linearIndex) const
+    {
+        return linearIndex >= 0 && linearIndex < m_sizeI * m_sizeJ;
+    }
+
     size_t linearSize() const
     {
         return m_sizeI * m_sizeJ;
