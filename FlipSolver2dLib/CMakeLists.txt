@@ -97,20 +97,6 @@ set(BUILD_TESTING OFF)
 set(EIGEN_BUILD_PKGCONFIG OFF)
 FetchContent_MakeAvailable(Eigen3)
 
-#SuiteSparse
-FetchContent_Declare(
-  SuiteSparse
-  GIT_REPOSITORY https://github.com/DrTimothyAldenDavis/SuiteSparse.git
-  GIT_TAG v7.2.2
-  GIT_SHALLOW TRUE
-  GIT_PROGRESS TRUE)
-
-FetchContent_Populate(SuiteSparse)
-
-message(SUITESPARSE ${suitesparse_SOURCE_DIR})
-
-add_subdirectory(${suitesparse_SOURCE_DIR}/CHOLMOD ${suitesparse_BINARY_DIR}/CHOLMOD)
-
 add_library(FlipSolver2d STATIC
   ${HEADERS}
   ${SOURCES}
