@@ -75,7 +75,7 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     Eigen::setNbThreads(ThreadPool::i()->threadCount());
     m_randEngine = std::mt19937(p->seed);
     m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
-    m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-6;
+    m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-2;
     m_projectPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
     m_densityPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
     m_viscosityPreconditioner = std::make_shared<StubPreconditioner>();
@@ -91,25 +91,22 @@ FlipSolver::~FlipSolver()
 void FlipSolver::project()
 {
     //using precond = Eigen::IncompleteLUT<double>;
-    using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
+
     calcPressureRhs(m_rhs);
 //    //debug() << "Calculated rhs: " << rhs;
-    Eigen::SparseMatrix<double,Eigen::RowMajor> mat(getPressureProjectionMatrix());
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> solver;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
-    solver.setTolerance(m_projectTolerance);
-    solver.compute(mat);
-    if(solver.info()!=Eigen::Success) {
+
+    if(m_solver.info()!=Eigen::Success) {
         std::cout << "Pressure solver decomposition failed!\n";
         return;
     }
 
-    m_pressures = solver.solve(m_rhs);
-    if(solver.info()!=Eigen::Success) {
+    m_pressures = m_solver.solve(m_rhs);
+    if(m_solver.info()!=Eigen::Success) {
         std::cout << "Pressure solver solving failed!\n";
         return;
     }
-    std::cout << "Pressure done with " << solver.iterations() << " iterations\n";
+    std::cout << "Pressure done with " << m_solver.iterations() << " iterations\n";
 //    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,&pd, m_pcgIterLimit, m_projectTolerance))
 //    {
 //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
@@ -221,29 +218,20 @@ void FlipSolver::densityCorrection()
 {
     updateDensityGrid();
 
-    //calcDensityCorrectionRhs(m_rhs);
-    //    //debug() << "Calculated rhs: " << rhs;
-    //StaticMatrix mat = StaticMatrix(getPressureProjectionMatrix());
-//    IPPreconditioner::IPPreconditionerData pd(mat);
-//    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_densityPreconditioner,&pd,m_pcgIterLimit,1e-2))
-//    {
-//        std::cout << "PCG Solver density: Iteration limit exhaustion!\n";
-//    }
-    //    auto provider = getPressureMatrixElementProvider();
+    calcDensityCorrectionRhs(m_rhs);
+    if(m_solver.info()!=Eigen::Success) {
+        std::cout << "Density solver decomposition failed!\n";
+        return;
+    }
 
-    //    if(!m_pcgSolver.mfcgSolve(provider,m_pressures.data(),m_rhs,m_pcgIterLimit))
-    //    {
-    //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
-    //    }
+    m_pressures = m_solver.solve(m_rhs);
+    if(m_solver.info()!=Eigen::Success) {
+        std::cout << "Density solver solving failed!\n";
+        return;
+    }
+    std::cout << "Density done with " << m_solver.iterations() << " iterations\n";
 
-//    if(anyNanInf(m_pressures.data()))
-//    {
-//        std::cout << "NaN or inf in density pressures vector!\n" << std::flush;
-//    }
-
-    //debug() << "pressures = " << pressures;
-
-    //adjustParticlesByDensity();
+    adjustParticlesByDensity();
 }
 
 void FlipSolver::updateDensityGrid()
@@ -319,40 +307,41 @@ void FlipSolver::adjustParticlesByDensity()
 
 void FlipSolver::adjustParticlesByDensityThread(Range r)
 {
-//    const float scale = (m_stepDt * m_stepDt) / (m_fluidDensity * m_dx * m_dx);
-//    for(int idx = r.start; idx < r.end; idx++)
-//    {
-//        if(m_markerParticles.markedForDeath(idx))
-//        {
-//            continue;
-//        }
-//        Vertex& position = m_markerParticles.positions().at(idx);
-//        int iCorr = position.x() - 0.5f;
-//        int jCorr = position.y() - 0.5f;
-//        int i = position.x();
-//        int j = position.y();
+    const float scale = (m_stepDt * m_stepDt) / (m_fluidDensity * m_dx * m_dx);
+    for(int idx = r.start; idx < r.end; idx++)
+    {
+        if(m_markerParticles.markedForDeath(idx))
+        {
+            continue;
+        }
 
-//        float pCurrentI = m_pressures.getAt(iCorr,j);
-//        float pCurrentJ = m_pressures.getAt(i,jCorr);
+        Vertex& position = m_markerParticles.positions().at(idx);
+        int iCorr = std::clamp(static_cast<int>(position.x() - 0.5f),0,m_sizeI);
+        int jCorr = std::clamp(static_cast<int>(position.y() - 0.5f),0,m_sizeJ);
+        int i = std::clamp(static_cast<int>(position.x()),0,m_sizeI);
+        int j = std::clamp(static_cast<int>(position.y()),0,m_sizeJ);
 
-//        float pI = m_pressures.getAt(iCorr+1,j);
-//        float pJ = m_pressures.getAt(i,jCorr+1);
-//        if(m_materialGrid.isSolid(iCorr+1,j) || m_materialGrid.isSolid(iCorr,j))
-//        {
-//            pI = pCurrentI;
-//        }
+        float pCurrentI = m_pressures[linearIndex(iCorr,j)];
+        float pCurrentJ = m_pressures[linearIndex(i,jCorr)];
 
-//        if(m_materialGrid.isSolid(i,jCorr+1) || m_materialGrid.isSolid(i,jCorr))
-//        {
-//            pJ = pCurrentJ;
-//        }
+        float pI = m_pressures[linearIndex(iCorr+1,j)];
+        float pJ = m_pressures[linearIndex(i,jCorr+1)];
+        if(m_materialGrid.isSolid(iCorr+1,j) || m_materialGrid.isSolid(iCorr,j))
+        {
+            pI = pCurrentI;
+        }
 
-//        float pgradU = pI - pCurrentI;
-//        float pgradV = pJ - pCurrentJ;
+        if(m_materialGrid.isSolid(i,jCorr+1) || m_materialGrid.isSolid(i,jCorr))
+        {
+            pJ = pCurrentJ;
+        }
 
-//        position.x() += pgradU*scale;
-//        position.y() += pgradV*scale;
-//    }
+        float pgradU = pI - pCurrentI;
+        float pgradV = pJ - pCurrentJ;
+
+        position.x() += pgradU*scale;
+        position.y() += pgradV*scale;
+    }
 }
 
 void FlipSolver::advectThread(Range range)
@@ -431,7 +420,11 @@ void FlipSolver::step()
     auto t1 = high_resolution_clock::now();
     advect();
     auto t2 = high_resolution_clock::now();
-    //densityCorrection();
+    m_pressureMatrix = getPressureProjectionMatrix();
+    m_solver.compute(m_pressureMatrix);
+
+    m_solver.setTolerance(1e-4);
+    densityCorrection();
     m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
     particleToGrid();
@@ -447,6 +440,7 @@ void FlipSolver::step()
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
 
+    m_solver.setTolerance(1e-4);
     project();
 
     updateVelocityFromSolids();
@@ -1247,7 +1241,7 @@ void FlipSolver::calcViscosityRhs(std::vector<double> &rhs)
     }
 }
 
-void FlipSolver::calcDensityCorrectionRhs(std::vector<double> &rhs)
+void FlipSolver::calcDensityCorrectionRhs(Eigen::VectorXd &rhs)
 {
     const double scale = 1.0/m_stepDt;
 

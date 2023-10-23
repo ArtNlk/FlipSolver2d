@@ -185,7 +185,7 @@ protected:
 
     void calcViscosityRhs(std::vector<double> &rhs);
 
-    void calcDensityCorrectionRhs(std::vector<double> &rhs);
+    void calcDensityCorrectionRhs(Eigen::VectorXd &rhs);
 
     virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
     
@@ -288,6 +288,10 @@ protected:
     double m_projectTolerance;
     bool m_viscosityEnabled;
     SimulationMethod m_simulationMethod;
+
+    using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> m_pressureMatrix;
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_solver;
 
     size_t m_testValuePropertyIndex;
     size_t m_viscosityPropertyIndex;

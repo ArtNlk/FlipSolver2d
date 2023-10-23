@@ -36,6 +36,8 @@ void NBFlipSolver::step()
     extrapolateLevelsetInside(m_fluidSdf);
     updateMaterials();
     applyBodyForces();
+    m_pressureMatrix = getPressureProjectionMatrix();
+    m_solver.compute(m_pressureMatrix);
     project();
     updateVelocityFromSolids();
     //applyViscosity();
