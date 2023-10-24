@@ -24,6 +24,11 @@ NBFlipSolver::NBFlipSolver(const NBFlipParameters *p):
 void NBFlipSolver::step()
 {
     advect();
+    if(m_pressureSolver.info()!=Eigen::Success) {
+        std::cout << "Pressure solver decomposition failed!\n";
+        return;
+    }
+
     m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
     particleToGrid();
@@ -37,12 +42,15 @@ void NBFlipSolver::step()
     updateMaterials();
     applyBodyForces();
     m_pressureMatrix = getPressureProjectionMatrix();
-    m_solver.compute(m_pressureMatrix);
+    m_pressureSolver.compute(m_pressureMatrix);
     project();
     updateVelocityFromSolids();
-    //applyViscosity();
-    //project();
-    //m_fluidVelocityGrid.extrapolate(10);
+    if(m_viscosityEnabled)
+    {
+        applyViscosity();
+        project();
+    }
+    m_fluidVelocityGrid.extrapolate(10);
     particleUpdate();
     countParticles();
     reseedParticles();

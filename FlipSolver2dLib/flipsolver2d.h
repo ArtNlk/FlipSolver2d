@@ -183,7 +183,7 @@ protected:
 
     virtual void calcPressureRhs(Eigen::VectorXd &rhs);
 
-    void calcViscosityRhs(std::vector<double> &rhs);
+    void calcViscosityRhs(Eigen::VectorXd &rhs);
 
     void calcDensityCorrectionRhs(Eigen::VectorXd &rhs);
 
@@ -191,7 +191,7 @@ protected:
     
     virtual Eigen::SparseMatrix<double, Eigen::RowMajor> getPressureProjectionMatrix();
     
-    DynamicMatrix getViscosityMatrix();
+    Eigen::SparseMatrix<double, Eigen::RowMajor> getViscosityMatrix();
 
     Vertex jitteredPosInCell(int i, int j);
 
@@ -261,7 +261,7 @@ protected:
     Grid2d<float> m_densityGrid;
     Grid2d<float> m_testGrid;
     Eigen::VectorXd m_rhs;
-    Eigen::VectorXd m_pressures;
+    Eigen::VectorXd m_solverResult;
 
     LinearSolver m_pcgSolver;
     std::shared_ptr<IPreconditioner> m_projectPreconditioner;
@@ -291,7 +291,10 @@ protected:
 
     using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
     Eigen::SparseMatrix<double,Eigen::RowMajor> m_pressureMatrix;
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_solver;
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
+
+    Eigen::SparseMatrix<double,Eigen::RowMajor> m_viscosityMatrix;
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_viscositySolver;
 
     size_t m_testValuePropertyIndex;
     size_t m_viscosityPropertyIndex;
