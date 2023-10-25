@@ -167,7 +167,7 @@ void FlipSolver::applyViscosity()
                  m_fluidVelocityGrid.velocityGridV().linearSize());
 
 
-    calcViscosityRhs(m_rhs);
+    calcViscosityRhs(rhs);
     auto viscosityMatrix = getViscosityMatrix();
 
     m_viscositySolver.compute(viscosityMatrix);
@@ -296,7 +296,7 @@ void FlipSolver::updateDensityGridThread(Range r, Grid2d<float> &centeredWeights
                                                 static_cast<float>(m_fluidDensity),
                                                 std::numeric_limits<float>::max());
         }
-        m_testGrid.at(cellIdx) = m_densityGrid.at(cellIdx);
+        //m_testGrid.at(cellIdx) = m_densityGrid.at(cellIdx);
     }
 }
 
@@ -1010,9 +1010,10 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSolver::getViscosityMatrix()
     for(int i = 0; i < m_sizeI; i++)
     {
         for(int j = 0; j < m_sizeJ; j++)
-        {
+        {   
             int idxU = m_fluidVelocityGrid.velocityGridU().linearIndex(i,j);
             int idxV = m_fluidVelocityGrid.velocityGridV().linearIndex(i,j);
+
             if(idxU != -1)
             {
                 float fi = static_cast<float>(i);
@@ -1021,7 +1022,7 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSolver::getViscosityMatrix()
                 //U component
                 output.coeffRef(idxU,idxU) += m_fluidDensity;
 
-                int uImOneLinearIdx = uIndexer.linearIndex(i-1,j);;
+                int uImOneLinearIdx = uIndexer.linearIndex(i-1,j);
 
                 if(uImOneLinearIdx != -1)
                 {
@@ -1238,7 +1239,7 @@ void FlipSolver::calcViscosityRhs(Eigen::VectorXd &rhs)
             float u = m_fluidVelocityGrid.getU(i,j);
             rhs[idxU] = m_fluidDensity * u;
             float v = m_fluidVelocityGrid.getV(i,j);
-            rhs[vBaseIndex + linearIdxV] = m_fluidDensity * v; //BOUNDS!
+            rhs[vBaseIndex + linearIdxV] = m_fluidDensity * v;
         }
     }
 }
@@ -1651,7 +1652,7 @@ void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
             if(m_knownCenteredParams.at(i2d))
             {
                 m_viscosityGrid.at(i2d) /= cWeights.at(i2d);
-                //m_testGrid.at(i,j) = m_viscosityGrid.at(i,j);
+                m_testGrid.at(i2d) = m_viscosityGrid.at(i2d);
             }
         }
     }

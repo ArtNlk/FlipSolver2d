@@ -293,8 +293,8 @@ protected:
     Eigen::SparseMatrix<double,Eigen::RowMajor> m_pressureMatrix;
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
 
-    Eigen::SparseMatrix<double,Eigen::RowMajor> m_viscosityMatrix;
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_viscositySolver;
+    //Eigen::SparseMatrix<double,Eigen::RowMajor> m_viscosityMatrix;
+    Eigen::BiCGSTAB<Eigen::SparseMatrix<double>> m_viscositySolver;
 
     size_t m_testValuePropertyIndex;
     size_t m_viscosityPropertyIndex;
