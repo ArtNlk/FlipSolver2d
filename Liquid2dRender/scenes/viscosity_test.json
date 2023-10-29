@@ -74,7 +74,7 @@
         {
         "type": "source",
         "viscosity": 0.1,
-        "velocity": [1,0],
+        "velocity": [5,0],
         "verts": [
           [5,10],
           [5,15],
@@ -85,7 +85,7 @@
         {
         "type": "source",
         "viscosity": 10,
-        "velocity": [1,0],
+        "velocity": [5,0],
         "verts": [
           [20,25],
           [20,30],
