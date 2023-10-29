@@ -42,7 +42,7 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_solidSdf(p->gridSizeI,p->gridSizeJ),
     m_fluidSdf(p->gridSizeI, p->gridSizeJ),
     m_knownCenteredParams(p->gridSizeI,p->gridSizeJ, false, OOBStrategy::OOB_CONST, true),
-    m_viscosityGrid(p->gridSizeI,p->gridSizeJ,0.f,OOBStrategy::OOB_EXTEND),
+    m_viscosityGrid(p->gridSizeI,p->gridSizeJ,0.f,OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.5f,0.5f)),
     m_emitterId(p->gridSizeI, p->gridSizeJ, -1),
     m_solidId(p->gridSizeI, p->gridSizeJ,-1),
     m_fluidParticleCounts(p->gridSizeI, p->gridSizeJ),
@@ -170,6 +170,7 @@ void FlipSolver::applyViscosity()
     calcViscosityRhs(rhs);
     auto viscosityMatrix = getViscosityMatrix();
 
+    m_viscositySolver.setTolerance(1e-4);
     m_viscositySolver.compute(viscosityMatrix);
     if(m_viscositySolver.info()!=Eigen::Success) {
         std::cout << "Viscosity solver decomposition failed!\n";
@@ -1007,9 +1008,9 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSolver::getViscosityMatrix()
     LinearIndexable2d& uIndexer = m_fluidVelocityGrid.velocityGridU();
     LinearIndexable2d& vIndexer = m_fluidVelocityGrid.velocityGridV();
 
-    for(int i = 0; i < m_sizeI; i++)
+    for(int i = 0; i < m_sizeI+1; i++)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        for(int j = 0; j < m_sizeJ+1; j++)
         {   
             int idxU = m_fluidVelocityGrid.velocityGridU().linearIndex(i,j);
             int idxV = m_fluidVelocityGrid.velocityGridV().linearIndex(i,j);
@@ -1230,16 +1231,24 @@ void FlipSolver::calcViscosityRhs(Eigen::VectorXd &rhs)
     LinearIndexable2d& vIndexer = m_fluidVelocityGrid.velocityGridV();
     int vBaseIndex = uIndexer.linearSize();
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (int i = 0; i < m_sizeI+1; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (int j = 0; j < m_sizeJ+1; j++)
         {
             int idxU = uIndexer.linearIndex(i,j);
-            int linearIdxV = vIndexer.linearIndex(i,j);
-            float u = m_fluidVelocityGrid.getU(i,j);
-            rhs[idxU] = m_fluidDensity * u;
-            float v = m_fluidVelocityGrid.getV(i,j);
-            rhs[vBaseIndex + linearIdxV] = m_fluidDensity * v;
+            int idxV = vIndexer.linearIndex(i,j);
+
+            if(idxU != -1)
+            {
+                float u = m_fluidVelocityGrid.getU(i,j);
+                rhs[idxU] = m_fluidDensity * u;
+            }
+
+            if(idxV != -1)
+            {
+                float v = m_fluidVelocityGrid.getV(i,j);
+                rhs[vBaseIndex + idxV] = m_fluidDensity * v;
+            }
         }
     }
 }
@@ -1652,8 +1661,9 @@ void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
             if(m_knownCenteredParams.at(i2d))
             {
                 m_viscosityGrid.at(i2d) /= cWeights.at(i2d);
-                m_testGrid.at(i2d) = m_viscosityGrid.at(i2d);
+                //m_testGrid.at(i2d) = m_viscosityGrid.at(i2d);
             }
+            //m_testGrid.at(i2d) = m_viscosityGrid.at(i2d);
         }
     }
 }

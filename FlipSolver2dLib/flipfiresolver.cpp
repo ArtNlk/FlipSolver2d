@@ -76,7 +76,7 @@ void FlipFireSolver::reseedParticles()
         int i = pos.x();
         int j = pos.y();
 
-        if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+        if(m_fluidParticleCounts.at(i,j) > 4*m_particlesPerCell)
         {
             m_markerParticles.markForDeath(pIndex);
             m_fluidParticleCounts.at(i,j) -= 1;

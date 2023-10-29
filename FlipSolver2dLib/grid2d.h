@@ -35,8 +35,11 @@ public:
 
     void swap(Grid2d<T> other)
     {
-        std::swap(m_sizeI,other.m_sizeI);
-        std::swap(m_sizeJ,other.m_sizeJ);
+        std::swap(m_sizeI, other.m_sizeI);
+        std::swap(m_sizeJ, other.m_sizeJ);
+        std::swap(m_gridOffset, other.m_gridOffset);
+        std::swap(m_oobStrat, other.m_oobStrat);
+        std::swap(m_oobConst, other.m_oobConst);
         m_data.swap(other.m_data);
     }
 

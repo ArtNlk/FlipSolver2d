@@ -49,6 +49,11 @@ protected:
     const StaggeredVelocityGrid &advectedVelocityGrid() const;
 
 protected:
+
+    void centeredParamsToGrid() override;
+
+    void centeredParamsToGridThread(Range r, Grid2d<float> &cWeights);
+
     StaggeredVelocityGrid m_advectedVelocity;
     SdfGrid m_advectedSdf;
     Grid2d<float> m_uWeights;

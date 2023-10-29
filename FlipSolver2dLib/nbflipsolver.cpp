@@ -24,10 +24,7 @@ NBFlipSolver::NBFlipSolver(const NBFlipParameters *p):
 void NBFlipSolver::step()
 {
     advect();
-    if(m_pressureSolver.info()!=Eigen::Success) {
-        std::cout << "Pressure solver decomposition failed!\n";
-        return;
-    }
+    m_testGrid = m_viscosityGrid;
 
     m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
@@ -66,6 +63,7 @@ void NBFlipSolver::advect()
 
     Grid2d<float> advectedU(m_sizeI + 1, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetU);
     Grid2d<float> advectedV(m_sizeI, m_sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetV);
+    Grid2d<float> advectedViscosity(m_sizeI, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetCentered);
 
     std::vector<Range> rangesU = ThreadPool::i()->splitRange(advectedU.data().size());
     std::vector<Range> rangesV = ThreadPool::i()->splitRange(advectedV.data().size());
@@ -86,7 +84,14 @@ void NBFlipSolver::advect()
         ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
                                  offsetCentered,std::ref(m_fluidSdf), std::ref(m_advectedSdf));
     }
+    for(Range r : rangesSdf)
+    {
+        ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
+                                 offsetCentered,std::ref(m_viscosityGrid), std::ref(advectedViscosity));
+    }
     ThreadPool::i()->wait();
+
+    m_viscosityGrid.swap(advectedViscosity);
 
     m_advectedVelocity.velocityGridU() = advectedU;
     m_advectedVelocity.velocityGridV() = advectedV;
@@ -191,6 +196,9 @@ void NBFlipSolver::reseedParticles()
         }
     }
 
+    std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
+                                              (m_viscosityPropertyIndex);
+
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -219,11 +227,20 @@ void NBFlipSolver::reseedParticles()
                     }
                     Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
                     //Vertex velocity = Vertex();
-                    //int emitterId = m_emitterId.at(i,j);
-                    //float viscosity = m_sources[emitterId].viscosity();
+                    int emitterId = m_emitterId.at(i,j);
+                    float viscosity = 0.f;
+                    if(emitterId != -1)
+                    {
+                        viscosity = m_sources[emitterId].viscosity();
+                    }
+                    else
+                    {
+                        viscosity = m_viscosityGrid.interpolateAt(pos);
+                    }
                     //float conc = m_sources[emitterId].concentrartion();
                     //float temp = m_sources[emitterId].temperature();
-                    m_markerParticles.addMarkerParticle(pos,velocity);
+                    size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
+                    particleViscosities[pIdx] = viscosity;
                 }
             }
         }
@@ -243,7 +260,7 @@ void NBFlipSolver::eulerAdvectionThread(Range range, Vertex offset, const Grid2d
     for(int idx = range.start; idx < range.end; idx++)
     {
         Index2d i2d = outputGrid.index2d(idx);
-        Vertex currentPos = Vertex(i2d.i, i2d.j) + offset;
+        Vertex currentPos = Vertex(i2d.i, i2d.j);
         Vertex prevPos = inverseRk4Integrate(currentPos,m_fluidVelocityGrid);
         dataOut[idx] = inputGrid.interpolateAt(prevPos);
     }
@@ -251,6 +268,9 @@ void NBFlipSolver::eulerAdvectionThread(Range range, Vertex offset, const Grid2d
 
 void NBFlipSolver::initialFluidSeed()
 {
+    std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
+                                              (m_viscosityPropertyIndex);
+
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -277,8 +297,13 @@ void NBFlipSolver::initialFluidSeed()
                         continue;
                     }
                     Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
-                    float viscosity = m_viscosityGrid.interpolateAt(pos);
-                    m_markerParticles.addMarkerParticle(pos,velocity);
+                    //Vertex velocity = Vertex();
+                    float viscosity = 0.f;
+                    viscosity = m_viscosityGrid.interpolateAt(pos);
+                    //float conc = m_sources[emitterId].concentrartion();
+                    //float temp = m_sources[emitterId].temperature();
+                    size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
+                    particleViscosities[pIdx] = viscosity;
                 }
             }
         }
@@ -422,4 +447,66 @@ Vertex NBFlipSolver::inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGr
 const StaggeredVelocityGrid &NBFlipSolver::advectedVelocityGrid() const
 {
     return m_advectedVelocity;
+}
+
+void NBFlipSolver::centeredParamsToGrid()
+{
+    Grid2d<float> centeredWeights(m_sizeI,m_sizeJ,1e-10f);
+
+    //m_viscosityGrid.fill(0.f);
+    m_divergenceControl.fill(0.f);
+    m_knownCenteredParams.fill(false);
+
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_viscosityGrid.linearSize(),1,8);
+
+    for(Range& range : ranges)
+    {
+        ThreadPool::i()->enqueue(&NBFlipSolver::centeredParamsToGridThread,this,range,
+                                 std::ref(centeredWeights));
+    }
+    ThreadPool::i()->wait();
+}
+
+void NBFlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
+{
+    std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
+                                              (m_viscosityPropertyIndex);
+
+    for(size_t idx = r.start; idx < r.end; idx++)
+    {
+        Index2d i2d = m_fluidVelocityGrid.index2d(idx);
+        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        for(int binIdx : affectingBins)
+        {
+            if(binIdx >= 0)
+            {
+                for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
+                {
+                    Vertex position = m_markerParticles.particlePosition(particleIdx);
+                    float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
+                                                                     position.y() - (i2d.j));
+                    if(std::abs(weightCentered) > 1e-6f)
+                    {
+                        cWeights.at(i2d.i,i2d.j) += weightCentered;
+                        if(!m_knownCenteredParams.at(i2d.i,i2d.j))
+                        {
+                            m_knownCenteredParams.at(i2d.i,i2d.j) = true;
+                            m_viscosityGrid.at(i2d) = 0.f;
+                        }
+                        m_viscosityGrid.at(i2d.i,i2d.j) += weightCentered * particleViscosities.at(particleIdx);
+                    }
+                }
+            }
+        }
+
+        if(m_knownCenteredParams.inBounds(i2d))
+        {
+            if(m_knownCenteredParams.at(i2d))
+            {
+                m_viscosityGrid.at(i2d) /= cWeights.at(i2d);
+                //m_testGrid.at(i2d) = m_viscosityGrid.at(i2d);
+            }
+            //m_testGrid.at(i2d) = m_viscosityGrid.at(i2d);
+        }
+    }
 }

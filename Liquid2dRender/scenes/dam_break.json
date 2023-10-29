@@ -1,9 +1,9 @@
 {
   "settings": {
-    "simType": "flip",
+    "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 50,
+    "resolution": 128,
     "fps": 30,
     "density": 0.5,
     "airDensity": 0.001,
@@ -62,7 +62,7 @@
       },
       {
         "type": "fluid",
-        "viscosity": 1,
+        "viscosity": 10,
         "enabled": true,
         "verts": [
           [25,3],
