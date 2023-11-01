@@ -17,6 +17,7 @@
 *.qm
 .#*
 *.*#
+.vs/*
 core
 !core/
 tags
@@ -58,6 +59,7 @@ Thumbs.db
 *.opensdf
 *.vcxproj
 *vcxproj.*
+CMakeSettings.json
 
 #Qt creator fiels
 CMakeLists.txt.user*
