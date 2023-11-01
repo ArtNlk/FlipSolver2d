@@ -369,7 +369,7 @@ void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bo
     int sizeI = extrapolatedGrid.sizeI();
     int sizeJ = extrapolatedGrid.sizeJ();
     Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
-    std::queue<Index2d> wavefront;
+    std::queue<int> wavefront;
     for(int i = 0; i < sizeI; i++)
     {
         for(int j = 0; j < sizeJ; j++)
@@ -387,13 +387,13 @@ void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bo
         {
             if(markers.at(i,j) != 0)
             {
-                for(Index2d& neighborIndex : extrapolatedGrid
-                                                .getNeighborhood(i,j,neighborRadius,vonNeumannNeighborMode))
+                for(int neighborIndex : extrapolatedGrid.getNeighborhood(i,j))
                 {
-                    if(markers.at(neighborIndex) == 0)
+                    if(neighborIndex == -1) continue;
+                    if(markers.data().at(neighborIndex) == 0)
                     {
                         markers.at(i,j) = 1;
-                        wavefront.push(Index2d(i,j));
+                        wavefront.push(flagGrid.linearIndex(i,j));
                         break;
                     }
                 }
@@ -403,27 +403,26 @@ void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bo
 
     while(!wavefront.empty())
     {
-        Index2d index = wavefront.front();
-        std::vector<Index2d> neighbors = extrapolatedGrid.getNeighborhood(index,
-                                                                          neighborRadius,
-                                                                          vonNeumannNeighborMode);
+        int index = wavefront.front();
+        std::array<int, 8> neighbors = extrapolatedGrid.getNeighborhood(index);
         double avg = 0;
         int count = 0;
-        for(Index2d& neighborIndex : neighbors)
+        for(int neighborIndex : neighbors)
         {
-            if(markers.at(neighborIndex) < markers.at(index))
+            if(neighborIndex == -1) continue;
+            if(markers.data().at(neighborIndex) < markers.data().at(index))
             {
-                avg += extrapolatedGrid.at(neighborIndex);
+                avg += extrapolatedGrid.data().at(neighborIndex);
                 count++;
             }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= extrapRadius)
+            if(markers.data().at(neighborIndex) == std::numeric_limits<int>().max() && markers.data().at(index) <= extrapRadius)
             {
-                markers.at(neighborIndex) = markers.at(index) + 1;
+                markers.data().at(neighborIndex) = markers.data().at(index) + 1;
                 wavefront.push(neighborIndex);
             }
         }
-        extrapolatedGrid.at(index) = avg / count;
-        flagGrid.at(index) = true;
+        extrapolatedGrid.data().at(index) = avg / count;
+        flagGrid.data().at(index) = true;
 
         wavefront.pop();
     }

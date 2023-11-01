@@ -186,8 +186,6 @@ protected:
     void calcViscosityRhs(Eigen::VectorXd &rhs);
 
     void calcDensityCorrectionRhs(Eigen::VectorXd &rhs);
-
-    virtual void extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps = 10);
     
     virtual Eigen::SparseMatrix<double, Eigen::RowMajor> getPressureProjectionMatrix();
     

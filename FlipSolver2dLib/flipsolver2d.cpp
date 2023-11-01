@@ -808,67 +808,6 @@ void FlipSolver::firstFrameInit()
     seedInitialFluid();
 }
 
-void FlipSolver::extrapolateVelocityField(Grid2d<float> &extrapGrid, Grid2d<bool> &flagGrid, int steps)
-{
-    Grid2d<int> markers(m_sizeI,m_sizeJ,std::numeric_limits<int>().max());
-    std::queue<Index2d> wavefront;
-    //Extrapolate U
-    for(int i = 0; i < m_sizeI; i++)
-    {
-        for(int j = 0; j < m_sizeJ; j++)
-        {
-            if(flagGrid.at(i,j))
-            {
-                markers.at(i,j) = 0;
-            }
-        }
-    }
-
-    for(int i = 0; i < m_sizeI; i++)
-    {
-        for(int j = 0; j < m_sizeJ; j++)
-        {
-            if(markers.at(i,j) != 0)
-            {
-                for(Index2d& neighborIndex : getNeighborhood(i,j,1,false))
-                {
-                    if(markers.at(neighborIndex) == 0)
-                    {
-                        markers.at(i,j) = 1;
-                        wavefront.push(Index2d(i,j));
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    while(!wavefront.empty())
-    {
-        Index2d index = wavefront.front();
-        std::vector<Index2d> neighbors = getNeighborhood(index,1,false);
-        double avg = 0;
-        int count = 0;
-        for(Index2d& neighborIndex : neighbors)
-        {
-            if(markers.at(neighborIndex) < markers.at(index))
-            {
-                avg += extrapGrid.at(neighborIndex);
-                count++;
-            }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= steps)
-            {
-                markers.at(neighborIndex) = markers.at(index) + 1;
-                wavefront.push(neighborIndex);
-            }
-        }
-        extrapGrid.at(index) = avg / count;
-        flagGrid.at(index) = true;
-
-        wavefront.pop();
-    }
-}
-
 Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSolver::getPressureProjectionMatrix()
 {
     Eigen::SparseMatrix<double,Eigen::RowMajor> output = Eigen::SparseMatrix<double>();
@@ -1673,7 +1612,7 @@ void FlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
     int sizeI = grid.sizeI();
     int sizeJ = grid.sizeJ();
     Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
-    std::queue<Index2d> wavefront;
+    std::queue<int> wavefront;
     for(int i = 0; i < sizeI; i++)
     {
         for(int j = 0; j < sizeJ; j++)
@@ -1691,12 +1630,13 @@ void FlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
         {
             if(markers.at(i,j) != 0)
             {
-                for(Index2d& neighborIndex : grid.getNeighborhood(i,j,1,false))
+                for(int neighborIndex : grid.getNeighborhood(i,j))
                 {
-                    if(markers.at(neighborIndex) == 0)
+                    if(neighborIndex == -1) continue;
+                    if(markers.data().at(neighborIndex) == 0)
                     {
                         markers.at(i,j) = 1;
-                        wavefront.push(Index2d(i,j));
+                        wavefront.push(grid.linearIndex(i,j));
                         break;
                     }
                 }
@@ -1706,24 +1646,25 @@ void FlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
 
     while(!wavefront.empty())
     {
-        Index2d index = wavefront.front();
-        std::vector<Index2d> neighbors = grid.getNeighborhood(index,1,false);
+        int index = wavefront.front();
+        std::array<int, 8> neighbors = grid.getNeighborhood(index);
         double avg = 0;
         int count = 0;
-        for(Index2d& neighborIndex : neighbors)
+        for(int neighborIndex : neighbors)
         {
-            if(markers.at(neighborIndex) < markers.at(index))
+            if(neighborIndex == -1) continue;
+            if(markers.data().at(neighborIndex) < markers.data().at(index))
             {
-                avg += grid.at(neighborIndex);
+                avg += grid.data().at(neighborIndex);
                 count++;
             }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= 1e6)
+            if(markers.data().at(neighborIndex) == std::numeric_limits<int>().max() && markers.data().at(index) <= 1e6)
             {
-                markers.at(neighborIndex) = markers.at(index) + 1;
+                markers.data().at(neighborIndex) = markers.data().at(index) + 1;
                 wavefront.push(neighborIndex);
             }
         }
-        grid.at(index) = avg / count - 1.f;
+        grid.data().at(index) = avg / count - 1.f;
 
         wavefront.pop();
     }
@@ -1735,7 +1676,7 @@ void FlipSolver::extrapolateLevelsetOutside(SdfGrid &grid)
     int sizeJ = grid.sizeJ();
     const float maxSdf = sizeI * sizeJ;
     Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
-    std::queue<Index2d> wavefront;
+    std::queue<int> wavefront;
     for(int i = 0; i < sizeI; i++)
     {
         for(int j = 0; j < sizeJ; j++)
@@ -1753,12 +1694,13 @@ void FlipSolver::extrapolateLevelsetOutside(SdfGrid &grid)
         {
             if(markers.at(i,j) != 0)
             {
-                for(Index2d& neighborIndex : grid.getNeighborhood(i,j,1,false))
+                for(int neighborIndex : grid.getNeighborhood(i,j))
                 {
-                    if(markers.at(neighborIndex) == 0)
+                    if(neighborIndex == -1) continue;
+                    if(markers.data().at(neighborIndex) == 0)
                     {
                         markers.at(i,j) = 1;
-                        wavefront.push(Index2d(i,j));
+                        wavefront.push(grid.linearIndex(i,j));
                         break;
                     }
                 }
@@ -1768,24 +1710,25 @@ void FlipSolver::extrapolateLevelsetOutside(SdfGrid &grid)
 
     while(!wavefront.empty())
     {
-        Index2d index = wavefront.front();
-        std::vector<Index2d> neighbors = grid.getNeighborhood(index,1,false);
+        int index = wavefront.front();
+        std::array<int, 8> neighbors = grid.getNeighborhood(index);
         double avg = 0;
         int count = 0;
-        for(Index2d& neighborIndex : neighbors)
+        for(int neighborIndex : neighbors)
         {
-            if(markers.at(neighborIndex) < markers.at(index))
+            if(neighborIndex == -1) continue;
+            if(markers.data().at(neighborIndex) < markers.data().at(index))
             {
-                avg += grid.at(neighborIndex);
+                avg += grid.data().at(neighborIndex);
                 count++;
             }
-            if(markers.at(neighborIndex) == std::numeric_limits<int>().max() && markers.at(index) <= 1e6)
+            if(markers.data().at(neighborIndex) == std::numeric_limits<int>().max() && markers.data().at(index) <= 1e6)
             {
-                markers.at(neighborIndex) = markers.at(index) + 1;
+                markers.data().at(neighborIndex) = markers.data().at(index) + 1;
                 wavefront.push(neighborIndex);
             }
         }
-        grid.at(index) = avg / count + 1.f;
+        grid.data().at(index) = avg / count + 1.f;
 
         wavefront.pop();
     }

@@ -14,7 +14,7 @@ set(MEMORY_SANITIZE OFF)
 set(THREAD_SANITIZE OFF)
 set(ALL_WARNINGS OFF)
 
-set(FLUID_ACCEL "sse") #sse, avx, avx2, avx512
+set(FLUID_ACCEL "avx2") #sse, avx, avx2, avx512
 
 if(FLUID_ACCEL STREQUAL "sse")
     add_compile_definitions(FLUID_SSE)
@@ -28,14 +28,14 @@ elseif(FLUID_ACCEL STREQUAL "avx")
     if(UNIX)
         add_compile_options(-mavx)
     elseif(MSVC)
-        add_compile_options(/arch:avx)
+        add_compile_options(/arch:AVX)
     endif()
 elseif(FLUID_ACCEL STREQUAL "avx2")
     add_compile_definitions(FLUID_AVX2)
     if(UNIX)
         add_compile_options(-mavx2)
     elseif(MSVC)
-        add_compile_options(/arch:avx2)
+        add_compile_options(/arch:AVX2)
     endif()
 elseif(FLUID_ACCEL STREQUAL "avx512")
     #add_compile_definitions(FLUID_512)
@@ -72,6 +72,7 @@ elseif(MSVC)
     endif()
 
     add_compile_options(/openmp)
+    add_compile_options(/Qvec-report:2)
 endif()
 
 set(USE_NUMPY_LOGGING ON)

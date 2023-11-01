@@ -87,14 +87,12 @@ FetchContent_Declare(
   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
   GIT_TAG 3.4.0
   GIT_SHALLOW TRUE
-  GIT_PROGRESS TRUE)
-set(EIGEN_BUILD_DOC OFF)
-# note: To disable eigen tests,
-# you should put this code in a add_subdirectory to avoid to change
-# BUILD_TESTING for your own project too since variables are directory
-# scoped
-set(BUILD_TESTING OFF)
-set(EIGEN_BUILD_PKGCONFIG OFF)
+  GIT_PROGRESS TRUE
+  CMAKE_CACHE_ARGS 
+    -DBUILD_TESTING:BOOL=OFF
+    -DEIGEN_BUILD_PKGCONFIG:BOOL=OFF
+    -DEIGEN_BUILD_DOC:BOOL=OFF)
+
 FetchContent_MakeAvailable(Eigen3)
 
 add_library(FlipSolver2d STATIC

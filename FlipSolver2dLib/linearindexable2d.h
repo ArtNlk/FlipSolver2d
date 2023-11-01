@@ -52,31 +52,28 @@ public:
         return index;
     }
 
-    inline std::vector<Index2d> getNeighborhood(int index, int radius = 1, bool vonNeumann = false)
+    inline std::array<int,8> getNeighborhood(int index)
     {
-        return getNeighborhood(index2d(index), radius, vonNeumann);
+        return getNeighborhood(index2d(index));
     }
 
-    inline std::vector<Index2d> getNeighborhood(Index2d index, int radius = 1, bool vonNeumann = false)
+    inline std::array<int, 8> getNeighborhood(Index2d index)
     {
-        return getNeighborhood(index.i, index.j, radius, vonNeumann);
+        return getNeighborhood(index.i, index.j);
     }
 
-    inline std::vector<Index2d> getNeighborhood(int i, int j, int radius = 1, bool vonNeumann = false)
+    inline std::array<int, 8> getNeighborhood(int i, int j)
     {
-        std::vector<Index2d> output;
-        output.reserve((radius*2+1)*(radius*2+1));
-        for(int iOffset = -radius; iOffset <= radius; iOffset++)
+        std::array<int, 8> output;
+        int outputIdx = 0;
+        for(int iOffset = -1; iOffset <= 1; iOffset++)
         {
-            for(int jOffset = -radius; jOffset <= radius; jOffset++)
+            for(int jOffset = -1; jOffset <= 1; jOffset++)
             {
                 if(iOffset == 0 && jOffset == 0) continue;
-                if(std::abs(iOffset) + std::abs(jOffset) > radius && vonNeumann) continue;
-                Index2d index = Index2d(i + iOffset,j + jOffset);
-                if(index.i >= 0 && index.i < m_sizeI && index.j >= 0 && index.j < m_sizeJ)
-                {
-                    output.push_back(index);
-                }
+                int index = linearIndex(i + iOffset,j + jOffset);
+                output[outputIdx] = index;
+                outputIdx++;
             }
         }
 
