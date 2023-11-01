@@ -11,6 +11,7 @@
     "particlesPerCell": 4,
     "picRatio": 0.03,
     "cflNumber": 5,
+    "viscosityEnabled": true,
     "globalAcceleration": [9.8,0]
   },
   "solver": {
@@ -97,6 +98,7 @@
       {
         "type": "source",
         "viscosity": 0,
+        "velocity": [5,0],
         "verts": [
           [3,3],
           [3,10],

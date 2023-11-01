@@ -183,7 +183,7 @@ protected:
 
     virtual void calcPressureRhs(Eigen::VectorXd &rhs);
 
-    void calcViscosityRhs(Eigen::VectorXd &rhs);
+    void calcViscosityRhs(Eigen::VectorXd &rhs, Grid2d<float> &sourceGrid);
 
     void calcDensityCorrectionRhs(Eigen::VectorXd &rhs);
     
@@ -292,7 +292,7 @@ protected:
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
 
     //Eigen::SparseMatrix<double,Eigen::RowMajor> m_viscosityMatrix;
-    Eigen::BiCGSTAB<Eigen::SparseMatrix<double>> m_viscositySolver;
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Upper> m_viscositySolver;
 
     size_t m_testValuePropertyIndex;
     size_t m_viscosityPropertyIndex;
