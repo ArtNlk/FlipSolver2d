@@ -5,6 +5,7 @@
 #include <random>
 #include <memory>
 
+#include "inversepoissonpreconditioner.h"
 #include "linearindexable2d.h"
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
@@ -287,7 +288,8 @@ protected:
     bool m_viscosityEnabled;
     SimulationMethod m_simulationMethod;
 
-    using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
+    //using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
+    using precond = InversePoissonPreconditioner<double, Eigen::Upper>;
     Eigen::SparseMatrix<double,Eigen::RowMajor> m_pressureMatrix;
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
 

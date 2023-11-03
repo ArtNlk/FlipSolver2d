@@ -10,17 +10,13 @@
 #include <thread>
 #include <type_traits>
 
-#include "Eigen/src/Core/Matrix.h"
-#include "Eigen/src/Core/util/Constants.h"
-#include "Eigen/src/IterativeLinearSolvers/ConjugateGradient.h"
-#include "Eigen/src/IterativeLinearSolvers/IncompleteCholesky.h"
-#include "Eigen/src/SparseCore/SparseMatrix.h"
 #include "grid2d.h"
 #include "index2d.h"
 #include "linearindexable2d.h"
 #include "linearsolver.h"
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
+#include "inversepoissonpreconditioner.h"
 
 #include "dynamicmatrix.h"
 #include "logger.h"

@@ -45,7 +45,9 @@ set(SOURCES
     staggeredvelocitygrid.cpp
     flipfiresolver.cpp
     nbflipsolver.cpp
-    markerparticlesystem.cpp)
+    markerparticlesystem.cpp
+    inversepoissonpreconditioner.h
+)
 
 set(SSE42_HEADERS
     vops_sse42.h
@@ -98,10 +100,6 @@ FetchContent_MakeAvailable(Eigen3)
 add_library(FlipSolver2d STATIC
   ${HEADERS}
   ${SOURCES}
-  ${SSE42_HEADERS}
-  ${SSE42_SOURCES}
-  ${AVX_HEADERS}
-  ${AVX_SOURCES}
 )
 target_include_directories(FlipSolver2d PUBLIC "./threading/")
 target_include_directories(FlipSolver2d PUBLIC ${Eigen3_SOURCE_DIR})
