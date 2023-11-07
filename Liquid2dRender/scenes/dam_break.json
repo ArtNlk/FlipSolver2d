@@ -3,7 +3,7 @@
     "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 512,
+    "resolution": 256,
     "fps": 30,
     "density": 0.5,
     "airDensity": 0.001,
@@ -15,7 +15,7 @@
     "particleScale": 0.8,
     "picRatio": 0.03,
     "cflNumber": 5,
-    "viscosityEnabled": true,
+    "viscosityEnabled": false,
     "globalAcceleration": [9.8,0]
   },
   "solver": {
