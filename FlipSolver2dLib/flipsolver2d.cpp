@@ -95,7 +95,7 @@ void FlipSolver::project()
 //    //debug() << "Calculated rhs: " << rhs;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
 
-    m_solverResult = m_pressureSolver.solve(m_rhs);
+    m_solverResult = m_pressureSolver.solve(m_rhs).eval();
 
     if(m_pressureSolver.info()!=Eigen::Success) {
         std::cout << "Pressure solver solving failed!\n";
