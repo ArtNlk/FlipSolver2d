@@ -71,7 +71,7 @@ public:
             }
         }
         m_mat = identity - m_mat;
-        //m_mat = m_mat * m_mat.transpose();
+        m_mat = m_mat * m_mat.transpose();
 
         m_info = Eigen::Success;
         return;
@@ -88,8 +88,7 @@ public:
     void _solve_impl(const Rhs& b, Dest& x) const
     {
         eigen_assert(m_factorizationIsOk && "factorize() should be called first");
-        x = m_mat * (m_mat.transpose() * b);
-        //x = m_mat.adjoint().template triangularView<Eigen::Lower>() * x;
+        x = m_mat * b;
     }
 
 protected:
