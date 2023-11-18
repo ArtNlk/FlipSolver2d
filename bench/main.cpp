@@ -8,6 +8,10 @@
 #include <emmintrin.h>
 #include <smmintrin.h>
 
+#ifdef FLUID_AVX2
+#include <immintrin.h>
+#endif
+
 const int gridSize = 2048;
 
 struct MatCoeffs
@@ -34,7 +38,9 @@ void matmulCustom();
 
 void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
 void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
+#ifdef FLUID_AVX2
 void matmulAVX2(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
+#endif
 
 int main()
 {
@@ -134,17 +140,28 @@ void matmulCustom()
     t2 = high_resolution_clock::now();
     ms_double = t2 - t1;
     std::cout << "Matmul SSE: "  << ms_double.count() << std::endl;
+
+#ifdef FLUID_AVX2
+    t1 = high_resolution_clock::now();
+    for(int i = 0; i < 100000; i++)
+    {
+        matmulAVX2(mat,v,out);
+    }
+    t2 = high_resolution_clock::now();
+    ms_double = t2 - t1;
+    std::cout << "Matmul AVX2: "  << ms_double.count() << std::endl;
+#endif
 }
 
 void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out)
 {
 #pragma omp parallel for
-    for(int rowIdx = 0; rowIdx < mat.size(); rowIdx++)
+    for(int rowIdx = 0; rowIdx < mat.size(); rowIdx+= 2)
     {
-        const int idxIm1 = rowIdx-1;
-        const int idxIp1 = rowIdx+1;
-        const int idxJm1 = rowIdx-gridSize;
-        const int idxJp1 = rowIdx+gridSize;
+        const int idxIm1 = std::clamp(rowIdx-1,0,static_cast<int>(in.size()));
+        const int idxIp1 = std::clamp(rowIdx+1,0,static_cast<int>(in.size()));
+        const int idxJm1 = std::clamp(rowIdx-gridSize,0,static_cast<int>(in.size()));
+        const int idxJp1 = std::clamp(rowIdx+gridSize,0,static_cast<int>(in.size()));
         const std::array<double,5>& m = mat[rowIdx].vals;
         out[rowIdx] = m[0]*in[rowIdx] +
                         m[1]*in[idxIm1] +
@@ -163,26 +180,29 @@ void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in,
         const int idxIp1 = rowIdx+1;
         const int idxJm1 = rowIdx-gridSize;
         const int idxJp1 = rowIdx+gridSize;
+        const double valIdxIm1 = idxIm1 >= 0 ? in[idxIm1] : 0.0;
+        const double valIdxIp1 = idxIp1 >= 0 ? in[idxIp1] : 0.0;
+        const double valIdxJm1 = idxJm1 < in.size() ? in[idxJm1] : 0.0;
+        const double valIdxJp1 = idxJp1 < in.size() ? in[idxJp1] : 0.0;
         const std::array<double,5>& m = mat[rowIdx].vals;
-        __m128d _vI, _vJ, _mI, _mJ, _res;
-        _vI = _mm_set_pd(in[idxIm1], in[idxIp1]);
+        __m128d _vI, _vJ, _mI, _mJ, _temp, _res;
+        _vI = _mm_set_pd(valIdxIm1, valIdxIp1);
         _mI = _mm_loadu_pd(&m[1]);
-        _vI = _mm_mul_pd(_vI,_mI);
+        _res = _mm_dp_pd(_vI,_mI,0b11001100);
 
-        _vJ = _mm_set_pd(in[idxJm1], in[idxJp1]);
+        _vJ = _mm_set_pd(valIdxJm1, valIdxJp1);
         _mJ = _mm_loadu_pd(&m[3]);
+        _temp = _mm_dp_pd(_vJ,_mJ,0b11001100);
 
         out[rowIdx] = m[0]*in[rowIdx];
 
+        _res = _mm_shuffle_pd(_res,_temp,0b01);
+        _res = _mm_hadd_pd(_res,_res);
 
-        _vJ = _mm_mul_pd(_vJ,_mJ);
-        _res = _mm_hadd_pd(_vI,_vJ);
-        _res = _mm_add_sd(_res,_mm_shuffle_pd(_res, _res, 1));
+        double result[2] = {0.0,0.0};
+        _mm_store_pd(&(result[0]),_res);
 
-        double result;
-        _mm_store_pd(&result,_res);
-
-        out[rowIdx] += result;
+        out[rowIdx] += result[0];
 //        out[rowIdx] = m[0]*in[rowIdx] +
 //                      m[1]*in[idxIm1] +
 //                      m[2]*in[idxIp1] +
@@ -190,3 +210,40 @@ void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in,
 //                      m[4]*in[idxJp1];
     }
 }
+
+#ifdef FLUID_AVX2
+void matmulAVX2(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out)
+{
+#pragma omp parallel for
+    for(int rowIdx = 0; rowIdx < mat.size(); rowIdx++)
+    {
+        const int idxIm1 = std::clamp(rowIdx-1,0,static_cast<int>(in.size()));
+        const int idxIp1 = std::clamp(rowIdx+1,0,static_cast<int>(in.size()));
+        const int idxJm1 = std::clamp(rowIdx-gridSize,0,static_cast<int>(in.size()));
+        const int idxJp1 = std::clamp(rowIdx+gridSize,0,static_cast<int>(in.size()));
+        const std::array<double,5>& m = mat[rowIdx].vals;
+        __m256d _val, _mat, _temp;
+        __m256i _idx;
+
+        _idx = _mm256_set_epi64x(idxJp1, idxJm1, idxIp1, idxIm1);
+        _val = _mm256_i64gather_pd(in.data(),_idx,1);
+        _mat = _mm256_loadu_pd(m.data());
+        _temp = _mm256_mul_pd(_val, _mat);
+
+        __m256d temp = _mm256_hadd_pd( _temp, _temp );
+        __m128d hi128 = _mm256_extractf128_pd( temp, 1 );
+        __m128d dotproduct = _mm_add_pd( _mm256_castpd256_pd128(temp), hi128 );
+
+        double result[2] = {0.0,0.0};
+        _mm_store_pd(&(result[0]),dotproduct);
+
+        out[rowIdx] += result[0];
+
+        //        out[rowIdx] = m[0]*in[rowIdx] +
+        //                      m[1]*in[idxIm1] +
+        //                      m[2]*in[idxIp1] +
+        //                      m[3]*in[idxJm1] +
+        //                      m[4]*in[idxJp1];
+    }
+}
+#endif

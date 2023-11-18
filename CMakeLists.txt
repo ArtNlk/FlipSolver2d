@@ -14,7 +14,7 @@ set(MEMORY_SANITIZE OFF)
 set(THREAD_SANITIZE OFF)
 set(ALL_WARNINGS OFF)
 
-set(FLUID_ACCEL "sse") #sse, avx, avx2, avx512
+set(FLUID_ACCEL "avx2") #sse, avx, avx2, avx512
 
 if(FLUID_ACCEL STREQUAL "sse")
     add_compile_definitions(FLUID_SSE)
