@@ -7,12 +7,15 @@
 #include <random>
 #include <emmintrin.h>
 #include <smmintrin.h>
+#include <stdexcept>
+#include <thread>
 
 #ifdef FLUID_AVX2
 #include <immintrin.h>
 #endif
 
-const int gridSize = 2048;
+const int gridSize = 4096;
+const int innerRepCount = 100000;
 
 struct MatCoeffs
 {
@@ -44,6 +47,8 @@ void matmulAVX2(const std::vector<MatCoeffs>& mat, const std::vector<double>& in
 
 int main()
 {
+    Eigen::initParallel();
+    Eigen::setNbThreads(std::thread::hardware_concurrency());
     for(int i = 0; i < 10; i++)
     {
         std::cout << "Run " << i << std::endl;
@@ -55,6 +60,7 @@ int main()
 
 void matmulEigen()
 {
+    std::cout << "Eigen running on " << Eigen::nbThreads() << " threads" << std::endl;
     using std::chrono::high_resolution_clock;
     using std::chrono::duration_cast;
     using std::chrono::duration;
@@ -80,11 +86,13 @@ void matmulEigen()
     }
     Eigen::SparseMatrix<double,Eigen::RowMajor> mat(gridSize,gridSize);
     mat.setFromTriplets(tripletList.begin(), tripletList.end());
+    mat.makeCompressed();
 
     auto t1 = high_resolution_clock::now();
-    for(int i = 0; i < 100000; i++)
+    for(int i = 0; i < innerRepCount; i++)
     {
-        out = (mat*v).eval();
+        out = mat*v;
+        out.eval();
     }
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms_double = t2 - t1;
@@ -105,8 +113,14 @@ void matmulCustom()
     std::vector<double> v;
     v.resize(gridSize);
 
-    std::vector<double> out;
-    out.resize(gridSize);
+    std::vector<double> outScalar;
+    outScalar.resize(gridSize);
+    std::vector<double> outSSE;
+    outSSE.resize(gridSize);
+#ifdef FLUID_AVX2
+    std::vector<double> outAVX2;
+    outAVX2.resize(gridSize);
+#endif
 
     for(int i=0;i<gridSize;++i)
     {
@@ -124,44 +138,57 @@ void matmulCustom()
     }
 
     auto t1 = high_resolution_clock::now();
-    for(int i = 0; i < 100000; i++)
+    for(int i = 0; i < innerRepCount; i++)
     {
-        matmulScalar(mat,v,out);
+        matmulScalar(mat,v,outScalar);
     }
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms_double = t2 - t1;
     std::cout << "Matmul scalar: "  << ms_double.count() << std::endl;
 
-    t1 = high_resolution_clock::now();
-    for(int i = 0; i < 100000; i++)
-    {
-        matmulSSE(mat,v,out);
-    }
-    t2 = high_resolution_clock::now();
-    ms_double = t2 - t1;
-    std::cout << "Matmul SSE: "  << ms_double.count() << std::endl;
+//    t1 = high_resolution_clock::now();
+//    for(int i = 0; i < innerRepCount; i++)
+//    {
+//        matmulSSE(mat,v,outSSE);
+//    }
+//    t2 = high_resolution_clock::now();
+//    ms_double = t2 - t1;
+//    std::cout << "Matmul SSE: "  << ms_double.count() << std::endl;
 
 #ifdef FLUID_AVX2
     t1 = high_resolution_clock::now();
-    for(int i = 0; i < 100000; i++)
+    for(int i = 0; i < innerRepCount; i++)
     {
-        matmulAVX2(mat,v,out);
+        matmulAVX2(mat,v,outAVX2);
     }
     t2 = high_resolution_clock::now();
     ms_double = t2 - t1;
     std::cout << "Matmul AVX2: "  << ms_double.count() << std::endl;
+#endif
+
+#if 0
+    std::cout << "Verifying custom results" << std::endl;
+
+    for(int i = 0; i < outScalar.size(); i++)
+    {
+        if(outScalar[i] - outSSE[i] > 0.000001)
+        {
+            std::cout << "Mismatch at "<< i <<"! Scalar vs SSE" << outScalar[i] << " " << outSSE[i] << std::endl;
+            throw std::runtime_error("Scalar-SSE mismatch!");
+        }
+    }
 #endif
 }
 
 void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out)
 {
 #pragma omp parallel for
-    for(int rowIdx = 0; rowIdx < mat.size(); rowIdx+= 2)
+    for(int rowIdx = 0; rowIdx < mat.size(); rowIdx++)
     {
-        const int idxIm1 = std::clamp(rowIdx-1,0,static_cast<int>(in.size()));
-        const int idxIp1 = std::clamp(rowIdx+1,0,static_cast<int>(in.size()));
-        const int idxJm1 = std::clamp(rowIdx-gridSize,0,static_cast<int>(in.size()));
-        const int idxJp1 = std::clamp(rowIdx+gridSize,0,static_cast<int>(in.size()));
+        const int idxIm1 = std::clamp(rowIdx-1,0,static_cast<int>(in.size())-1);
+        const int idxIp1 = std::clamp(rowIdx+1,0,static_cast<int>(in.size())-1);
+        const int idxJm1 = std::clamp(rowIdx-gridSize,0,static_cast<int>(in.size())-1);
+        const int idxJp1 = std::clamp(rowIdx+gridSize,0,static_cast<int>(in.size())-1);
         const std::array<double,5>& m = mat[rowIdx].vals;
         out[rowIdx] = m[0]*in[rowIdx] +
                         m[1]*in[idxIm1] +
@@ -176,10 +203,10 @@ void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in,
 #pragma omp parallel for
     for(int rowIdx = 0; rowIdx < mat.size(); rowIdx++)
     {
-        const int idxIm1 = rowIdx-1;
-        const int idxIp1 = rowIdx+1;
-        const int idxJm1 = rowIdx-gridSize;
-        const int idxJp1 = rowIdx+gridSize;
+        const int idxIm1 = std::clamp(rowIdx-1,0,static_cast<int>(in.size())-1);
+        const int idxIp1 = std::clamp(rowIdx+1,0,static_cast<int>(in.size())-1);
+        const int idxJm1 = std::clamp(rowIdx-gridSize,0,static_cast<int>(in.size())-1);
+        const int idxJp1 = std::clamp(rowIdx+gridSize,0,static_cast<int>(in.size())-1);
         const double valIdxIm1 = idxIm1 >= 0 ? in[idxIm1] : 0.0;
         const double valIdxIp1 = idxIp1 >= 0 ? in[idxIp1] : 0.0;
         const double valIdxJm1 = idxJm1 < in.size() ? in[idxJm1] : 0.0;
