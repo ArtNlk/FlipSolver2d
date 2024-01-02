@@ -3,11 +3,12 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
 #include <memory>
+#include <chrono>
 
 #include "nlohmann/json.hpp"
+
+#include "imgui.h"
 
 #include "flipsolver2d.h"
 #include "nbflipsolver.h"
@@ -16,7 +17,6 @@
 
 #include "fluidrenderer.h"
 #include "geometry2d.h"
-#include "textmenurenderer.h"
 #include "emitter.h"
 
 using json = nlohmann::json;
@@ -53,20 +53,14 @@ protected:
     Obstacle obstacleFromJson(json obstacleJson);
     Sink sinkFromJson(json sinkJson);
     void addObjectFromJson(json objectJson);
-    void setupFluidrender();
-    void setupFluidrenderQuad();
-    void addVert(std::vector<float> &vertexVector, float x, float y, float u, float v);
-    void formQuad(std::vector<unsigned int> &indexVector, std::vector<float> &vertexVector);
-    void updateFluidrenderQuad();
-    void updateFluidrenderBuffers();
-    void updateFluidrenderQuadVertex(Vertex v, int vertexIndex);
     void render();
-    void resizeFluidrenderQuad();
+    void renderSceneViewPanel(bool update);
+    bool renderControlsPanel();
+    void renderStatsPanel();
 
     GLFWwindow* m_window;
     std::shared_ptr<FlipSolver> m_solver;
     FluidRenderer m_fluidRenderer;
-    TextMenuRenderer m_textMenuRenderer;
     static const char* m_configFilePath;
 
     unsigned int m_fluidgrid_vbo;
@@ -82,10 +76,14 @@ protected:
 
     bool m_renderRequested;
 
+    int m_simStepsLeft;
+
     static const int m_startWindowWidth = 900;
     static const int m_startWindowHeight = 900;
 
     static constexpr float m_gridDrawFraction = 0.85;
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_lastFrameTime;
 
     //Taken from https://stackoverflow.com/questions/7676971/pointing-to-a-function-that-is-a-class-member-glfw-setkeycallback
     class GLFWCallbackWrapper
@@ -111,6 +109,8 @@ protected:
     private:
         static LiquidRenderApp* s_application;
     };
+
+    ImGuiIO* m_io;
 };
 
 #endif // LIQUIDRENDERAPP_H

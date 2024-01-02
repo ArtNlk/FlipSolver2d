@@ -142,6 +142,16 @@ public:
         }
     }
 
+    int textureWidth()
+    {
+        return m_textureWidth;
+    }
+
+    int textureHeight()
+    {
+        return m_textureHeight;
+    }
+
     static const Color &velocityVectorColor();
 
     unsigned int renderTexture();

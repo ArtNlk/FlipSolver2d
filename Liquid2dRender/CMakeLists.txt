@@ -6,6 +6,8 @@ include_directories(include/external)
 
 include(FetchContent)
 
+find_package(OpenGL REQUIRED)
+
 #GLFW
 FetchContent_Declare(
         glfw
@@ -26,24 +28,24 @@ if(NOT glfw_POPULATED)
     add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
 
-message(Fetching freetype)
-#FREETYPE
-FetchContent_Declare(
-  freetype
-  URL https://download.savannah.gnu.org/releases/freetype/freetype-2.12.1.tar.gz
+add_library(imgui_glfw STATIC
+    ${CMAKE_SOURCE_DIR}/imgui/imgui.cpp
+    ${CMAKE_SOURCE_DIR}/imgui/imgui_draw.cpp
+    ${CMAKE_SOURCE_DIR}/imgui/imgui_demo.cpp
+    ${CMAKE_SOURCE_DIR}/imgui/imgui_tables.cpp
+    ${CMAKE_SOURCE_DIR}/imgui/imgui_widgets.cpp
+
+    ${CMAKE_SOURCE_DIR}/imgui/backends/imgui_impl_glfw.cpp
+    ${CMAKE_SOURCE_DIR}/imgui/backends/imgui_impl_opengl3.cpp
 )
-FetchContent_GetProperties(freetype)
-if(NOT freetype_POPULATED)
-    FetchContent_Populate(freetype)
 
-    set(FT_DISABLE_ZLIB ON CACHE INTERNAL "Use internal ZLIB")
-    set(FT_DISABLE_BZIP2 ON CACHE INTERNAL "Disable BZIP2 compressed fonts")
-    set(FT_DISABLE_PNG ON CACHE INTERNAL "Disable PNG fonts")
-    set(FT_DISABLE_HARFBUZZ ON CACHE INTERNAL "Disable Harf buzz autohint")
-    set(FT_DISABLE_BROTLI ON CACHE INTERNAL "Disable WOFF2 fonts")
+target_link_libraries(imgui_glfw PUBLIC glfw ${OPENGL_LIBRARIES})
 
-    add_subdirectory(${freetype_SOURCE_DIR} ${freetype_BINARY_DIR})
-endif()
+target_include_directories(imgui_glfw
+PUBLIC
+    ${CMAKE_SOURCE_DIR}/imgui
+    ${CMAKE_SOURCE_DIR}/imgui/backends
+)
 
 #GLM
 FetchContent_Declare(
@@ -73,17 +75,12 @@ if(NOT nlohmann_json_POPULATED)
     add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
 endif()
 
-find_package(OpenGL REQUIRED)
-
 set(HEADERS
     include/glad/glad.h
     liquidrenderapp.h
     fluidrenderer.h
     texture2d.h
-    color.h
-    textrenderer.h
-    textmenurenderer.h
-    globalcallbackhandler.h)
+    color.h)
 
 set(SOURCES
     src/glad.c
@@ -91,10 +88,7 @@ set(SOURCES
     liquidrenderapp.cpp
     fluidrenderer.cpp
     texture2d.cpp
-    color.cpp
-    textrenderer.cpp
-    textmenurenderer.cpp
-    globalcallbackhandler.cpp)
+    color.cpp)
 
 file(GLOB SCENES
      "scenes/*.json"
@@ -122,6 +116,7 @@ target_link_libraries(LiquidRenderApp glfw)
 target_link_libraries(LiquidRenderApp freetype)
 target_link_libraries(LiquidRenderApp glm)
 target_link_libraries(LiquidRenderApp nlohmann_json::nlohmann_json)
+target_link_libraries(LiquidRenderApp imgui_glfw)
 
 if(UNIX)
 target_link_libraries(LiquidRenderApp ${CMAKE_DL_LIBS})

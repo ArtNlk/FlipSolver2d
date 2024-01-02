@@ -10,8 +10,6 @@
 #include "materialgrid.h"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "globalcallbackhandler.h"
-
 #include "mathfuncs.h"
 
 const Color FluidRenderer::m_emptyColor = Color(255,255,255);
@@ -431,7 +429,6 @@ void FluidRenderer::updateGrid()
 {
     m_solver->updateSinks();
     m_solver->updateSources();
-    GlobalCallbackHandler::instance().registerRenderUpdate();
     switch(m_gridRenderMode)
     {
     case FluidRenderMode::RENDER_MATERIAL:
@@ -710,7 +707,6 @@ void FluidRenderer::updateGridFromFluidSdf()
 
 void FluidRenderer::updateVectors()
 {
-    GlobalCallbackHandler::instance().registerRenderUpdate();
     switch(m_vectorRenderMode)
     {
     case VECTOR_RENDER_CENTER:
