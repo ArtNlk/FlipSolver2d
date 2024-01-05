@@ -3,10 +3,10 @@
 #include <memory>
 #include <ratio>
 #include <stdexcept>
-#include <cstdlib>
 #include <filesystem>
 
 #include "GLFW/glfw3.h"
+#include "fluidrenderer.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -26,7 +26,8 @@ LiquidRenderApp::LiquidRenderApp() :
     m_solver(nullptr),
     m_fluidRenderer(m_startWindowWidth,m_startWindowHeight),
     m_renderRequested(false),
-    m_simStepsLeft(0)
+    m_simStepsLeft(0),
+    m_recording(false)
 {
     m_windowWidth = m_startWindowWidth;
     m_windowHeight = m_startWindowHeight;
@@ -95,13 +96,14 @@ void LiquidRenderApp::init()
     //glViewport(0, 0, m_windowWidth, m_windowHeight);
 
     m_fluidRenderer.init(m_solver);
+    m_fluidRenderer.particlesEnabled() = true;
 
     //setupFluidrender();
     //resizeFluidrenderQuad();
     m_solver->updateSinks();
     m_solver->updateSources();
     m_solver->updateSolids();
-    m_fluidRenderer.updateGrid();
+    m_fluidRenderer.update();
     m_renderRequested = true;
 
     m_lastFrameTime = std::chrono::high_resolution_clock::now();
@@ -111,7 +113,7 @@ void LiquidRenderApp::run()
 {
     while(!glfwWindowShouldClose(m_window))
     {
-        glfwWaitEvents();
+        glfwPollEvents();
         render();
     }
 }
@@ -123,160 +125,6 @@ void LiquidRenderApp::resizeCallback(GLFWwindow *window, int width, int height)
     //resizeFluidrenderQuad();
     //m_textMenuRenderer.resize(width,height);
     m_renderRequested = true;
-}
-
-void LiquidRenderApp::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    return;
-    switch(action)
-    {
-        case GLFW_PRESS:
-            switch(key)
-            {
-                case GLFW_KEY_M:
-                    if(mods & GLFW_MOD_SHIFT)
-                    {
-                        m_fluidRenderer.gridRenderMode()--;
-                        m_fluidRenderer.updateGrid();
-                    }
-                    else
-                    {
-                        m_fluidRenderer.gridRenderMode()++;
-                        m_fluidRenderer.updateGrid();
-                    }
-                break;
-
-                case GLFW_KEY_V:
-                    if(mods & GLFW_MOD_SHIFT)
-                    {
-                        m_fluidRenderer.toggleVectors();
-                    }
-                    else
-                    {
-                        m_fluidRenderer.vectorRenderMode()++;
-                    }
-                    m_fluidRenderer.update();
-                break;
-
-                case GLFW_KEY_E:
-                    m_fluidRenderer.toggleExtras();
-                    m_fluidRenderer.update();
-                break;
-
-                case GLFW_KEY_G:
-                    m_fluidRenderer.toggleGeometry();
-                    m_fluidRenderer.update();
-                break;
-
-                case GLFW_KEY_U:
-                    m_fluidRenderer.update();
-                break;
-
-                case GLFW_KEY_P:
-                    if(mods & GLFW_MOD_SHIFT)
-                    {
-                        m_fluidRenderer.toggleParticles();
-                    }
-                    else
-                    {
-                        m_fluidRenderer.particleRenderMode()++;
-                    }
-                    m_fluidRenderer.update();
-                break;
-
-                case GLFW_KEY_R:
-                {
-                    int frame = 0;
-                    static bool isFirst = true;
-                    if(isFirst)
-                    {
-                        std::filesystem::create_directory("./output");
-                        for (const auto& entry : std::filesystem::directory_iterator("./output"))
-                                std::filesystem::remove_all(entry.path());
-                        isFirst = false;
-                    }
-                    bool run = true;
-                    for(int second = 0; second < 30; second++)
-                    {
-                        for(int i = 0; i < m_solver->fps(); i++)
-                        {
-                            m_solver->stepFrame();
-                            m_fluidRenderer.update();
-                            render();
-                            m_fluidRenderer.dumpToTga(std::to_string(m_solver->fps()) + "fps_" + std::to_string(m_solver->frameNumber()) + ".tga");
-                            frame++;
-                            glfwPollEvents();
-                            if(glfwWindowShouldClose(m_window))
-                            {
-                                run = false;
-                            }
-                            if(!run) break;
-                        }
-                        if(!run) break;
-                    }
-                }
-                break;
-
-                case GLFW_KEY_F:
-                    m_fluidRenderer.dumpToTga("frame.png");
-                break;
-
-                case  GLFW_KEY_EQUAL:
-                    m_fluidRenderer.increaseParticleSize();
-                    render();
-                break;
-
-                case  GLFW_KEY_MINUS:
-                    m_fluidRenderer.decreaseParticleSize();
-                    render();
-                break;
-
-                case GLFW_KEY_SPACE:
-                {
-                    if(mods & GLFW_MOD_SHIFT)
-                    {
-                        m_solver->stepFrame();
-                        m_fluidRenderer.update();
-                        render();
-                    }
-                    else if(mods & GLFW_MOD_CONTROL)
-                    {
-                        bool run = true;
-                        for(int i = 0; i < m_solver->fps() * 10; i++)
-                        {
-                            m_solver->stepFrame();
-                            m_fluidRenderer.update();
-                            render();
-                            glfwPollEvents();
-                            if(glfwWindowShouldClose(m_window))
-                            {
-                                run = false;
-                            }
-                            if(!run) break;
-                        }
-                    }
-                    else
-                    {
-                        bool run = true;
-                        for(int i = 0; i < m_solver->fps(); i++)
-                        {
-                            m_solver->stepFrame();
-                            m_fluidRenderer.update();
-                            render();
-                            glfwPollEvents();
-                            if(glfwWindowShouldClose(m_window))
-                            {
-                                run = false;
-                            }
-                            if(!run) break;
-                        }
-                    }
-
-                }
-                break;
-            }
-        break;
-    }
 }
 
 void LiquidRenderApp::loadJson(std::string fileName)
@@ -335,7 +183,7 @@ void LiquidRenderApp::loadJson(std::string fileName)
         }
 
         m_solver->initAdditionalParameters();
-        solverFromJson(sceneJson["solver"]);
+        objectsFromJson(sceneJson["solver"]);
     }
     catch (std::exception &e)
     {
@@ -417,15 +265,15 @@ SimulationMethod LiquidRenderApp::simMethodFromName(const std::string &name)
     {
         return SimulationMethod::SIMULATION_LIQUID;
     }
-    else if(name == "smoke")
+    if(name == "smoke")
     {
         return SimulationMethod::SIMULATION_SMOKE;
     }
-    else if(name == "fire")
+    if(name == "fire")
     {
         return SimulationMethod::SIMULATION_FIRE;
     }
-    else if(name == "nbflip")
+    if(name == "nbflip")
     {
         return SimulationMethod::SIMULATION_NBFLIP;
     }
@@ -436,7 +284,7 @@ SimulationMethod LiquidRenderApp::simMethodFromName(const std::string &name)
 //    SimSettings::airDensity() = tryGetValue(settingsJson,"airDensity",SimSettings::fluidDensity() * 0.001f);
 //    SimSettings::surfaceTensionFactor() = tryGetValue(settingsJson,"surfaceTensionFactor",0.0);
 
-void LiquidRenderApp::solverFromJson(json solverJson)
+void LiquidRenderApp::objectsFromJson(json solverJson)
 {
     std::vector<json> objects = solverJson["objects"]
                                         .get<std::vector<json>>();
@@ -580,7 +428,7 @@ void LiquidRenderApp::renderSceneViewPanel(bool update)
 
     if(update)
     {
-        m_fluidRenderer.updateGrid();
+        m_fluidRenderer.update();
         m_fluidRenderer.render();
     }
 
@@ -597,6 +445,7 @@ void LiquidRenderApp::renderSceneViewPanel(bool update)
 bool LiquidRenderApp::renderControlsPanel()
 {
     ImGui::Begin("Controls");
+    ImGui::SeparatorText("Run");
 
     bool update = true;
     if(ImGui::Button("Step one frame"))
@@ -607,11 +456,26 @@ bool LiquidRenderApp::renderControlsPanel()
 
     static int steps = 0;
     ImGui::InputInt("Steps to run",&steps,1,10);
+    steps = std::clamp(steps,0,1000000000);
 
     ImGui::BeginDisabled(m_simStepsLeft > 0);
     if(ImGui::Button("Step multiple frames"))
     {
         m_simStepsLeft = steps;
+    }
+
+    if(ImGui::Button("Record multiple frames"))
+    {
+        m_simStepsLeft = steps;
+        m_recording = true;
+        static bool isFirst = true;
+        if(isFirst)
+        {
+            std::filesystem::create_directory("./output");
+            for (const auto& entry : std::filesystem::directory_iterator("./output"))
+                std::filesystem::remove_all(entry.path());
+            isFirst = false;
+        }
     }
     ImGui::EndDisabled();
 
@@ -620,8 +484,30 @@ bool LiquidRenderApp::renderControlsPanel()
         m_solver->stepFrame();
         update = true;
         m_simStepsLeft--;
+        if(m_recording)
+        {
+            m_fluidRenderer.dumpToTga(std::to_string(m_solver->fps()) + "_fps_" + std::to_string(m_solver->frameNumber()) + ".tga");
+        }
+    }
+    else if(m_recording)
+    {
+        m_recording = false;
     }
     ImGui::Value("Steps left",m_simStepsLeft);
+
+    ImGui::SeparatorText("Render control");
+
+    gridRenderCombo();
+    vectorRenderCombo();
+    particleRenderCombo();
+
+    ImGui::Checkbox("Vectors enabled",&m_fluidRenderer.vectorRenderEnabled());
+    ImGui::Checkbox("Particles enabled",&m_fluidRenderer.particlesEnabled());
+    ImGui::Checkbox("Geometry outline enabled",&m_fluidRenderer.geometryEnabled());
+    ImGui::Checkbox("Sinks and sources enabled",&m_fluidRenderer.extrasEnabled());
+
+    ImGui::InputInt("Particle size",&m_fluidRenderer.particleSize(),1,10);
+    m_fluidRenderer.particleSize() = std::clamp(m_fluidRenderer.particleSize(),1,1000000000);
 
     ImGui::End();
     return update;
@@ -632,6 +518,63 @@ void LiquidRenderApp::renderStatsPanel()
     ImGui::Begin("Stats");
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_io->Framerate, m_io->Framerate);
     ImGui::End();
+}
+
+void LiquidRenderApp::gridRenderCombo()
+{
+    if (ImGui::BeginCombo("Grid render mode", m_fluidRenderer.currentFluidRenderModeName().c_str()))
+    {
+        FluidRenderMode fluidMode = static_cast<FluidRenderMode>(0);
+
+        do
+        {
+            if (ImGui::Selectable(m_fluidRenderer.fluidModeToName(fluidMode).c_str(),
+                                  m_fluidRenderer.gridRenderMode() == fluidMode))
+            {
+                m_fluidRenderer.setRenderMode(fluidMode);
+            }
+        }while(nextRenderModeEnum<FluidRenderMode,GRID_RENDER_ITER_END>(fluidMode));
+
+        ImGui::EndCombo();
+    }
+}
+
+void LiquidRenderApp::vectorRenderCombo()
+{
+    if (ImGui::BeginCombo("Vector render mode", m_fluidRenderer.currentVectorRenderModeName().c_str()))
+    {
+        VectorRenderMode vectorMode = static_cast<VectorRenderMode>(0);
+
+        do
+        {
+            if (ImGui::Selectable(m_fluidRenderer.vectorModeToName(vectorMode).c_str(),
+                                  m_fluidRenderer.vectorRenderMode() == vectorMode))
+            {
+                m_fluidRenderer.vectorRenderMode() = vectorMode;
+            }
+        }while(nextRenderModeEnum<VectorRenderMode,VECTOR_RENDER_ITER_END>(vectorMode));
+
+        ImGui::EndCombo();
+    }
+}
+
+void LiquidRenderApp::particleRenderCombo()
+{
+    if (ImGui::BeginCombo("Particle render mode", m_fluidRenderer.currentParticleRenderModeName().c_str()))
+    {
+        ParticleRenderMode particleMode = static_cast<ParticleRenderMode>(0);
+
+        do
+        {
+            if (ImGui::Selectable(m_fluidRenderer.particleModeToName(particleMode).c_str(),
+                                  m_fluidRenderer.particleRenderMode() == particleMode))
+            {
+                m_fluidRenderer.particleRenderMode() = particleMode;
+            }
+        }while(nextRenderModeEnum<ParticleRenderMode,PARTICLE_RENDER_ITER_END>(particleMode));
+
+        ImGui::EndCombo();
+    }
 }
 
 template<class T>

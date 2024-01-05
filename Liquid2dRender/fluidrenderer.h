@@ -50,6 +50,13 @@ inline ParticleRenderMode& operator++(ParticleRenderMode& state, int) {
     return state;
 }
 
+template<class IterableEnum, IterableEnum endVal>
+inline bool nextRenderModeEnum(IterableEnum& state) {
+    bool isLast = state == (endVal-1);
+    state++;
+    return !isLast;
+}
+
 class FluidRenderer
 {
 public:
@@ -60,6 +67,15 @@ public:
     void updateGrid();
     void updateVectors();
     void updateParticles();
+
+    std::string fluidModeToName(const FluidRenderMode mode) const;
+    std::string currentFluidRenderModeName() const;
+
+    std::string vectorModeToName(const VectorRenderMode mode) const;
+    std::string currentVectorRenderModeName() const;
+
+    std::string particleModeToName(const ParticleRenderMode mode) const;
+    std::string currentParticleRenderModeName() const;
 
     inline void setRenderMode(FluidRenderMode mode)
     {
@@ -98,7 +114,7 @@ public:
         return m_extrasEnabled;
     }
 
-    inline bool extrasEnabled()
+    inline bool& extrasEnabled()
     {
         return m_extrasEnabled;
     }
@@ -140,6 +156,11 @@ public:
         {
             m_particleRadius = 0;
         }
+    }
+
+    int& particleSize()
+    {
+        return m_particleRadius;
     }
 
     int textureWidth()

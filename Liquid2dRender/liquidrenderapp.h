@@ -33,7 +33,6 @@ public:
 
 protected:
     void resizeCallback(GLFWwindow* window, int width, int height);
-    void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
     void loadJson(std::string fileName);
 
@@ -48,15 +47,20 @@ protected:
     template<class T>
     T tryGetValue(json input, std::string key, T defaultValue);
 
-    void solverFromJson(json solverJson);
+    void objectsFromJson(json solverJson);
     Emitter emitterFromJson(json emitterJson);
     Obstacle obstacleFromJson(json obstacleJson);
     Sink sinkFromJson(json sinkJson);
     void addObjectFromJson(json objectJson);
+
     void render();
     void renderSceneViewPanel(bool update);
     bool renderControlsPanel();
     void renderStatsPanel();
+
+    void gridRenderCombo();
+    void vectorRenderCombo();
+    void particleRenderCombo();
 
     GLFWwindow* m_window;
     std::shared_ptr<FlipSolver> m_solver;
@@ -77,6 +81,7 @@ protected:
     bool m_renderRequested;
 
     int m_simStepsLeft;
+    bool m_recording;
 
     static const int m_startWindowWidth = 900;
     static const int m_startWindowHeight = 900;
@@ -97,10 +102,6 @@ protected:
         static void ResizeCallback(GLFWwindow *window, int width, int height)
         {
             s_application->resizeCallback(window,width,height);
-        }
-        static void KeyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-        {
-            s_application->keyCallback(window,key,scancode,action,mods);
         }
         static void SetApplication(LiquidRenderApp *application)
         {

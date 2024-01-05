@@ -746,6 +746,93 @@ void FluidRenderer::updateParticles()
     }
 }
 
+std::string FluidRenderer::fluidModeToName(const FluidRenderMode mode) const
+{
+    switch(mode)
+    {
+    case RENDER_MATERIAL:
+        return std::string("Render material");
+        break;
+    case RENDER_VELOCITY:
+        return std::string("Render velocity");
+        break;
+    case RENDER_TEST:
+        return std::string("Render test value");
+        break;
+    case RENDER_U:
+        return std::string("Render U component");
+        break;
+    case RENDER_V:
+        return std::string("Render V component");
+        break;
+    case RENDER_OBSTACLE_SDF:
+        return std::string("Render obstacle SDF");
+        break;
+    case RENDER_FLUID_SDF:
+        return std::string("Render fluid SDF");
+        break;
+    default:
+        return std::string("Bad fluid render mode");
+        break;
+    }
+}
+
+std::string FluidRenderer::currentFluidRenderModeName() const
+{
+    return fluidModeToName(m_gridRenderMode);
+}
+
+std::string FluidRenderer::vectorModeToName(const VectorRenderMode mode) const
+{
+    switch(mode)
+    {
+    case VECTOR_RENDER_CENTER:
+        return std::string("Render centered average");
+        break;
+    case VECTOR_RENDER_STAGGERED:
+        return std::string("Render staggered velocity of cell");
+        break;
+    case VECTOR_RENDER_SOLID_SDF_GRADIENT:
+        return std::string("Render obstacle SDF gradient");
+        break;
+    case VECTOR_RENDER_FLUID_SDF_GRADIENT:
+        return std::string("Render fluid SDF gradient");
+        break;
+    default:
+        return std::string("Bad vector render mode");
+        break;
+    }
+}
+
+std::string FluidRenderer::currentVectorRenderModeName() const
+{
+    return vectorModeToName(m_vectorRenderMode);
+}
+
+std::string FluidRenderer::particleModeToName(const ParticleRenderMode mode) const
+{
+    switch(mode)
+    {
+    case PARTICLE_RENDER_VELOCITY:
+        return std::string("Particle render velocity");
+        break;
+    case PARTICLE_RENDER_SOLID:
+        return std::string("Particle render solid");
+        break;
+    case PARTICLE_RENDER_TEST_VALUE:
+        return std::string("Particle render test value");
+        break;
+    default:
+        return std::string("Bad particle render mode");
+        break;
+    }
+}
+
+std::string FluidRenderer::currentParticleRenderModeName() const
+{
+    return particleModeToName(m_particleRenderMode);
+}
+
 void FluidRenderer::updateVectorsStaggered()
 {
     //float unitLengthVelocity = 0.75; //Velocity len(v) at which draw vector will be exactly length 1 grid cell side
