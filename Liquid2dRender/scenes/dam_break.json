@@ -1,6 +1,6 @@
 {
   "settings": {
-    "simType": "nbflip",
+    "simType": "flip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
     "resolution": 256,
@@ -15,6 +15,7 @@
     "particleScale": 0.8,
     "picRatio": 0.03,
     "cflNumber": 5,
+    "-scale": 0.1,
     "viscosityEnabled": false,
     "globalAcceleration": [9.8,0]
   },

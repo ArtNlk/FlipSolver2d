@@ -200,8 +200,8 @@ void LiquidRenderApp::populateFlipSolverParamsFromJson(FlipSolverParameters *p, 
     p->dx =
     p->particlesPerCell = settingsJson["particlesPerCell"].get<int>();
     std::pair<float,float> v = tryGetValue(settingsJson,"globalAcceleration",std::pair(9.8,0.f));
-    v.first *= s;
-    v.second *= s;
+    // v.first *= s;
+    // v.second *= s;
     p->globalAcceleration = v;
     p->resolution = settingsJson["resolution"].get<int>();
     p->fps = settingsJson["fps"].get<int>();
