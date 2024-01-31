@@ -1,6 +1,8 @@
 #ifndef FLIPSOLVER_H
 #define FLIPSOLVER_H
 
+#include <array>
+#include <chrono>
 #include <vector>
 #include <random>
 #include <memory>
@@ -57,6 +59,95 @@ public:
   }
 };
 
+enum SolverStage {
+    ADVECTION = 0,
+    DECOMPOSITION,
+    DENSITY,
+    PARTICLE_REBIN,
+    PARTICLE_TO_GRID,
+    GRID_UPDATE,
+    AFTER_TRANSFER,
+    PRESSURE,
+    VISCOSITY,
+    REPRESSURE,
+    PARTICLE_UPDATE,
+    PARTICLE_RESEED,
+    SOLVER_STAGE_COUNT
+};
+
+template<class IterableEnum, IterableEnum endVal>
+inline IterableEnum& incrementEnum(IterableEnum& state) {
+    const int i = static_cast<int>(state)+1;
+    state = static_cast<IterableEnum>((i) % endVal);
+    return state;
+}
+
+template<class IterableEnum, IterableEnum endVal>
+inline bool nextEnum(IterableEnum& state) {
+    bool isLast = state == (endVal-1);
+    state = incrementEnum<IterableEnum, endVal>(state);
+    return !isLast;
+}
+
+class SolverTimeStats {
+public:
+    using Clock = std::chrono::high_resolution_clock;
+    using TimePoint = std::chrono::time_point<Clock,Clock::duration>;
+    using MsDuration = std::chrono::duration<float, std::milli>;
+    using StageTimings = std::array<float, SOLVER_STAGE_COUNT>;
+
+    SolverTimeStats()
+    {
+        reset();
+    }
+
+    void reset(){
+        m_times.fill(0.f);
+        m_lastTimePoint = Clock::now();
+        m_frameStartTimePoint = Clock::now();
+        m_substepsTaken = 0;
+    }
+
+    void endStage(SolverStage s){
+        TimePoint currentTime = Clock::now();
+        m_times.at(s) += MsDuration(currentTime - m_lastTimePoint).count();
+        m_lastTimePoint = Clock::now();
+    }
+
+    void endFrame()
+    {
+        TimePoint currentTime = Clock::now();
+        m_totalFrameTime = MsDuration(currentTime - m_frameStartTimePoint).count();
+    }
+
+    void addSubstep()
+    {
+        m_substepsTaken++;
+    }
+
+    int substepCount() const
+    {
+        return m_substepsTaken;
+    }
+
+    StageTimings timings() const
+    {
+        return m_times;
+    }
+
+    float frameTime() const
+    {
+        return m_totalFrameTime;
+    }
+
+protected:
+    StageTimings m_times;
+    TimePoint m_lastTimePoint;
+    TimePoint m_frameStartTimePoint;
+    int m_substepsTaken;
+    float m_totalFrameTime;
+};
+
 class FlipSolver : public LinearIndexable2d
 {
 public:
@@ -109,6 +200,8 @@ public:
     const SdfGrid &solidSdf() const;
 
     const Grid2d<float> &testGrid() const;
+
+    const SolverTimeStats &timeStats() const;
 
     float stepDt() const;
 
@@ -287,6 +380,7 @@ protected:
     double m_projectTolerance;
     bool m_viscosityEnabled;
     SimulationMethod m_simulationMethod;
+    SolverTimeStats m_stats;
 
     //using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
     using precond = InversePoissonPreconditioner<double, Eigen::Upper>;

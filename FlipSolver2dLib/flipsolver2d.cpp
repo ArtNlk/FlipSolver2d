@@ -426,13 +426,8 @@ void FlipSolver::afterTransfer()
 
 void FlipSolver::step()
 {
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::duration;
-    using std::chrono::milliseconds;
-    static double sum = 0.0;
-    static double count = 0.0;
     advect();
+    m_stats.endStage(ADVECTION);
 
     m_pressureMatrix = getPressureProjectionMatrix();
     m_pressureSolver.compute(m_pressureMatrix);
@@ -440,55 +435,56 @@ void FlipSolver::step()
         std::cout << "Pressure solver decomposition failed!\n";
         return;
     }
+    m_stats.endStage(DECOMPOSITION);
 
     m_pressureSolver.setTolerance(1e-4);
     densityCorrection();
+    m_stats.endStage(DENSITY);
+
     m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
+    m_stats.endStage(PARTICLE_REBIN);
+
     particleToGrid();
+    m_stats.endStage(PARTICLE_TO_GRID);
 
     updateSdf();
 
     //updateLinearFluidViscosityMapping();
     updateMaterials();
+    m_stats.endStage(GRID_UPDATE);
+
     afterTransfer();
     extrapolateLevelsetInside(m_fluidSdf);
     m_fluidVelocityGrid.extrapolate(10);
 
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     applyBodyForces();
+    m_stats.endStage(AFTER_TRANSFER);
 
     m_pressureSolver.setTolerance(1e-6);
     project();
+    m_stats.endStage(PRESSURE);
 
     updateVelocityFromSolids();
-//    if(m_viscosityEnabled)
-//    {
-        auto t1 = high_resolution_clock::now();
+   if(m_viscosityEnabled)
+   {
         applyViscosity();
-        auto t2 = high_resolution_clock::now();
+        m_stats.endStage(VISCOSITY);
         project();
-//    }
+        m_stats.endStage(REPRESSURE);
+   }
     m_fluidVelocityGrid.extrapolate(10);
     particleUpdate();
+    m_stats.endStage(PARTICLE_UPDATE);
+
     countParticles();
     reseedParticles();
-
-    duration<double, std::milli> ms_double = t2 - t1;
-    sum += ms_double.count();
-    count+=1.0;
-    //m_frameTime = sum / count;
-    std::cout << ms_double.count() << "ms\n";
+    m_stats.endStage(PARTICLE_RESEED);
 }
 
 void FlipSolver::stepFrame()
 {
-    using std::chrono::high_resolution_clock;
-    using std::chrono::duration_cast;
-    using std::chrono::duration;
-    using std::chrono::milliseconds;
-    static double msSum = 0.0;
-    auto t1 = high_resolution_clock::now();
     if(m_frameNumber == 0)
     {
         firstFrameInit();
@@ -497,6 +493,7 @@ void FlipSolver::stepFrame()
     float substepTime = 0.f;
     bool finished = false;
     int substepCount = 0;
+    m_stats.reset();
 
     while(!finished)
     {
@@ -515,18 +512,13 @@ void FlipSolver::stepFrame()
         m_stepDt = maxSubstepSize;
         std::cout << "Substep " << substepCount << " substep dt: " << m_stepDt << " vel " << vel << std::endl;
         step();
+        m_stats.addSubstep();
         substepTime += maxSubstepSize;
         substepCount++;
         if(substepCount > 50) break;
     }
-    auto t2 = high_resolution_clock::now();
-    duration<double, std::milli> ms = t2 - t1;
-    //std::cout << "Frame took" << ms.count() << "ms\n";
-    m_frameTime = ms.count();
-    msSum += ms.count();
-    std::cout << "Frame done in " << substepCount << " substeps" << std::endl;
+    m_stats.endFrame();
     m_frameNumber++;
-    m_avgFrameMs = msSum / m_frameNumber;
 }
 
 void FlipSolver::updateSolids()
@@ -781,6 +773,11 @@ const SdfGrid &FlipSolver::solidSdf() const
 const Grid2d<float> &FlipSolver::testGrid() const
 {
     return m_testGrid;
+}
+
+const SolverTimeStats &FlipSolver::timeStats() const
+{
+    return m_stats;
 }
 
 double FlipSolver::divergenceAt(int i, int j)

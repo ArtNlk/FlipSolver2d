@@ -450,8 +450,7 @@ bool LiquidRenderApp::renderControlsPanel()
     bool update = true;
     if(ImGui::Button("Step one frame"))
     {
-        m_solver->stepFrame();
-        update = true;
+        m_simStepsLeft = 1;
     }
 
     static int steps = 0;
@@ -482,6 +481,7 @@ bool LiquidRenderApp::renderControlsPanel()
     if(m_simStepsLeft > 0)
     {
         m_solver->stepFrame();
+        m_lastFrameStats = m_solver->timeStats();
         update = true;
         m_simStepsLeft--;
         if(m_recording)
@@ -516,7 +516,17 @@ bool LiquidRenderApp::renderControlsPanel()
 void LiquidRenderApp::renderStatsPanel()
 {
     ImGui::Begin("Stats");
+    ImGui::SeparatorText("Application stats");
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_io->Framerate, m_io->Framerate);
+    ImGui::SeparatorText("Solver stats");
+    ImGui::Text("Total frame time: %.3f ms", m_lastFrameStats.frameTime());
+    ImGui::Text("Substeps taken: %d", m_lastFrameStats.substepCount());
+
+    SolverStage stage = static_cast<SolverStage>(0);
+    do
+    {
+        ImGui::Text(stepStageToString(stage).c_str(), m_lastFrameStats.timings().at(stage));
+    }while(nextEnum<SolverStage,SOLVER_STAGE_COUNT>(stage));
     ImGui::End();
 }
 
@@ -533,7 +543,7 @@ void LiquidRenderApp::gridRenderCombo()
             {
                 m_fluidRenderer.setRenderMode(fluidMode);
             }
-        }while(nextRenderModeEnum<FluidRenderMode,GRID_RENDER_ITER_END>(fluidMode));
+        }while(nextEnum<FluidRenderMode,GRID_RENDER_ITER_END>(fluidMode));
 
         ImGui::EndCombo();
     }
@@ -552,7 +562,7 @@ void LiquidRenderApp::vectorRenderCombo()
             {
                 m_fluidRenderer.vectorRenderMode() = vectorMode;
             }
-        }while(nextRenderModeEnum<VectorRenderMode,VECTOR_RENDER_ITER_END>(vectorMode));
+        }while(nextEnum<VectorRenderMode,VECTOR_RENDER_ITER_END>(vectorMode));
 
         ImGui::EndCombo();
     }
@@ -571,9 +581,56 @@ void LiquidRenderApp::particleRenderCombo()
             {
                 m_fluidRenderer.particleRenderMode() = particleMode;
             }
-        }while(nextRenderModeEnum<ParticleRenderMode,PARTICLE_RENDER_ITER_END>(particleMode));
+        }while(nextEnum<ParticleRenderMode,PARTICLE_RENDER_ITER_END>(particleMode));
 
         ImGui::EndCombo();
+    }
+}
+
+const std::string LiquidRenderApp::stepStageToString(SolverStage stage) const
+{
+    switch(stage)
+    {
+    case ADVECTION:
+        return "Advection: %.3f ms";
+        break;
+    case DECOMPOSITION:
+        return "Decomposition: %.3f ms";
+        break;
+    case DENSITY:
+        return "Density correction: %.3f ms";
+        break;
+    case PARTICLE_REBIN:
+        return "Particle rebinning: %.3f ms";
+        break;
+    case PARTICLE_TO_GRID:
+        return "Particle to grid transfer: %.3f ms";
+        break;
+    case GRID_UPDATE:
+        return "Grid update: %.3f ms";
+        break;
+    case AFTER_TRANSFER:
+        return "After particle transfer: %.3f ms";
+        break;
+    case PRESSURE:
+        return "Pressure update: %.3f ms";
+        break;
+    case VISCOSITY:
+        return "Viscosity update: %.3f ms";
+        break;
+    case REPRESSURE:
+        return "Secondary pressure update: %.3f ms";
+        break;
+    case PARTICLE_UPDATE:
+        return "Particle values update: %.3f ms";
+        break;
+    case PARTICLE_RESEED:
+        return "Particle reseeding: %.3f ms";
+        break;
+    case SOLVER_STAGE_COUNT:
+    default:
+        return "Invalid timing stage value!";
+        break;
     }
 }
 

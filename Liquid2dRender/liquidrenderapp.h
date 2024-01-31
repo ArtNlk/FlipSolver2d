@@ -62,6 +62,8 @@ protected:
     void vectorRenderCombo();
     void particleRenderCombo();
 
+    const std::string stepStageToString(SolverStage stage) const;
+
     GLFWwindow* m_window;
     std::shared_ptr<FlipSolver> m_solver;
     FluidRenderer m_fluidRenderer;
@@ -82,6 +84,8 @@ protected:
 
     int m_simStepsLeft;
     bool m_recording;
+
+    SolverTimeStats m_lastFrameStats;
 
     static const int m_startWindowWidth = 900;
     static const int m_startWindowHeight = 900;

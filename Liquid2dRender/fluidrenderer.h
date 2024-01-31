@@ -50,13 +50,6 @@ inline ParticleRenderMode& operator++(ParticleRenderMode& state, int) {
     return state;
 }
 
-template<class IterableEnum, IterableEnum endVal>
-inline bool nextRenderModeEnum(IterableEnum& state) {
-    bool isLast = state == (endVal-1);
-    state++;
-    return !isLast;
-}
-
 class FluidRenderer
 {
 public:
