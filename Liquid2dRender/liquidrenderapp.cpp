@@ -87,6 +87,9 @@ void LiquidRenderApp::init()
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
+    // ImGuiIO& io = ImGui::GetIO();
+    // ImFont* fontDefault = io.Fonts->AddFontDefault();
+    // fontDefault->Scale = 14.f/13.f;
     //ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
@@ -428,6 +431,7 @@ void LiquidRenderApp::renderSceneViewPanel(bool update)
 
     if(update)
     {
+        std::cout << "update true" << std::endl;
         m_fluidRenderer.update();
         m_fluidRenderer.render();
     }
@@ -447,13 +451,13 @@ bool LiquidRenderApp::renderControlsPanel()
     ImGui::Begin("Controls");
     ImGui::SeparatorText("Run");
 
-    bool update = true;
+    bool update = false;
     if(ImGui::Button("Step one frame"))
     {
         m_simStepsLeft = 1;
     }
 
-    static int steps = 0;
+    static int steps = 30;
     ImGui::InputInt("Steps to run",&steps,1,10);
     steps = std::clamp(steps,0,1000000000);
 

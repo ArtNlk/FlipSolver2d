@@ -25,33 +25,49 @@ NBFlipSolver::NBFlipSolver(const NBFlipParameters *p):
 void NBFlipSolver::step()
 {
     advect();
-    m_testGrid = m_viscosityGrid;
+    m_stats.endStage(ADVECTION);
+    //m_testGrid = m_viscosityGrid;
 
     m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
+    m_stats.endStage(PARTICLE_REBIN);
     particleToGrid();
     m_fluidVelocityGrid.extrapolate(10);
+    m_stats.endStage(PARTICLE_TO_GRID);
     m_savedFluidVelocityGrid = m_fluidVelocityGrid;
+
     updateSdf();
     //updateLinearFluidViscosityMapping();
     extrapolateLevelsetOutside(m_fluidSdf);
     afterTransfer();
     extrapolateLevelsetInside(m_fluidSdf);
+    m_stats.endStage(AFTER_TRANSFER);
+
     updateMaterials();
     applyBodyForces();
+    m_stats.endStage(GRID_UPDATE);
+
     m_pressureMatrix = getPressureProjectionMatrix();
     m_pressureSolver.compute(m_pressureMatrix);
+    m_stats.endStage(DECOMPOSITION);
+
     project();
+    m_stats.endStage(PRESSURE);
+
     updateVelocityFromSolids();
     if(m_viscosityEnabled)
     {
         applyViscosity();
+        m_stats.endStage(VISCOSITY);
         project();
+        m_stats.endStage(REPRESSURE);
     }
     m_fluidVelocityGrid.extrapolate(10);
     particleUpdate();
+    m_stats.endStage(PARTICLE_UPDATE);
     countParticles();
     reseedParticles();
+    m_stats.endStage(PARTICLE_RESEED);
 }
 
 void NBFlipSolver::advect()

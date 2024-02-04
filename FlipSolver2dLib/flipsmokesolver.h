@@ -47,7 +47,7 @@ protected:
 
     LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
     
-    //Eigen::SparseMatrix<double,Eigen::RowMajor> getPressureProjectionMatrix() override;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> getPressureProjectionMatrix() override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
 

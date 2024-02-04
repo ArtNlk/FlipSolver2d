@@ -437,8 +437,8 @@ void FlipSolver::step()
     }
     m_stats.endStage(DECOMPOSITION);
 
-    m_pressureSolver.setTolerance(1e-4);
-    densityCorrection();
+    //m_pressureSolver.setTolerance(1e-4);
+    //densityCorrection();
     m_stats.endStage(DENSITY);
 
     m_markerParticles.pruneParticles();
