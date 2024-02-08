@@ -495,6 +495,13 @@ bool LiquidRenderApp::renderControlsPanel()
     }
     ImGui::EndDisabled();
 
+    ImGui::BeginDisabled(m_simStepsLeft == 0);
+    if(ImGui::Button("Stop"))
+    {
+        m_simStepsLeft = 0;
+    }
+    ImGui::EndDisabled();
+
     if(m_simStepsLeft > 0)
     {
         m_solver->stepFrame();
@@ -542,7 +549,8 @@ void LiquidRenderApp::renderStatsPanel()
     SolverStage stage = static_cast<SolverStage>(0);
     do
     {
-        ImGui::Text(stepStageToString(stage).c_str(), m_lastFrameStats.timings().at(stage));
+        ImGui::Text(stepStageToString(stage).c_str(), m_lastFrameStats.timings().at(stage),
+                    (m_lastFrameStats.timings().at(stage)/m_lastFrameStats.frameTime()) * 100.f);
     }while(nextEnum<SolverStage,SOLVER_STAGE_COUNT>(stage));
     ImGui::End();
 }
@@ -609,40 +617,40 @@ const std::string LiquidRenderApp::stepStageToString(SolverStage stage) const
     switch(stage)
     {
     case ADVECTION:
-        return "Advection: %.3f ms";
+        return "Advection: %.3f ms %.1f%%";
         break;
     case DECOMPOSITION:
-        return "Decomposition: %.3f ms";
+        return "Decomposition: %.3f ms %.1f%%";
         break;
     case DENSITY:
-        return "Density correction: %.3f ms";
+        return "Density correction: %.3f ms %.1f%%";
         break;
     case PARTICLE_REBIN:
-        return "Particle rebinning: %.3f ms";
+        return "Particle rebinning: %.3f ms %.1f%%";
         break;
     case PARTICLE_TO_GRID:
-        return "Particle to grid transfer: %.3f ms";
+        return "Particle to grid transfer: %.3f ms %.1f%%";
         break;
     case GRID_UPDATE:
-        return "Grid update: %.3f ms";
+        return "Grid update: %.3f ms %.1f%%";
         break;
     case AFTER_TRANSFER:
-        return "After particle transfer: %.3f ms";
+        return "After particle transfer: %.3f ms %.1f%%";
         break;
     case PRESSURE:
-        return "Pressure update: %.3f ms";
+        return "Pressure update: %.3f ms %.1f%%";
         break;
     case VISCOSITY:
-        return "Viscosity update: %.3f ms";
+        return "Viscosity update: %.3f ms %.1f%%";
         break;
     case REPRESSURE:
-        return "Secondary pressure update: %.3f ms";
+        return "Secondary pressure update: %.3f ms %.1f%%";
         break;
     case PARTICLE_UPDATE:
-        return "Particle values update: %.3f ms";
+        return "Particle values update: %.3f ms %.1f%%";
         break;
     case PARTICLE_RESEED:
-        return "Particle reseeding: %.3f ms";
+        return "Particle reseeding: %.3f ms %.1f%%";
         break;
     case SOLVER_STAGE_COUNT:
     default:
