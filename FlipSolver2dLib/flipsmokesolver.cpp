@@ -71,27 +71,33 @@ void FlipSmokeSolver::centeredParamsToGrid()
 
 void FlipSmokeSolver::calcPressureRhs(Eigen::VectorXd &rhs)
 {
-    double scale = 1.0/m_dx;
+    const double scale = 1.0/m_dx;
 
-   for (int i = 0; i < m_sizeI; i++)
-   {
-       for (int j = 0; j < m_sizeJ; j++)
-       {
-           if (!m_materialGrid.isSolid(i,j))
-           {
-               rhs[linearIndex(i,j)] = -scale * divergenceAt(i,j);
+    for (int i = 0; i < m_sizeI; i++)
+    {
+        for (int j = 0; j < m_sizeJ; j++)
+        {
+            if (!m_materialGrid.isSolid(i,j))
+            {
+                double val = -scale * divergenceAt(i,j);
 
-               rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i-1,j) *
-                                       scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
-               rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i+1,j) *
-                                       scale * static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - 0);
-               rhs[linearIndex(i,j)] -= m_materialGrid.isSolid(i,j-1) *
-                                       scale * static_cast<double>(m_fluidVelocityGrid.v(i,j) - 0);
-               rhs[linearIndex(i,j)] += m_materialGrid.isSolid(i,j+1) *
-                                       scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0);
-           }
-       }
-   }
+                val -= m_materialGrid.isSolid(i-1,j) *
+                       scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
+                val += m_materialGrid.isSolid(i+1,j) *
+                       scale * static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - 0);
+                val -= m_materialGrid.isSolid(i,j-1) *
+                       scale * static_cast<double>(m_fluidVelocityGrid.v(i,j) - 0);
+                val += m_materialGrid.isSolid(i,j+1) *
+                       scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0);
+
+                rhs.coeffRef(linearIndex(i,j)) = val;
+            }
+            else
+            {
+                rhs.coeffRef(linearIndex(i,j)) = 0.0;
+            }
+        }
+    }
 }
 
 void FlipSmokeSolver::particleUpdate()
