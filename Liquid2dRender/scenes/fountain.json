@@ -5,7 +5,7 @@
     "domainSizeJ": 75,
     "resolution": 128,
     "fps": 30,
-    "scale": 1,
+    "scale": 0.1,
     "maxSubsteps": 10,
     "seed": 0,
     "particlesPerCell": 4,
@@ -45,7 +45,7 @@
         {
         "type": "source",
         "viscosity": 0,
-        "velocity": [-20,0],
+        "velocity": [-7,0],
         "verts": [
           [25,34],
           [25,36],

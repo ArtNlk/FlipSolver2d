@@ -408,6 +408,13 @@ void LiquidRenderApp::render()
     ImGui::NewFrame();
 
     //ImGui::ShowDemoWindow();
+    static bool firstUpdate = true;
+    if(firstUpdate)
+    {
+        m_fluidRenderer.update();
+        m_fluidRenderer.render();
+        firstUpdate = false;
+    }
 
     const bool update = renderControlsPanel();
     renderSceneViewPanel(update);
@@ -436,11 +443,17 @@ void LiquidRenderApp::renderSceneViewPanel(bool update)
         m_fluidRenderer.render();
     }
 
-    ImVec2 size = ImGui::GetContentRegionAvail();
-    float ratio = m_fluidRenderer.textureWidth() / m_fluidRenderer.textureHeight();
-    size.x = size.y * ratio;
+    ImVec2 availSize = ImGui::GetContentRegionAvail();
+    ImVec2 fluidSize = ImVec2(m_solver->gridSizeJ(),m_solver->gridSizeI());
+    float scaleX = availSize.x/fluidSize.x;
+    float scaleY = availSize.y/fluidSize.y;
+    float scale = std::min(scaleX, scaleY);
+    ImVec2 renderSize(fluidSize.x*scale,fluidSize.y*scale);
+
+    m_fluidRenderer.resizeTexture(renderSize.x,renderSize.y);
+
     ImGui::Image((void*)(intptr_t)m_fluidRenderer.renderTexture(),
-                 size,
+                 renderSize,
                  ImVec2(0,1),ImVec2(1,0));
 
     ImGui::End();

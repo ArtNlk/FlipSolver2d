@@ -467,9 +467,13 @@ unsigned int FluidRenderer::renderTexture()
 
 void FluidRenderer::resizeTexture(int width, int height)
 {
-    m_textureHeight = height;
-    m_textureWidth = width;
-    setupOffscreenBuffer();
+    if(m_textureHeight != height || m_textureWidth != width)
+    {
+        m_textureHeight = height;
+        m_textureWidth = width;
+        setupOffscreenBuffer();
+        render();
+    }
 }
 
 float FluidRenderer::fluidGridAspect()

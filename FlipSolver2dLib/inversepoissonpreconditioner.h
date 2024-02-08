@@ -74,6 +74,7 @@ public:
         m_mat = m_mat * m_mat.transpose();
 
         m_info = Eigen::Success;
+        m_factorizationIsOk = true;
         return;
     }
 
@@ -81,6 +82,7 @@ public:
     void compute(const MatrixType& mat)
     {
         factorize(mat);
+        m_isInitialized = true;
     }
 
     // internal
