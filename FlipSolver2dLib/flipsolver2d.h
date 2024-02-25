@@ -25,6 +25,8 @@
 
 enum SimulationMethod : char {SIMULATION_LIQUID, SIMULATION_SMOKE, SIMULATION_FIRE, SIMULATION_NBFLIP};
 
+enum ParameterHandlingMethod : char {PARTICLE, HYBRID, GRID};
+
 struct FlipSolverParameters
 {
     double fluidDensity;
@@ -46,6 +48,7 @@ struct FlipSolverParameters
     float sceneScale;
     bool viscosityEnabled;
     SimulationMethod simulationMethod;
+    ParameterHandlingMethod parameterHandlingMethod;
 };
 
 struct PairHash {
@@ -239,6 +242,10 @@ public:
 
     virtual void initAdditionalParameters();
 
+    void eulerAdvectionThread(Range range,
+                              const Grid2d<float> &inputGrid,
+                              Grid2d<float> &outputGrid);
+
 protected:
 
     virtual double divergenceAt(int i, int j);
@@ -256,6 +263,8 @@ protected:
     void applyViscosity();
 
     virtual void advect();
+
+    virtual void eulerAdvectParameters(){};
 
     void densityCorrection();
 
@@ -303,7 +312,9 @@ protected:
 
     void applyPressureThreadV(Range range,const Eigen::VectorXd &pressures);
     
-    Vertex rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid);
+    Vertex rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid, float dt);
+
+    virtual void gridUpdate();
 
     virtual void particleToGrid();
 
@@ -380,6 +391,7 @@ protected:
     double m_projectTolerance;
     bool m_viscosityEnabled;
     SimulationMethod m_simulationMethod;
+    ParameterHandlingMethod m_parameterHandlingMethod;
     SolverTimeStats m_stats;
 
     //using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;

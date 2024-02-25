@@ -234,6 +234,21 @@ void LiquidRenderApp::populateFlipSolverParamsFromJson(FlipSolverParameters *p, 
         p->gridSizeI = (static_cast<float>(p->domainSizeI) /
                     static_cast<float>(p->domainSizeJ)) * p->resolution;
     }
+
+    std::string parameterHandling = tryGetValue(settingsJson,"parameterHandlingMethod",std::string("particle"));
+    if(parameterHandling == "particle")
+    {
+        p->parameterHandlingMethod = ParameterHandlingMethod::PARTICLE;
+    }
+    if(parameterHandling == "hybrid")
+    {
+        p->parameterHandlingMethod = ParameterHandlingMethod::HYBRID;
+    }
+    if(parameterHandling == "grid")
+    {
+        p->parameterHandlingMethod = ParameterHandlingMethod::GRID;
+    }
+
     std::string simTypeName = settingsJson["simType"].get<std::string>();
     p->simulationMethod = simMethodFromName(simTypeName);
 }
@@ -521,16 +536,16 @@ bool LiquidRenderApp::renderControlsPanel()
 
     ImGui::SeparatorText("Render control");
 
-    gridRenderCombo();
-    vectorRenderCombo();
-    particleRenderCombo();
+    update |= gridRenderCombo();
+    update |= vectorRenderCombo();
+    update |= particleRenderCombo();
 
-    ImGui::Checkbox("Vectors enabled",&m_fluidRenderer.vectorRenderEnabled());
-    ImGui::Checkbox("Particles enabled",&m_fluidRenderer.particlesEnabled());
-    ImGui::Checkbox("Geometry outline enabled",&m_fluidRenderer.geometryEnabled());
-    ImGui::Checkbox("Sinks and sources enabled",&m_fluidRenderer.extrasEnabled());
+    update |= ImGui::Checkbox("Vectors enabled",&m_fluidRenderer.vectorRenderEnabled());
+    update |= ImGui::Checkbox("Particles enabled",&m_fluidRenderer.particlesEnabled());
+    update |= ImGui::Checkbox("Geometry outline enabled",&m_fluidRenderer.geometryEnabled());
+    update |= ImGui::Checkbox("Sinks and sources enabled",&m_fluidRenderer.extrasEnabled());
 
-    ImGui::InputInt("Particle size",&m_fluidRenderer.particleSize(),1,10);
+    update |= ImGui::InputInt("Particle size",&m_fluidRenderer.particleSize(),1,10);
     m_fluidRenderer.particleSize() = std::clamp(m_fluidRenderer.particleSize(),1,1000000000);
 
     ImGui::End();
@@ -555,8 +570,9 @@ void LiquidRenderApp::renderStatsPanel()
     ImGui::End();
 }
 
-void LiquidRenderApp::gridRenderCombo()
+bool LiquidRenderApp::gridRenderCombo()
 {
+    bool updated = false;
     if (ImGui::BeginCombo("Grid render mode", m_fluidRenderer.currentFluidRenderModeName().c_str()))
     {
         FluidRenderMode fluidMode = static_cast<FluidRenderMode>(0);
@@ -567,15 +583,18 @@ void LiquidRenderApp::gridRenderCombo()
                                   m_fluidRenderer.gridRenderMode() == fluidMode))
             {
                 m_fluidRenderer.setRenderMode(fluidMode);
+                updated = true;
             }
         }while(nextEnum<FluidRenderMode,GRID_RENDER_ITER_END>(fluidMode));
 
         ImGui::EndCombo();
     }
+    return updated;
 }
 
-void LiquidRenderApp::vectorRenderCombo()
+bool LiquidRenderApp::vectorRenderCombo()
 {
+    bool updated = false;
     if (ImGui::BeginCombo("Vector render mode", m_fluidRenderer.currentVectorRenderModeName().c_str()))
     {
         VectorRenderMode vectorMode = static_cast<VectorRenderMode>(0);
@@ -586,15 +605,18 @@ void LiquidRenderApp::vectorRenderCombo()
                                   m_fluidRenderer.vectorRenderMode() == vectorMode))
             {
                 m_fluidRenderer.vectorRenderMode() = vectorMode;
+                updated = true;
             }
         }while(nextEnum<VectorRenderMode,VECTOR_RENDER_ITER_END>(vectorMode));
 
         ImGui::EndCombo();
     }
+    return updated;
 }
 
-void LiquidRenderApp::particleRenderCombo()
+bool LiquidRenderApp::particleRenderCombo()
 {
+    bool updated = false;
     if (ImGui::BeginCombo("Particle render mode", m_fluidRenderer.currentParticleRenderModeName().c_str()))
     {
         ParticleRenderMode particleMode = static_cast<ParticleRenderMode>(0);
@@ -605,11 +627,13 @@ void LiquidRenderApp::particleRenderCombo()
                                   m_fluidRenderer.particleRenderMode() == particleMode))
             {
                 m_fluidRenderer.particleRenderMode() = particleMode;
+                updated = true;
             }
         }while(nextEnum<ParticleRenderMode,PARTICLE_RENDER_ITER_END>(particleMode));
 
         ImGui::EndCombo();
     }
+    return updated;
 }
 
 const std::string LiquidRenderApp::stepStageToString(SolverStage stage) const

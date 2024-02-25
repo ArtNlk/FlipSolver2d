@@ -58,9 +58,9 @@ protected:
     bool renderControlsPanel();
     void renderStatsPanel();
 
-    void gridRenderCombo();
-    void vectorRenderCombo();
-    void particleRenderCombo();
+    bool gridRenderCombo();
+    bool vectorRenderCombo();
+    bool particleRenderCombo();
 
     const std::string stepStageToString(SolverStage stage) const;
 

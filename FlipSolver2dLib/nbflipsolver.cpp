@@ -34,18 +34,11 @@ void NBFlipSolver::step()
     particleToGrid();
     m_fluidVelocityGrid.extrapolate(10);
     m_stats.endStage(PARTICLE_TO_GRID);
-    m_savedFluidVelocityGrid = m_fluidVelocityGrid;
 
-    updateSdf();
-    //updateLinearFluidViscosityMapping();
-    extrapolateLevelsetOutside(m_fluidSdf);
-    afterTransfer();
-    extrapolateLevelsetInside(m_fluidSdf);
-    m_stats.endStage(AFTER_TRANSFER);
+    gridUpdate();
 
-    updateMaterials();
-    applyBodyForces();
     m_stats.endStage(GRID_UPDATE);
+    m_savedFluidVelocityGrid = m_fluidVelocityGrid;
 
     m_pressureMatrix = getPressureProjectionMatrix();
     m_pressureSolver.compute(m_pressureMatrix);
@@ -89,22 +82,22 @@ void NBFlipSolver::advect()
     for(Range r : rangesU)
     {
         ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
-                                 offsetU,std::ref(m_fluidVelocityGrid.velocityGridU()), std::ref(advectedU));
+                                 std::ref(m_fluidVelocityGrid.velocityGridU()), std::ref(advectedU));
     }
     for(Range r : rangesV)
     {
         ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
-                                 offsetV,std::ref(m_fluidVelocityGrid.velocityGridV()), std::ref(advectedV));
+                                 std::ref(m_fluidVelocityGrid.velocityGridV()), std::ref(advectedV));
     }
     for(Range r : rangesSdf)
     {
         ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
-                                 offsetCentered,std::ref(m_fluidSdf), std::ref(m_advectedSdf));
+                                 std::ref(m_fluidSdf), std::ref(m_advectedSdf));
     }
     for(Range r : rangesSdf)
     {
         ThreadPool::i()->enqueue(&NBFlipSolver::eulerAdvectionThread,this,r,
-                                 offsetCentered,std::ref(m_viscosityGrid), std::ref(advectedViscosity));
+                                 std::ref(m_viscosityGrid), std::ref(advectedViscosity));
     }
     ThreadPool::i()->wait();
 
@@ -271,16 +264,18 @@ void NBFlipSolver::firstFrameInit()
     initialFluidSeed();
 }
 
-void NBFlipSolver::eulerAdvectionThread(Range range, Vertex offset, const Grid2d<float> &inputGrid, Grid2d<float> &outputGrid)
+void NBFlipSolver::gridUpdate()
 {
-    std::vector<float>& dataOut = outputGrid.data();
-    for(int idx = range.start; idx < range.end; idx++)
-    {
-        Index2d i2d = outputGrid.index2d(idx);
-        Vertex currentPos = Vertex(i2d.i, i2d.j);
-        Vertex prevPos = inverseRk4Integrate(currentPos,m_fluidVelocityGrid);
-        dataOut[idx] = inputGrid.interpolateAt(prevPos);
-    }
+    updateSdf();
+    //updateLinearFluidViscosityMapping();
+    extrapolateLevelsetOutside(m_fluidSdf);
+
+    afterTransfer();
+    extrapolateLevelsetInside(m_fluidSdf);
+    m_stats.endStage(AFTER_TRANSFER);
+
+    updateMaterials();
+    applyBodyForces();
 }
 
 void NBFlipSolver::initialFluidSeed()

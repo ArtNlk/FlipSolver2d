@@ -13,6 +13,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(MEMORY_SANITIZE OFF)
 set(THREAD_SANITIZE OFF)
 set(ALL_WARNINGS OFF)
+set(POOL_SINGLE_THREAD OFF)
+
+if(POOL_SINGLE_THREAD)
+    add_compile_definitions(ENQUEUE_IS_RUN)
+endif()
 
 set(FLUID_ACCEL "sse") #sse, avx, avx2, avx512
 

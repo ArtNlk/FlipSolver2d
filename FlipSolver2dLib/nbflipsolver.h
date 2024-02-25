@@ -30,7 +30,7 @@ protected:
 
     void firstFrameInit() override;
 
-    void eulerAdvectionThread(Range range, Vertex offset, const Grid2d<float>& inputGrid, Grid2d<float>& outputGrid);
+    void gridUpdate() override;
 
     void initialFluidSeed();
 

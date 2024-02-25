@@ -1,6 +1,7 @@
 #include "flipsmokesolver.h"
 
 #include "flipsolver2d.h"
+#include "grid2d.h"
 #include "mathfuncs.h"
 
 #include <cmath>
@@ -198,6 +199,38 @@ void FlipSmokeSolver::reseedParticles()
             }
         }
     }
+}
+
+void FlipSmokeSolver::gridUpdate()
+{
+    particleToGrid();
+    m_stats.endStage(PARTICLE_TO_GRID);
+    updateSdf();
+    updateMaterials();
+}
+
+void FlipSmokeSolver::eulerAdvectParameters()
+{
+    Vertex offsetCentered(0.5f,0.5f);
+    Grid2d<float> advectedConcentration(m_sizeI, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetCentered);
+    Grid2d<float> advectedTemperature(m_sizeI, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetCentered);
+
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(advectedConcentration.data().size());
+    for(Range r : ranges)
+    {
+        ThreadPool::i()->enqueue(&FlipSolver::eulerAdvectionThread,this,r,
+                                 std::ref(m_smokeConcentration),std::ref(advectedConcentration));
+        ThreadPool::i()->enqueue(&FlipSolver::eulerAdvectionThread,this,r,
+                                 std::ref(m_temperature),std::ref(advectedTemperature));
+    }
+    ThreadPool::i()->wait();
+
+    m_smokeConcentration = advectedConcentration;
+    m_temperature = advectedTemperature;
+    // for(int i = 0; i < m_smokeConcentration.linearSize(); i++)
+    // {
+    //     m_testGrid.data().at(i) = m_smokeConcentration.data().at(i);
+    // }
 }
 
 void FlipSmokeSolver::applyPressuresToVelocityField(Eigen::VectorXd &pressures)

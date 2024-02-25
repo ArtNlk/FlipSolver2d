@@ -7,8 +7,6 @@
 #include <limits>
 #include <ostream>
 #include <queue>
-#include <thread>
-#include <type_traits>
 
 #include "grid2d.h"
 #include "index2d.h"
@@ -16,13 +14,9 @@
 #include "linearsolver.h"
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
-#include "inversepoissonpreconditioner.h"
 
-#include "dynamicmatrix.h"
-#include "logger.h"
 #include "mathfuncs.h"
 #include "threadpool.h"
-#include "staticmatrix.h"
 
 #include <Eigen/IterativeLinearSolvers>
 
@@ -66,7 +60,8 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_sceneScale(p->sceneScale),
     m_projectTolerance(1e-6),
     m_viscosityEnabled(p->viscosityEnabled),
-    m_simulationMethod(p->simulationMethod)
+    m_simulationMethod(p->simulationMethod),
+    m_parameterHandlingMethod(p->parameterHandlingMethod)
 {
     Eigen::initParallel();
     Eigen::setNbThreads(ThreadPool::i()->threadCount());
@@ -226,11 +221,16 @@ void FlipSolver::advect()
     }
     ThreadPool::i()->wait();
 
+    if(m_parameterHandlingMethod == GRID)
+    {
+        eulerAdvectParameters();
+    }
     //std::cout << "Advection done in max " << maxSubsteps << " substeps" << std::endl;
 }
 
 void FlipSolver::densityCorrection()
 {
+    m_pressureSolver.setTolerance(1e-4);
     updateDensityGrid();
 
     calcDensityCorrectionRhs(m_rhs);
@@ -364,7 +364,7 @@ void FlipSolver::advectThread(Range range)
     for(int i = range.start; i < range.end; i++)
     {
         Vertex& position = m_markerParticles.positions()[i];
-        position = rk4Integrate(position, m_fluidVelocityGrid);
+        position = rk4Integrate(position, m_fluidVelocityGrid, m_stepDt);
         if(m_solidSdf.interpolateAt(position.x(),position.y()) < 0.f)
         {
             position = m_solidSdf.closestSurfacePoint(position);
@@ -375,6 +375,19 @@ void FlipSolver::advectThread(Range range)
         {
             m_markerParticles.markForDeath(i);
         }
+    }
+}
+
+void FlipSolver::eulerAdvectionThread(Range range, const Grid2d<float> &inputGrid, Grid2d<float> &outputGrid)
+{
+    std::vector<float>& dataOut = outputGrid.data();
+    std::vector<int>& emitterIdx = m_emitterId.data();
+    for(int idx = range.start; idx < range.end; idx++)
+    {
+        Index2d i2d = outputGrid.index2d(idx);
+        Vertex currentPos = Vertex(i2d.i, i2d.j);
+        Vertex prevPos = rk4Integrate(currentPos,m_fluidVelocityGrid, -m_stepDt);
+        dataOut[idx] = inputGrid.interpolateAt(prevPos);
     }
 }
 
@@ -437,21 +450,14 @@ void FlipSolver::step()
     }
     m_stats.endStage(DECOMPOSITION);
 
-    //m_pressureSolver.setTolerance(1e-4);
-    //densityCorrection();
+    densityCorrection();
     m_stats.endStage(DENSITY);
 
     m_markerParticles.pruneParticles();
     m_markerParticles.rebinParticles();
     m_stats.endStage(PARTICLE_REBIN);
 
-    particleToGrid();
-    m_stats.endStage(PARTICLE_TO_GRID);
-
-    updateSdf();
-
-    //updateLinearFluidViscosityMapping();
-    updateMaterials();
+    gridUpdate();
     m_stats.endStage(GRID_UPDATE);
 
     afterTransfer();
@@ -1246,21 +1252,31 @@ void FlipSolver::applyPressureThreadV(Range range, const Eigen::VectorXd &pressu
     }
 }
 
-Vertex FlipSolver::rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid)
+Vertex FlipSolver::rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid, float dt)
 {
-    float factor = m_stepDt;
-    Vertex k1 = factor*grid.velocityAt(currentPosition);
-    Vertex k2 = factor*grid.velocityAt(currentPosition + 0.5f*k1);
-    Vertex k3 = factor*grid.velocityAt(currentPosition + 0.5f*k2);
-    Vertex k4 = factor*grid.velocityAt(currentPosition + k3);
+    Vertex k1 = dt*grid.velocityAt(currentPosition);
+    Vertex k2 = dt*grid.velocityAt(currentPosition + 0.5f*k1);
+    Vertex k3 = dt*grid.velocityAt(currentPosition + 0.5f*k2);
+    Vertex k4 = dt*grid.velocityAt(currentPosition + k3);
 
     return currentPosition + (1.0f/6.0f)*(k1 + 2.f*k2 + 2.f*k3 + k4);
+}
+
+void FlipSolver::gridUpdate()
+{
+    particleToGrid();
+    m_stats.endStage(PARTICLE_TO_GRID);
+    updateSdf();
+    updateMaterials();
 }
 
 void FlipSolver::particleToGrid()
 {
     particleVelocityToGrid();
-    centeredParamsToGrid();
+    if(m_parameterHandlingMethod != GRID)
+    {
+        centeredParamsToGrid();
+    }
 }
 
 void FlipSolver::applyBodyForces()

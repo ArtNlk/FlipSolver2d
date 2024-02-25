@@ -33,7 +33,7 @@ public:
     ~ThreadPool();
 
     static ThreadPool* i();
-
+#ifndef ENQUEUE_IS_RUN
     template<typename F, typename... Args>
     void enqueue(F&& f, Args&&... args)
     {
@@ -44,6 +44,13 @@ public:
 
         m_cv.notify_one();
     }
+#else
+    template<typename F, typename... Args>
+    void enqueue(F&& f, Args&&... args)
+    {
+        std::bind(std::forward<F>(f), std::forward<Args>(args)...)();
+    }
+#endif
 
     std::vector<Range> splitRange(size_t length,
                                   size_t minSize = 1, size_t jobsPerThread = 1);

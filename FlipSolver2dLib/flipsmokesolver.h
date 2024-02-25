@@ -39,6 +39,10 @@ protected:
 
     void reseedParticles() override;
 
+    void gridUpdate() override;
+
+    void eulerAdvectParameters() override;
+
     void applyPressuresToVelocityField(Eigen::VectorXd &pressures) override;
 
     void seedInitialFluid() override;

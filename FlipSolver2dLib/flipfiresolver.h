@@ -20,9 +20,11 @@ public:
 protected:
     void afterTransfer() override;
     void combustionUpdate();
-    void combustionUpdateThread(Range range);
+    void particleCombustionUpdateThread(Range range);
+    void gridCombustionUpdateThread(Range range);
     void reseedParticles() override;
     void particleUpdate() override;
+    void eulerAdvectParameters() override;
 
     void initAdditionalParameters() override;
 

@@ -14,7 +14,8 @@
     "concentrationDecayRate": 0.05,
     "buoyancyFactor": 1,
     "sootFactor": 0.5,
-    "globalAcceleration": [9.8,0]
+    "globalAcceleration": [9.8,0],
+    "parameterHandlingMethod": "grid"
   },
   "solver": {
     "objects": [
