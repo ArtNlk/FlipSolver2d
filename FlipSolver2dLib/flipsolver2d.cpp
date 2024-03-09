@@ -1078,6 +1078,10 @@ void FlipSolver::calcDensityCorrectionRhs(Eigen::VectorXd &rhs)
             {
                 rhs[linearIndex(i,j)] = scale * (1.0 - std::clamp(m_densityGrid.getAt(i,j) / m_fluidDensity,0.5,1.5));
             }
+            else
+            {
+                rhs[linearIndex(i,j)] = 0.0;
+            }
         }
     }
 }
