@@ -214,12 +214,21 @@ void FlipSolver::applyViscosity()
 void FlipSolver::advect()
 {
     std::vector<Range> ranges = ThreadPool::i()->splitRange(m_markerParticles.particleCount());
+    std::vector<std::vector<size_t>> rebinSets(ranges.size());
 
-    for(Range& range : ranges)
+    for(int i = 0; i < ranges.size(); i++)
     {
-        ThreadPool::i()->enqueue(&FlipSolver::advectThread,this,range);
+        ThreadPool::i()->enqueue(&FlipSolver::advectThread,this,ranges.at(i),std::ref(rebinSets.at(i)));
     }
     ThreadPool::i()->wait();
+
+    for(const std::vector<size_t>& rebinSet : rebinSets)
+    {
+        for(size_t idx : rebinSet)
+        {
+            m_markerParticles.scheduleRebin(idx);
+        }
+    }
 
     if(m_parameterHandlingMethod == GRID)
     {
@@ -359,11 +368,14 @@ void FlipSolver::adjustParticlesByDensityThread(Range r)
     }
 }
 
-void FlipSolver::advectThread(Range range)
+void FlipSolver::advectThread(Range range, std::vector<size_t> &rebinningSet)
 {
+    std::vector<float>& testValues = m_markerParticles.particleProperties<float>(m_testValuePropertyIndex);
+
     for(int i = range.start; i < range.end; i++)
     {
         Vertex& position = m_markerParticles.positions()[i];
+        const int oldBinIdx = m_markerParticles.gridToBinIdx(position);
         position = rk4Integrate(position, m_fluidVelocityGrid, m_stepDt);
         if(m_solidSdf.interpolateAt(position.x(),position.y()) < 0.f)
         {
@@ -371,9 +383,15 @@ void FlipSolver::advectThread(Range range)
         }
         int pI = simmath::integr(position.x());
         int pJ = simmath::integr(position.y());
+        //testValues[i] = false;
         if(!inBounds(pI,pJ) || m_materialGrid.isSink(pI,pJ))
         {
             m_markerParticles.markForDeath(i);
+        }
+        else if(m_markerParticles.gridToBinIdx(position) != oldBinIdx)
+        {
+            rebinningSet.push_back(i);
+            //testValues[i] = true;
         }
     }
 }
@@ -453,9 +471,41 @@ void FlipSolver::step()
     densityCorrection();
     m_stats.endStage(DENSITY);
 
-    m_markerParticles.pruneParticles();
+    // for (int pIndex = 0; pIndex < m_markerParticles.particleCount(); pIndex++)
+    // {
+    //     Vertex pos = m_markerParticles.particlePosition(pIndex);
+    //     int i = pos.x();
+    //     int j = pos.y();
+
+    //     if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+    //     {
+    //         m_markerParticles.markForDeath(pIndex);
+    //         m_fluidParticleCounts.at(i,j) -= 1;
+    //         //pIndex--;
+    //         continue;
+    //     }
+    // }
+
+    // m_markerParticles.pruneParticles();
+    std::vector<float>& testValues = m_markerParticles.particleProperties<float>(m_testValuePropertyIndex);
+    std::fill(testValues.begin(),testValues.end(),0.f);
     m_markerParticles.rebinParticles();
     m_stats.endStage(PARTICLE_REBIN);
+
+    // Grid2d<MarkerParticleSystem::ParticleBin>& bins = m_markerParticles.bins();
+    // for(int i = 0; i < bins.linearSize(); i++)
+    // {
+    //     MarkerParticleSystem::ParticleBin& bin = bins.data()[i];
+
+    //     for(size_t idx : bin)
+    //     {
+    //         if(testValues.at(idx) > 0.5f)
+    //         {
+    //             std::cout << "Double binned!" << std::endl;
+    //         }
+    //         testValues.at(idx) = 1.f;
+    //     }
+    // }
 
     gridUpdate();
     m_stats.endStage(GRID_UPDATE);
@@ -653,21 +703,6 @@ int FlipSolver::frameNumber()
 
 void FlipSolver::reseedParticles()
 {
-    for (int pIndex = 0; pIndex < m_markerParticles.particleCount(); pIndex++)
-    {
-        Vertex pos = m_markerParticles.particlePosition(pIndex);
-        int i = pos.x();
-        int j = pos.y();
-
-        if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
-        {
-            m_markerParticles.markForDeath(pIndex);
-            m_fluidParticleCounts.at(i,j) -= 1;
-            //pIndex--;
-            continue;
-        }
-    }
-
     std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
                                               (m_viscosityPropertyIndex);
 
@@ -695,8 +730,8 @@ void FlipSolver::reseedParticles()
                     //Vertex velocity = Vertex();
                     int emitterId = m_emitterId.at(i,j);
                     float viscosity = m_sources[emitterId].viscosity();
-                    size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
-                    particleViscosities[pIdx] = viscosity;
+                    //size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
+                    //particleViscosities[pIdx] = viscosity;
                 }
             }
 //            else if(m_fluidSdf.at(i,j) < -1.f)

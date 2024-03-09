@@ -14,6 +14,8 @@ MarkerParticleSystem::MarkerParticleSystem(int gridSizeI, int gridSizeJ, size_t 
     m_particlePositions(0),
     m_velocities(0),
     m_markedForDeath(0),
+    m_markedForRebin(0),
+    m_rebinningSet(0),
     m_properties(0)
 {
 
@@ -54,6 +56,7 @@ void MarkerParticleSystem::rebinParticles()
         ThreadPool::i()->enqueue(&MarkerParticleSystem::rebinParticlesThread,this,range,std::ref(sync));
     }
     ThreadPool::i()->wait();
+    m_rebinningSet.clear();
 }
 
 void MarkerParticleSystem::pruneParticles()
@@ -74,6 +77,7 @@ size_t MarkerParticleSystem::addMarkerParticle(Vertex position, Vertex velocity)
     binForGridPosition(m_particlePositions.back()).push_back(m_particlePositions.size() - 1);
     m_velocities.push_back(velocity);
     m_markedForDeath.push_back(false);
+    m_markedForRebin.push_back(false);
 
     for(VariantVector& v : m_properties)
     {
@@ -93,9 +97,17 @@ size_t MarkerParticleSystem::addMarkerParticle(Vertex position, Vertex velocity)
 
 void MarkerParticleSystem::eraseMarkerParticle(size_t index)
 {
+    for(size_t rebIdx : m_rebinningSet)
+    {
+        if(rebIdx == index)
+        {
+            std::cout << "Attempt to delete rebinned particle!" << std::endl;
+        }
+    }
     swapErase(m_particlePositions, index);
     swapErase(m_velocities, index);
     swapErase(m_markedForDeath, index);
+    swapErase(m_markedForRebin, index);
     for(VariantVector& v : m_properties)
     {
         switch(v.index())
@@ -118,6 +130,17 @@ void MarkerParticleSystem::markForDeath(size_t particleIndex)
 bool MarkerParticleSystem::markedForDeath(size_t particleIdx)
 {
     return m_markedForDeath.at(particleIdx);
+}
+
+void MarkerParticleSystem::scheduleRebin(size_t particleIdx)
+{
+    m_rebinningSet.push_back(particleIdx);
+    m_markedForRebin.at(particleIdx) = true;
+}
+
+bool MarkerParticleSystem::scheduledForRebin(size_t particleIdx)
+{
+    return m_markedForRebin[particleIdx];
 }
 
 Grid2d<MarkerParticleSystem::ParticleBin>& MarkerParticleSystem::bins()
@@ -235,16 +258,23 @@ void MarkerParticleSystem::rebinParticlesThread(Range r, std::latch &sync)
     for(int binIdx = r.start; binIdx < r.end; binIdx++)
     {
         ParticleBin& currentBin = m_particleBins.data()[binIdx];
-        std::vector<float>& testValues = std::get<std::vector<float>>(m_properties[0]);
-        currentBin.clear();
-        for(int particleIdx = 0; particleIdx < m_particlePositions.size(); particleIdx++)
+        for(size_t pIdx = 0; pIdx < currentBin.size(); pIdx++)
         {
-            int idx = gridToBinIdx(m_particlePositions[particleIdx]);
+            if(m_markedForRebin[currentBin[pIdx]])
+            {
+                m_markedForRebin[currentBin[pIdx]] = false;
+                swapErase(currentBin,pIdx);
+                pIdx--;
+            }
+        }
+        //currentBin.clear();
+        for(const size_t particleIndex : m_rebinningSet)
+        {
+            int idx = gridToBinIdx(m_particlePositions[particleIndex]);
 
             if(idx == binIdx)
             {
-                currentBin.push_back(particleIdx);
-                //testValues[particleIdx] = binIdx % 2 == 0;
+                currentBin.push_back(particleIndex);
             }
         }
     }

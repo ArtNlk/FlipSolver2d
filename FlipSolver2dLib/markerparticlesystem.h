@@ -63,6 +63,10 @@ public:
 
     bool markedForDeath(size_t particleIdx);
 
+    void scheduleRebin(size_t particleIdx);
+
+    bool scheduledForRebin(size_t particleIdx);
+
     Grid2d<ParticleBin>& bins();
 
     template<class T>
@@ -122,6 +126,8 @@ protected:
     std::vector<Vertex> m_particlePositions;
     std::vector<Vertex> m_velocities;
     std::vector<bool> m_markedForDeath;
+    std::vector<bool> m_markedForRebin;
+    std::vector<size_t> m_rebinningSet;
     std::vector<VariantVector> m_properties;
 };
 

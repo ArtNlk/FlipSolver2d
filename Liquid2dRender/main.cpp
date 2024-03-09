@@ -31,12 +31,16 @@ void handler(int sig) {
 }
 #endif
 
+#include <float.h>
+
 int main()
 {
 #ifdef __linux__
     signal(SIGSEGV, handler);
 //    feenableexcept(FE_DIVBYZERO);
 #endif
+    unsigned int current_word = 0;
+    _controlfp_s(&current_word, 0, _EM_INVALID);
     LiquidRenderApp app;
     app.init();
     app.run();
