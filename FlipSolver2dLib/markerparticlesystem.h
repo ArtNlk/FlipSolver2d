@@ -15,13 +15,17 @@
 
 struct MarkerParticle
 {
+    MarkerParticle(Vertex& pos, Vertex& vel) :
+        position(pos),
+        velocity(vel),
+        testValue(0.f),
+        markForDeath(false)
+    {
+
+    }
+
     Vertex position;
     Vertex velocity;
-    float viscosity;
-    float temperature;
-    float smokeConcentrartion;
-    float fuel;
-    FluidMaterial material = FluidMaterial::FLUID;
     float testValue = 0.f;
     bool markForDeath = false;
 };
@@ -29,7 +33,7 @@ struct MarkerParticle
 class MarkerParticleSystem
 {
 public:
-    using ParticleBin = std::vector<size_t>;
+    using ParticleBin = std::vector<MarkerParticle>;
     using VariantVector = std::variant<std::vector<float>>;
     enum ParticleAttributeType : size_t
     {
@@ -55,41 +59,9 @@ public:
 
     void pruneParticles();
 
-    size_t addMarkerParticle(Vertex position, Vertex velocity = Vertex());
-
-    void eraseMarkerParticle(size_t index);
-
-    void markForDeath(size_t particleIndex);
-
-    bool markedForDeath(size_t particleIdx);
-
-    void scheduleRebin(size_t particleIdx);
-
-    bool scheduledForRebin(size_t particleIdx);
+    void addMarkerParticle(Vertex position, Vertex velocity = Vertex());
 
     Grid2d<ParticleBin>& bins();
-
-    template<class T>
-    size_t addParticleProperty()
-    {
-        VariantVector v = std::vector<T>(m_particlePositions.size());
-        m_properties.push_back(v);
-        return m_properties.size() - 1;
-    }
-
-    Vertex& particlePosition(size_t index);
-
-    Vertex &particleVelocity(size_t index);
-
-    std::vector<Vertex>& positions();
-
-    std::vector<Vertex>& velocities();
-
-    template<class T>
-    std::vector<T>& particleProperties(size_t propertyIndex)
-    {
-        return std::get<std::vector<T>>(m_properties.at(propertyIndex));
-    }
 
     Index2d binIdxForIdx(Index2d idx);
 
@@ -100,8 +72,6 @@ public:
     std::array<int,9> binsForGridCell(int i, int j);
 
     std::array<int,9> rebinSetForBinIdx(Index2d idx);
-
-    size_t particleCount() const;
 
 protected:
 
@@ -123,12 +93,8 @@ protected:
     size_t m_binSize;
     LinearIndexable2d m_gridIndexer;
     Grid2d<ParticleBin> m_particleBins;
-    std::vector<Vertex> m_particlePositions;
-    std::vector<Vertex> m_velocities;
-    std::vector<bool> m_markedForDeath;
-    std::vector<bool> m_markedForRebin;
-    std::vector<size_t> m_rebinningSet;
-    std::vector<VariantVector> m_properties;
+    std::vector<MarkerParticle> m_rebinningSet;
+    //std::vector<VariantVector> m_properties;
 };
 
 #endif // MARKERPARTICLESYSTEM_H

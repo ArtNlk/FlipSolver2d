@@ -66,7 +66,7 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     Eigen::initParallel();
     Eigen::setNbThreads(ThreadPool::i()->threadCount());
     m_randEngine = std::mt19937(p->seed);
-    m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
+    //m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
     m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-2;
     m_projectPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
     m_densityPreconditioner = std::make_shared<IPPreconditioner>(*dynamic_cast<LinearIndexable2d*>(this));
