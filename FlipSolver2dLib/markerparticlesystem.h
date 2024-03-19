@@ -8,10 +8,8 @@
 #include "materialgrid.h"
 #include "threadpool.h"
 #include <array>
-#include <iterator>
 #include <variant>
 #include <vector>
-#include <latch>
 
 struct MarkerParticle
 {
@@ -26,17 +24,121 @@ struct MarkerParticle
     bool markForDeath = false;
 };
 
+template<class T>
+inline void swapErase(std::vector<T>& v, size_t index)
+{
+    std::swap<T>(v[index],v[v.size()-1]);
+    v.pop_back();
+}
+
+inline void swapErase(std::vector<bool>& v, size_t index)
+{
+    std::vector<bool>::swap(v[index],v[v.size()-1]);
+    v.pop_back();
+}
+
+template<class T>
+inline T swapPop(std::vector<T>& v, size_t index)
+{
+    std::swap<T>(v[index],v[v.size()-1]);
+    T val = v.back();
+    v.pop_back();
+    return val;
+}
+
+inline bool swapPop(std::vector<bool>& v, size_t index)
+{
+    std::vector<bool>::swap(v[index],v[v.size()-1]);
+    bool val = v.back();
+    v.pop_back();
+    return val;
+}
+
+class ParticleBin
+{
+public:
+    ParticleBin(size_t binIdx = std::numeric_limits<size_t>::max());
+
+    using VariantVector = std::variant<std::vector<float>>;
+
+    size_t addMarkerParticle(Vertex position, Vertex velocity = Vertex());
+
+    void eraseMarkerParticle(size_t index);
+
+    void markForDeath(size_t index);
+
+    bool markedForDeath(size_t index);
+
+    Vertex& particlePosition(size_t index);
+
+    Vertex& particleVelocity(size_t index);
+
+    void pruneParticles();
+
+    void rebinParticles(ParticleBin& rebinningSet);
+
+    void moveParticleToBin(ParticleBin& other, size_t idx);
+
+    void copyParticleToBin(ParticleBin& other, size_t idx);
+
+    void scheduleRebin(ParticleBin& rebinningSet, size_t idx);
+
+    void clear();
+
+    void setBinIndex(size_t index);
+
+    template<class T>
+    std::vector<T>& particleProperties(size_t propertyIndex)
+    {
+        return std::get<std::vector<T>>(m_properties.at(propertyIndex));
+    }
+
+    template<class T>
+    size_t addParticleProperty()
+    {
+        VariantVector v = std::vector<T>(m_particlePositions.size());
+        m_properties.push_back(v);
+        return m_properties.size() - 1;
+    }
+
+    size_t size() const
+    {
+        return m_particlePositions.size();
+    }
+
+    size_t binIdx() const
+    {
+        return m_binIdx;
+    }
+
+    std::vector<Vertex>& positions()
+    {
+        return m_particlePositions;
+    }
+
+    std::vector<Vertex>& velocities()
+    {
+        return m_velocities;
+    }
+
+protected:
+    std::vector<Vertex> m_particlePositions;
+    std::vector<Vertex> m_velocities;
+    std::vector<bool> m_markedForDeath;
+    std::vector<bool> m_markedForRebin;
+    std::vector<VariantVector> m_properties;
+    size_t m_binIdx;
+};
+
+enum ParticleAttributeType : size_t
+{
+    ATTR_FLOAT,
+    ATTR_INVALID = std::variant_npos
+};
+
 class MarkerParticleSystem
 {
 public:
-    using ParticleBin = std::vector<size_t>;
-    using VariantVector = std::variant<std::vector<float>>;
-    enum ParticleAttributeType : size_t
-    {
-        ATTR_FLOAT,
-        ATTR_INVALID = std::variant_npos
-    };
-
     MarkerParticleSystem(int gridSizeI, int gridSizeJ, size_t binSize);
 
     ParticleBin& binForGridIdx(int linIdx);
@@ -51,45 +153,30 @@ public:
     int gridToBinIdx(int linIdx);
     int gridToBinIdx(int i, int j);
 
-    void rebinParticles();
-
     void pruneParticles();
-
-    size_t addMarkerParticle(Vertex position, Vertex velocity = Vertex());
-
-    void eraseMarkerParticle(size_t index);
-
-    void markForDeath(size_t particleIndex);
-
-    bool markedForDeath(size_t particleIdx);
-
-    void scheduleRebin(size_t particleIdx);
-
-    bool scheduledForRebin(size_t particleIdx);
 
     Grid2d<ParticleBin>& bins();
 
     template<class T>
     size_t addParticleProperty()
     {
-        VariantVector v = std::vector<T>(m_particlePositions.size());
-        m_properties.push_back(v);
-        return m_properties.size() - 1;
+        for(auto& bin : m_particleBins.data())
+        {
+            bin.addParticleProperty<T>();
+        }
     }
 
-    Vertex& particlePosition(size_t index);
+    void addMarkerParticle(size_t binIdx, Vertex position, Vertex velocity);
 
-    Vertex &particleVelocity(size_t index);
+    void markForDeath(size_t binIdx, size_t particleIdx);
 
-    std::vector<Vertex>& positions();
+    void rebinParticles();
 
-    std::vector<Vertex>& velocities();
+    void scheduleRebin(size_t binIdx, size_t particleIdx);
 
-    template<class T>
-    std::vector<T>& particleProperties(size_t propertyIndex)
-    {
-        return std::get<std::vector<T>>(m_properties.at(propertyIndex));
-    }
+    std::vector<Vertex>& positions(size_t binIdx);
+
+    std::vector<Vertex>& velocities(size_t binIdx);
 
     Index2d binIdxForIdx(Index2d idx);
 
@@ -99,36 +186,17 @@ public:
 
     std::array<int,9> binsForGridCell(int i, int j);
 
-    std::array<int,9> rebinSetForBinIdx(Index2d idx);
-
     size_t particleCount() const;
 
 protected:
 
-    void rebinParticlesThread(Range r, std::latch& sync);
-
-    template<class T>
-    inline void swapErase(std::vector<T>& v, size_t index)
-    {
-        std::swap<T>(v[index],v[v.size()-1]);
-        v.pop_back();
-    }
-
-    inline void swapErase(std::vector<bool>& v, size_t index)
-    {
-        std::vector<bool>::swap(v[index],v[v.size()-1]);
-        v.pop_back();
-    }
+    void rebinParticlesThread(Range r);
 
     size_t m_binSize;
     LinearIndexable2d m_gridIndexer;
     Grid2d<ParticleBin> m_particleBins;
-    std::vector<Vertex> m_particlePositions;
-    std::vector<Vertex> m_velocities;
-    std::vector<bool> m_markedForDeath;
-    std::vector<bool> m_markedForRebin;
-    std::vector<size_t> m_rebinningSet;
-    std::vector<VariantVector> m_properties;
+
+    ParticleBin m_rebinningSet;
 };
 
 #endif // MARKERPARTICLESYSTEM_H

@@ -276,7 +276,7 @@ protected:
 
     void adjustParticlesByDensityThread(Range r);
 
-    void advectThread(Range range, std::vector<size_t>& rebinningSet);
+    void advectThread(Range range, std::vector<std::vector<size_t>> &rebinningSets);
 
     virtual void particleUpdate();
 

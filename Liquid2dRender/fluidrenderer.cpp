@@ -930,12 +930,16 @@ void FluidRenderer::reloadParticlesSolid()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
-    for(Vertex &pos : m_solver->markerParticles().positions())
+    for(ParticleBin& bin : m_solver->markerParticles().bins().data())
     {
-//        Color particleColor = particle.material == FluidMaterial::FLUID? m_markerParticleFluidColor :
-//                                                                         m_markerParticleAirColor;
-        addParticle(pos,m_markerParticleFluidColor);
+        for(Vertex &pos : bin.positions())
+        {
+    //        Color particleColor = particle.material == FluidMaterial::FLUID? m_markerParticleFluidColor :
+    //                                                                         m_markerParticleAirColor;
+            addParticle(pos,m_markerParticleFluidColor);
+        }
     }
+
     if(m_particleVerts.size() > oldParticlesSize)
     {
         setupParticleVerts();
@@ -950,11 +954,14 @@ void FluidRenderer::reloadParticlesVelocity()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
-    for(size_t idx = 0; idx < m_solver->markerParticles().particleCount(); idx++)
+    for(ParticleBin& bin : m_solver->markerParticles().bins().data())
     {
-        Vertex position = m_solver->markerParticles().positions()[idx];
-        Vertex velocity = m_solver->markerParticles().velocities()[idx];
-        addParticle(position,hueColorRamp(velocity.distFromZero() / m_velocityRangeMax * m_solver->dx()));
+        for(size_t idx = 0; idx < bin.size(); idx++)
+        {
+            Vertex position = bin.positions()[idx];
+            Vertex velocity = bin.velocities()[idx];
+            addParticle(position,hueColorRamp(velocity.distFromZero() / m_velocityRangeMax * m_solver->dx()));
+        }
     }
     if(m_particleVerts.size() > oldParticlesSize)
     {
@@ -970,14 +977,14 @@ void FluidRenderer::reloadParticlesFromTestValue()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
-    std::vector<float>& testValues = m_solver->markerParticles().particleProperties<float>(
-        m_solver->testValuePropertyIndex());
-    for(size_t idx = 0; idx < m_solver->markerParticles().particleCount(); idx++)
-    {
-        Vertex position = m_solver->markerParticles().positions()[idx];
-        Color pColor = Color(testValues[idx],testValues[idx],testValues[idx]);
-        addParticle(position,pColor);
-    }
+    // std::vector<float>& testValues = m_solver->markerParticles().particleProperties<float>(
+    //     m_solver->testValuePropertyIndex());
+    // for(size_t idx = 0; idx < m_solver->markerParticles().particleCount(); idx++)
+    // {
+    //     Vertex position = m_solver->markerParticles().positions()[idx];
+    //     Color pColor = Color(testValues[idx],testValues[idx],testValues[idx]);
+    //     addParticle(position,pColor);
+    // }
     if(m_particleVerts.size() > oldParticlesSize)
     {
         setupParticleVerts();

@@ -145,30 +145,30 @@ void NBFlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights
         {
             if(binIdx >= 0)
             {
-                for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
-                {
-                    Vertex position = m_markerParticles.particlePosition(particleIdx);
-//                    if(m_fluidSdf.lerpolateAt(position) < m_combinationBand)
-//                    {
-//                        continue;
-//                    }
-                    float weightU = simmath::quadraticBSpline(position.x() - static_cast<float>(i2d.i),
-                                                              position.y() - (static_cast<float>(i2d.j) + 0.5f));
+//                 for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
+//                 {
+//                     Vertex position = m_markerParticles.particlePosition(particleIdx);
+// //                    if(m_fluidSdf.lerpolateAt(position) < m_combinationBand)
+// //                    {
+// //                        continue;
+// //                    }
+//                     float weightU = simmath::quadraticBSpline(position.x() - static_cast<float>(i2d.i),
+//                                                               position.y() - (static_cast<float>(i2d.j) + 0.5f));
 
-                    float weightV = simmath::quadraticBSpline(position.x() - (static_cast<float>(i2d.i) + 0.5f),
-                                                              position.y() - static_cast<float>(i2d.j));
-                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
-                    {
-                        Vertex velocity = m_markerParticles.particleVelocity(particleIdx);
-                        uWeights.at(i2d.i,i2d.j) += weightU;
-                        m_fluidVelocityGrid.u(i2d.i,i2d.j) += weightU * (velocity.x());
-                        m_fluidVelocityGrid.setUValidity(i2d.i,i2d.j,true);
+//                     float weightV = simmath::quadraticBSpline(position.x() - (static_cast<float>(i2d.i) + 0.5f),
+//                                                               position.y() - static_cast<float>(i2d.j));
+//                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
+//                     {
+//                         Vertex velocity = m_markerParticles.particleVelocity(particleIdx);
+//                         uWeights.at(i2d.i,i2d.j) += weightU;
+//                         m_fluidVelocityGrid.u(i2d.i,i2d.j) += weightU * (velocity.x());
+//                         m_fluidVelocityGrid.setUValidity(i2d.i,i2d.j,true);
 
-                        vWeights.at(i2d.i,i2d.j) += weightV;
-                        m_fluidVelocityGrid.v(i2d.i,i2d.j) += weightV * (velocity.y());
-                        m_fluidVelocityGrid.setVValidity(i2d.i,i2d.j,true);
-                    }
-                }
+//                         vWeights.at(i2d.i,i2d.j) += weightV;
+//                         m_fluidVelocityGrid.v(i2d.i,i2d.j) += weightV * (velocity.y());
+//                         m_fluidVelocityGrid.setVValidity(i2d.i,i2d.j,true);
+//                     }
+//                 }
             }
         }
         if(m_fluidVelocityGrid.velocityGridU().inBounds(i2d))
@@ -184,30 +184,30 @@ void NBFlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights
 
 void NBFlipSolver::reseedParticles()
 {
-    for (int pIndex = 0; pIndex < m_markerParticles.particleCount(); pIndex++)
-    {
-        Vertex pos = m_markerParticles.particlePosition(pIndex);
-        int i = pos.x();
-        int j = pos.y();
-        float sdf = m_fluidSdf.lerpolateAt(pos);
-        if(!m_materialGrid.isSource(i,j) && sdf < m_narrowBand)
-        {
-            m_markerParticles.markForDeath(pIndex);
-            m_fluidParticleCounts.at(i,j) -= 1;
-            continue;
-        }
+    // for (int pIndex = 0; pIndex < m_markerParticles.particleCount(); pIndex++)
+    // {
+    //     Vertex pos = m_markerParticles.particlePosition(pIndex);
+    //     int i = pos.x();
+    //     int j = pos.y();
+    //     float sdf = m_fluidSdf.lerpolateAt(pos);
+    //     if(!m_materialGrid.isSource(i,j) && sdf < m_narrowBand)
+    //     {
+    //         //m_markerParticles.markForDeath(pIndex);
+    //         m_fluidParticleCounts.at(i,j) -= 1;
+    //         continue;
+    //     }
 
-        if((m_materialGrid.isSource(i,j) || sdf < m_resamplingBand)
-            && m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
-        {
-            m_markerParticles.markForDeath(pIndex);
-            m_fluidParticleCounts.at(i,j) -= 1;
-            continue;
-        }
-    }
+    //     if((m_materialGrid.isSource(i,j) || sdf < m_resamplingBand)
+    //         && m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+    //     {
+    //         //m_markerParticles.markForDeath(pIndex);
+    //         m_fluidParticleCounts.at(i,j) -= 1;
+    //         continue;
+    //     }
+    // }
 
-    std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
-                                              (m_viscosityPropertyIndex);
+    // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
+    //                                           (m_viscosityPropertyIndex);
 
     for (int i = 0; i < m_sizeI; i++)
     {
@@ -249,8 +249,8 @@ void NBFlipSolver::reseedParticles()
                     }
                     //float conc = m_sources[emitterId].concentrartion();
                     //float temp = m_sources[emitterId].temperature();
-                    size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
-                    particleViscosities[pIdx] = viscosity;
+                    // size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
+                    // particleViscosities[pIdx] = viscosity;
                 }
             }
         }
@@ -280,8 +280,8 @@ void NBFlipSolver::gridUpdate()
 
 void NBFlipSolver::initialFluidSeed()
 {
-    std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
-                                              (m_viscosityPropertyIndex);
+    // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
+    //                                           (m_viscosityPropertyIndex);
 
     for (int i = 0; i < m_sizeI; i++)
     {
@@ -314,8 +314,8 @@ void NBFlipSolver::initialFluidSeed()
                     viscosity = m_viscosityGrid.interpolateAt(pos);
                     //float conc = m_sources[emitterId].concentrartion();
                     //float temp = m_sources[emitterId].temperature();
-                    size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
-                    particleViscosities[pIdx] = viscosity;
+                    // size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
+                    // particleViscosities[pIdx] = viscosity;
                 }
             }
         }
@@ -481,8 +481,8 @@ void NBFlipSolver::centeredParamsToGrid()
 
 void NBFlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
 {
-    std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
-                                              (m_viscosityPropertyIndex);
+    // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
+    //                                           (m_viscosityPropertyIndex);
 
     for(size_t idx = r.start; idx < r.end; idx++)
     {
@@ -492,22 +492,22 @@ void NBFlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
         {
             if(binIdx >= 0)
             {
-                for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
-                {
-                    Vertex position = m_markerParticles.particlePosition(particleIdx);
-                    float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
-                                                                     position.y() - (i2d.j));
-                    if(std::abs(weightCentered) > 1e-6f)
-                    {
-                        cWeights.at(i2d.i,i2d.j) += weightCentered;
-                        if(!m_knownCenteredParams.at(i2d.i,i2d.j))
-                        {
-                            m_knownCenteredParams.at(i2d.i,i2d.j) = true;
-                            m_viscosityGrid.at(i2d) = 0.f;
-                        }
-                        m_viscosityGrid.at(i2d.i,i2d.j) += weightCentered * particleViscosities.at(particleIdx);
-                    }
-                }
+                // for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
+                // {
+                //     Vertex position = m_markerParticles.particlePosition(particleIdx);
+                //     float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
+                //                                                      position.y() - (i2d.j));
+                //     if(std::abs(weightCentered) > 1e-6f)
+                //     {
+                //         cWeights.at(i2d.i,i2d.j) += weightCentered;
+                //         if(!m_knownCenteredParams.at(i2d.i,i2d.j))
+                //         {
+                //             m_knownCenteredParams.at(i2d.i,i2d.j) = true;
+                //             m_viscosityGrid.at(i2d) = 0.f;
+                //         }
+                //         m_viscosityGrid.at(i2d.i,i2d.j) += weightCentered * particleViscosities.at(particleIdx);
+                //     }
+                // }
             }
         }
 

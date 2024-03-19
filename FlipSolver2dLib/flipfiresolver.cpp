@@ -57,27 +57,27 @@ void FlipFireSolver::combustionUpdate()
 
 void FlipFireSolver::particleCombustionUpdateThread(Range range)
 {
-    std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
-                                               (m_temperatureIndex);
-    std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
-                                                 (m_concentrationIndex);
-    std::vector<float>& particleFuels = m_markerParticles.particleProperties<float>
-                                        (m_fuelPropertyIndex);
-    std::vector<float>& testValues = m_markerParticles.particleProperties<float>
-                                        (m_testValuePropertyIndex);
+    // std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
+    //                                            (m_temperatureIndex);
+    // std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
+    //                                              (m_concentrationIndex);
+    // std::vector<float>& particleFuels = m_markerParticles.particleProperties<float>
+    //                                     (m_fuelPropertyIndex);
+    // std::vector<float>& testValues = m_markerParticles.particleProperties<float>
+    //                                     (m_testValuePropertyIndex);
 
-    for(int i = range.start; i < range.end; i++)
-    {
-        if(particleTemperatures.at(i) > m_ignitionTemperature && particleFuels.at(i) > 0.f)
-        {
-            float burntFuel = std::min(m_stepDt * m_burnRate,particleFuels.at(i));
-            particleFuels.at(i) -= burntFuel;
-            testValues.at(i) = particleFuels.at(i);
-            particleConcentrations.at(i) += m_smokeProportion * burntFuel;
-            particleTemperatures.at(i) += m_heatProportion * burntFuel;
-            //m_divergenceControl.data().at(i) -= m_divergenceProportion * burntFuel;
-        }
-    }
+    // for(int i = range.start; i < range.end; i++)
+    // {
+    //     if(particleTemperatures.at(i) > m_ignitionTemperature && particleFuels.at(i) > 0.f)
+    //     {
+    //         float burntFuel = std::min(m_stepDt * m_burnRate,particleFuels.at(i));
+    //         particleFuels.at(i) -= burntFuel;
+    //         testValues.at(i) = particleFuels.at(i);
+    //         particleConcentrations.at(i) += m_smokeProportion * burntFuel;
+    //         particleTemperatures.at(i) += m_heatProportion * burntFuel;
+    //         //m_divergenceControl.data().at(i) -= m_divergenceProportion * burntFuel;
+    //     }
+    // }
 }
 
 void FlipFireSolver::gridCombustionUpdateThread(Range range)
@@ -103,29 +103,29 @@ void FlipFireSolver::gridCombustionUpdateThread(Range range)
 
 void FlipFireSolver::reseedParticles()
 {
-    for (int pIndex = 0; pIndex < m_markerParticles.particleCount(); pIndex++)
-    {
-        Vertex pos = m_markerParticles.particlePosition(pIndex);
-        int i = pos.x();
-        int j = pos.y();
+    // for (int pIndex = 0; pIndex < m_markerParticles.particleCount(); pIndex++)
+    // {
+    //     Vertex pos = m_markerParticles.particlePosition(pIndex);
+    //     int i = pos.x();
+    //     int j = pos.y();
 
-        if(m_fluidParticleCounts.at(i,j) > 4*m_particlesPerCell)
-        {
-            m_markerParticles.markForDeath(pIndex);
-            m_fluidParticleCounts.at(i,j) -= 1;
-            //pIndex--;
-            continue;
-        }
-    }
+    //     if(m_fluidParticleCounts.at(i,j) > 4*m_particlesPerCell)
+    //     {
+    //         // m_markerParticles.markForDeath(pIndex);
+    //         m_fluidParticleCounts.at(i,j) -= 1;
+    //         //pIndex--;
+    //         continue;
+    //     }
+    // }
 
-    std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
-                                               (m_temperatureIndex);
+    // std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>
+    //                                            (m_temperatureIndex);
 
-    std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
-                                                 (m_concentrationIndex);
+    // std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float>
+    //                                              (m_concentrationIndex);
 
-    std::vector<float>& particleFuels = m_markerParticles.particleProperties<float>
-                                        (m_fuelPropertyIndex);
+    // std::vector<float>& particleFuels = m_markerParticles.particleProperties<float>
+    //                                     (m_fuelPropertyIndex);
 
     for (int i = 0; i < m_sizeI; i++)
     {
@@ -151,10 +151,10 @@ void FlipFireSolver::reseedParticles()
                     float conc = m_smokeConcentration.interpolateAt(pos);
                     float temp = m_temperature.interpolateAt(pos);
                     float fuel = m_fuel.interpolateAt(pos);
-                    size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
-                    particleTemperatures[pIdx] = temp;
-                    particleConcentrations[pIdx] = conc;
-                    particleFuels[pIdx] = fuel;
+                    // size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
+                    // particleTemperatures[pIdx] = temp;
+                    // particleConcentrations[pIdx] = conc;
+                    // particleFuels[pIdx] = fuel;
                     //testValues[pIdx] = temp / 1000.f;
                 }
             }
