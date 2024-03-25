@@ -214,19 +214,19 @@ void FlipSolver::applyViscosity()
 void FlipSolver::advect()
 {
     std::vector<Range> ranges = ThreadPool::i()->splitRange(m_markerParticles.bins().linearSize());
-    std::vector<std::vector<size_t>> rebinSets(m_markerParticles.bins().linearSize());
+    std::vector<std::vector<RebinRecord>> rebinSets(m_markerParticles.bins().linearSize());
 
     for(int i = 0; i < ranges.size(); i++)
     {
-        ThreadPool::i()->enqueue(&FlipSolver::advectThread,this,ranges.at(i),rebinSets);
+        ThreadPool::i()->enqueue(&FlipSolver::advectThread,this,ranges.at(i),std::ref(rebinSets));
     }
     ThreadPool::i()->wait();
 
     for(int binIdx = 0; binIdx < m_markerParticles.bins().linearSize(); binIdx++)
     {
-        for(size_t idx : rebinSets[binIdx])
+        for(RebinRecord r : rebinSets[binIdx])
         {
-            m_markerParticles.scheduleRebin(binIdx,idx);
+            m_markerParticles.scheduleRebin(binIdx,r);
         }
     }
 
@@ -375,13 +375,13 @@ void FlipSolver::adjustParticlesByDensityThread(Range r)
     }
 }
 
-void FlipSolver::advectThread(Range range, std::vector<std::vector<size_t>> &rebinningSets)
+void FlipSolver::advectThread(Range range, std::vector<std::vector<RebinRecord>> &rebinningSets)
 {
     //std::vector<float>& testValues = m_markerParticles.particleProperties<float>(m_testValuePropertyIndex);
 
     for(int binIdx = range.start; binIdx < range.end; binIdx++)
     {
-        std::vector<size_t>& rebinningSet = rebinningSets.at(binIdx);
+        std::vector<RebinRecord>& rebinningSet = rebinningSets.at(binIdx);
         std::vector<Vertex>& positions = m_markerParticles.binForBinIdx(binIdx).positions();
 
         for(int particleIdx = 0; particleIdx < positions.size(); particleIdx++)
@@ -396,13 +396,14 @@ void FlipSolver::advectThread(Range range, std::vector<std::vector<size_t>> &reb
             int pI = simmath::integr(position.x());
             int pJ = simmath::integr(position.y());
             //testValues[i] = false;
+            const int newBinIdx = m_markerParticles.gridToBinIdx(position);
             if(!inBounds(pI,pJ) || m_materialGrid.isSink(pI,pJ))
             {
                 m_markerParticles.markForDeath(binIdx,particleIdx);
             }
-            else if(m_markerParticles.gridToBinIdx(position) != oldBinIdx)
+            else if(newBinIdx != oldBinIdx)
             {
-                rebinningSet.push_back(binIdx);
+                rebinningSet.push_back(RebinRecord(particleIdx,newBinIdx));
                 //testValues[i] = true;
             }
         }
@@ -527,7 +528,6 @@ void FlipSolver::step()
 
     gridUpdate();
     m_stats.endStage(GRID_UPDATE);
-    return;
 
     afterTransfer();
     extrapolateLevelsetInside(m_fluidSdf);

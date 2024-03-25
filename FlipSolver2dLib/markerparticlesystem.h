@@ -54,6 +54,8 @@ inline bool swapPop(std::vector<bool>& v, size_t index)
     return val;
 }
 
+class RebinSet;
+
 class ParticleBin
 {
 public:
@@ -75,13 +77,13 @@ public:
 
     void pruneParticles();
 
-    void rebinParticles(ParticleBin& rebinningSet);
+    void rebinParticles(RebinSet &rebinningSet);
 
     void moveParticleToBin(ParticleBin& other, size_t idx);
 
     void copyParticleToBin(ParticleBin& other, size_t idx);
 
-    void scheduleRebin(ParticleBin& rebinningSet, size_t idx);
+    void scheduleRebin(RebinSet &rebinningSet, size_t particleIndex, size_t newBinIndex);
 
     void clear();
 
@@ -121,7 +123,13 @@ public:
         return m_velocities;
     }
 
+    std::vector<VariantVector>& properties()
+    {
+        return m_properties;
+    }
+
 protected:
+
     std::vector<Vertex> m_particlePositions;
     std::vector<Vertex> m_velocities;
     std::vector<bool> m_markedForDeath;
@@ -130,10 +138,40 @@ protected:
     size_t m_binIdx;
 };
 
+class RebinSet : public ParticleBin
+{
+public:
+    std::vector<size_t>& binIndexes()
+    {
+        return m_binIndexes;
+    }
+
+    size_t particleBinIdx(size_t particleIdx)
+    {
+        return m_binIndexes.at(particleIdx);
+    }
+
+    void clear()
+    {
+        ParticleBin::clear();
+
+        m_binIndexes.clear();
+    }
+
+protected:
+    std::vector<size_t> m_binIndexes;
+};
+
 enum ParticleAttributeType : size_t
 {
     ATTR_FLOAT,
     ATTR_INVALID = std::variant_npos
+};
+
+struct RebinRecord
+{
+    size_t particleIdx;
+    size_t newBinIdx;
 };
 
 class MarkerParticleSystem
@@ -164,6 +202,9 @@ public:
         {
             bin.addParticleProperty<T>();
         }
+        m_rebinningSet.addParticleProperty<T>();
+
+        return m_rebinningSet.properties().size() - 1;
     }
 
     void addMarkerParticle(size_t binIdx, Vertex position, Vertex velocity);
@@ -172,7 +213,7 @@ public:
 
     void rebinParticles();
 
-    void scheduleRebin(size_t binIdx, size_t particleIdx);
+    void scheduleRebin(size_t binIdx, RebinRecord r);
 
     std::vector<Vertex>& positions(size_t binIdx);
 
@@ -196,7 +237,7 @@ protected:
     LinearIndexable2d m_gridIndexer;
     Grid2d<ParticleBin> m_particleBins;
 
-    ParticleBin m_rebinningSet;
+    RebinSet m_rebinningSet;
 };
 
 #endif // MARKERPARTICLESYSTEM_H

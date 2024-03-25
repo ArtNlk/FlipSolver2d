@@ -930,14 +930,16 @@ void FluidRenderer::reloadParticlesSolid()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
+    int binIdx = 0;
     for(ParticleBin& bin : m_solver->markerParticles().bins().data())
     {
         for(Vertex &pos : bin.positions())
         {
     //        Color particleColor = particle.material == FluidMaterial::FLUID? m_markerParticleFluidColor :
     //                                                                         m_markerParticleAirColor;
-            addParticle(pos,m_markerParticleFluidColor);
+            addParticle(pos,binIdx % 2 == 0 ? m_markerParticleFluidColor : Color(255,0,0));
         }
+        binIdx++;
     }
 
     if(m_particleVerts.size() > oldParticlesSize)

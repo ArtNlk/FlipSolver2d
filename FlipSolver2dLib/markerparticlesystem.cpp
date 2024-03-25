@@ -57,9 +57,9 @@ void MarkerParticleSystem::rebinParticles()
     m_rebinningSet.clear();
 }
 
-void MarkerParticleSystem::scheduleRebin(size_t binIdx, size_t particleIdx)
+void MarkerParticleSystem::scheduleRebin(size_t binIdx, RebinRecord r)
 {
-    m_particleBins.data().at(binIdx).scheduleRebin(m_rebinningSet,particleIdx);
+    m_particleBins.data().at(binIdx).scheduleRebin(m_rebinningSet,r.particleIdx, r.newBinIdx);
 }
 
 void MarkerParticleSystem::pruneParticles()
@@ -77,7 +77,7 @@ Grid2d<ParticleBin>& MarkerParticleSystem::bins()
 
 void MarkerParticleSystem::addMarkerParticle(size_t binIdx, Vertex position, Vertex velocity)
 {
-    ASSERT(binIdx < m_bins.linearSize());
+    ASSERT(binIdx < m_particleBins.linearSize());
 
     m_particleBins.data().at(binIdx).addMarkerParticle(position, velocity);
 }
@@ -199,6 +199,8 @@ size_t ParticleBin::addMarkerParticle(Vertex position, Vertex velocity)
             break;
         }
     }
+
+    return m_particlePositions.size() - 1;
 }
 
 void ParticleBin::eraseMarkerParticle(size_t index)
@@ -238,7 +240,7 @@ Vertex &ParticleBin::particlePosition(size_t index)
 
 Vertex &ParticleBin::particleVelocity(size_t index)
 {
-    return m_particlePositions.at(index);
+    return m_velocities.at(index);
 }
 
 void ParticleBin::pruneParticles()
@@ -253,11 +255,11 @@ void ParticleBin::pruneParticles()
     }
 }
 
-void ParticleBin::rebinParticles(ParticleBin &rebinningSet)
+void ParticleBin::rebinParticles(RebinSet &rebinningSet)
 {
     for(size_t i = 0; i < rebinningSet.size(); i++)
     {
-        if(rebinningSet.binIdx() == m_binIdx)
+        if(rebinningSet.particleBinIdx(i) == m_binIdx)
         {
             rebinningSet.copyParticleToBin(*this, i);
         }
@@ -310,9 +312,31 @@ void ParticleBin::copyParticleToBin(ParticleBin &other, size_t idx)
     }
 }
 
-void ParticleBin::scheduleRebin(ParticleBin &rebinningSet, size_t idx)
+void ParticleBin::scheduleRebin(RebinSet &rebinningSet, size_t particleIndex, size_t newBinIndex)
 {
-    moveParticleToBin(rebinningSet, idx);
+    ASSERT(rebinningSet.m_properties.size() == m_properties.size());
+    rebinningSet.m_particlePositions.push_back(m_particlePositions.at(particleIndex));
+    rebinningSet.m_velocities.push_back(m_velocities.at(particleIndex));
+    rebinningSet.m_markedForDeath.push_back(m_markedForDeath.at(particleIndex));
+    rebinningSet.m_markedForRebin.push_back(m_markedForRebin.at(particleIndex));
+
+    rebinningSet.binIndexes().push_back(newBinIndex);
+
+    for(int i = 0; i < m_properties.size(); i++)
+    {
+        VariantVector& v = m_properties.at(i);
+        VariantVector& otherV = rebinningSet.m_properties.at(i);
+        switch(v.index())
+        {
+        case ParticleAttributeType::ATTR_FLOAT:
+            std::get<std::vector<float>>(otherV).push_back(std::get<std::vector<float>>(v).at(particleIndex));
+            break;
+
+        default:
+            break;
+        }
+    }
+    markForDeath(particleIndex);
 }
 
 void ParticleBin::clear()
