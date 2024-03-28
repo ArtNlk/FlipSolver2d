@@ -28,7 +28,7 @@ void NBFlipSolver::step()
     m_stats.endStage(ADVECTION);
     //m_testGrid = m_viscosityGrid;
 
-    m_markerParticles.pruneParticles();
+    pruneParticles();
     m_markerParticles.rebinParticles();
     m_stats.endStage(PARTICLE_REBIN);
     particleToGrid();

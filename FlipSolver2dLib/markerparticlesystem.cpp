@@ -62,14 +62,6 @@ void MarkerParticleSystem::scheduleRebin(size_t binIdx, RebinRecord r)
     m_particleBins.data().at(binIdx).scheduleRebin(m_rebinningSet,r.particleIdx, r.newBinIdx);
 }
 
-void MarkerParticleSystem::pruneParticles()
-{
-    for(ParticleBin& bin : m_particleBins.data())
-    {
-        bin.pruneParticles();
-    }
-}
-
 Grid2d<ParticleBin>& MarkerParticleSystem::bins()
 {
     return m_particleBins;

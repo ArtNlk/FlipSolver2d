@@ -247,6 +247,7 @@ public:
                               Grid2d<float> &outputGrid);
 
 protected:
+    void pruneParticles();
 
     virtual double divergenceAt(int i, int j);
 

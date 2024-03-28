@@ -191,8 +191,6 @@ public:
     int gridToBinIdx(int linIdx);
     int gridToBinIdx(int i, int j);
 
-    void pruneParticles();
-
     Grid2d<ParticleBin>& bins();
 
     template<class T>

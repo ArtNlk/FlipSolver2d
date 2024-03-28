@@ -423,6 +423,14 @@ void FlipSolver::eulerAdvectionThread(Range range, const Grid2d<float> &inputGri
     }
 }
 
+void FlipSolver::pruneParticles()
+{
+    for(ParticleBin& bin : m_markerParticles.bins().data())
+    {
+        bin.pruneParticles();
+    }
+}
+
 void FlipSolver::particleUpdate()
 {
     Grid2d<float>& prevU = m_savedFluidVelocityGrid.velocityGridU();
@@ -487,44 +495,13 @@ void FlipSolver::step()
     }
     m_stats.endStage(DECOMPOSITION);
 
-    //densityCorrection();
-    m_stats.endStage(DENSITY);
-
-    // for (int pIndex = 0; pIndex < m_markerParticles.particleCount(); pIndex++)
-    // {
-    //     Vertex pos = m_markerParticles.particlePosition(pIndex);
-    //     int i = pos.x();
-    //     int j = pos.y();
-
-    //     if(m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
-    //     {
-    //         m_markerParticles.markForDeath(pIndex);
-    //         m_fluidParticleCounts.at(i,j) -= 1;
-    //         //pIndex--;
-    //         continue;
-    //     }
-    // }
-
-    m_markerParticles.pruneParticles();
-    //std::vector<float>& testValues = m_markerParticles.particleProperties<float>(m_testValuePropertyIndex);
-    //std::fill(testValues.begin(),testValues.end(),0.f);
+    pruneParticles();
     m_markerParticles.rebinParticles();
     m_stats.endStage(PARTICLE_REBIN);
 
-    // Grid2d<MarkerParticleSystem::ParticleBin>& bins = m_markerParticles.bins();
-    // for(int i = 0; i < bins.linearSize(); i++)
-    // {
-    //     MarkerParticleSystem::ParticleBin& bin = bins.data()[i];
-
-    //     for(size_t idx : bin)
-    //     {
-    //         if(testValues.at(idx) > 0.5f)
-    //         {
-    //             std::cout << "Double binned!" << std::endl;
-    //         }
-    //         testValues.at(idx) = 1.f;
-    //     }
-    // }
+    //Assumption: particles are adjusted not enough to require rebinning
+    densityCorrection();
+    m_stats.endStage(DENSITY);
 
     gridUpdate();
     m_stats.endStage(GRID_UPDATE);
@@ -730,7 +707,7 @@ void FlipSolver::reseedParticles()
         for (int j = 0; j < m_sizeJ; j++)
         {
             int particleCount = m_fluidParticleCounts.at(i,j);
-            if(particleCount > 20)
+            if(particleCount > m_particlesPerCell*2)
             {
                 std::cout << "too many particles " << particleCount << " at " << i << ' ' << j;
             }
@@ -1165,6 +1142,13 @@ void FlipSolver::countParticles()
             int j = std::floor(position.y());
             if(i2d.i == i && i2d.j == j)
             {
+                if(m_fluidParticleCounts.at(i2d) >= 2*m_particlesPerCell)
+                {
+                    bin.eraseMarkerParticle(particleIdx);
+                    particleIdx--;
+                    continue;
+                }
+
                 m_fluidParticleCounts.at(i2d) += 1;
             }
 //        if(m_materialGrid.isSolid(i,j))
