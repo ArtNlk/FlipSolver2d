@@ -145,30 +145,32 @@ void NBFlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights
         {
             if(binIdx >= 0)
             {
-//                 for(size_t particleIdx : m_markerParticles.binForBinIdx(binIdx))
-//                 {
-//                     Vertex position = m_markerParticles.particlePosition(particleIdx);
-// //                    if(m_fluidSdf.lerpolateAt(position) < m_combinationBand)
-// //                    {
-// //                        continue;
-// //                    }
-//                     float weightU = simmath::quadraticBSpline(position.x() - static_cast<float>(i2d.i),
-//                                                               position.y() - (static_cast<float>(i2d.j) + 0.5f));
+                ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
+                for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
+                {
+                    Vertex position = currentBin.particlePosition(particleIdx);
+                    if(m_fluidSdf.lerpolateAt(position) < m_combinationBand)
+                    {
+                       continue;
+                    }
 
-//                     float weightV = simmath::quadraticBSpline(position.x() - (static_cast<float>(i2d.i) + 0.5f),
-//                                                               position.y() - static_cast<float>(i2d.j));
-//                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
-//                     {
-//                         Vertex velocity = m_markerParticles.particleVelocity(particleIdx);
-//                         uWeights.at(i2d.i,i2d.j) += weightU;
-//                         m_fluidVelocityGrid.u(i2d.i,i2d.j) += weightU * (velocity.x());
-//                         m_fluidVelocityGrid.setUValidity(i2d.i,i2d.j,true);
+                    float weightU = simmath::quadraticBSpline(position.x() - static_cast<float>(i2d.i),
+                                                              position.y() - (static_cast<float>(i2d.j) + 0.5f));
 
-//                         vWeights.at(i2d.i,i2d.j) += weightV;
-//                         m_fluidVelocityGrid.v(i2d.i,i2d.j) += weightV * (velocity.y());
-//                         m_fluidVelocityGrid.setVValidity(i2d.i,i2d.j,true);
-//                     }
-//                 }
+                    float weightV = simmath::quadraticBSpline(position.x() - (static_cast<float>(i2d.i) + 0.5f),
+                                                              position.y() - static_cast<float>(i2d.j));
+                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
+                    {
+                        Vertex velocity = currentBin.particleVelocity(particleIdx);
+                        uWeights.at(i2d.i,i2d.j) += weightU;
+                        m_fluidVelocityGrid.u(i2d.i,i2d.j) += weightU * (velocity.x());
+                        m_fluidVelocityGrid.setUValidity(i2d.i,i2d.j,true);
+
+                        vWeights.at(i2d.i,i2d.j) += weightV;
+                        m_fluidVelocityGrid.v(i2d.i,i2d.j) += weightV * (velocity.y());
+                        m_fluidVelocityGrid.setVValidity(i2d.i,i2d.j,true);
+                    }
+                }
             }
         }
         if(m_fluidVelocityGrid.velocityGridU().inBounds(i2d))
@@ -249,7 +251,7 @@ void NBFlipSolver::reseedParticles()
                     }
                     //float conc = m_sources[emitterId].concentrartion();
                     //float temp = m_sources[emitterId].temperature();
-                    // size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
+                    m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
                     // particleViscosities[pIdx] = viscosity;
                 }
             }
