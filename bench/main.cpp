@@ -7,15 +7,18 @@
 #include <random>
 #include <emmintrin.h>
 #include <smmintrin.h>
-#include <stdexcept>
 #include <thread>
 
 #ifdef FLUID_AVX2
 #include <immintrin.h>
 #endif
 
-const int gridSize = 4096;
+const int gridSize = 16384;
 const int innerRepCount = 100000;
+
+double eigenTime = 0.0;
+double customTime = 0.0;
+const int count = 100;
 
 struct MatCoeffs
 {
@@ -36,8 +39,8 @@ struct MatCoeffsIndexed
     std::array<double,5> vals;
 };
 
-void matmulEigen();
-void matmulCustom();
+Eigen::VectorXd matmulEigen();
+std::vector<double> matmulCustom();
 
 void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
 void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
@@ -49,16 +52,33 @@ int main()
 {
     Eigen::initParallel();
     Eigen::setNbThreads(std::thread::hardware_concurrency());
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < count; i++)
     {
         std::cout << "Run " << i << std::endl;
-        matmulEigen();
-        matmulCustom();
+        Eigen::VectorXd eigenVec = matmulEigen();
+        std::vector<double> customVec = matmulCustom();
+        std::cout << "Verifying eigen vs custom" << std::endl;
+        if(eigenVec.size() != customVec.size())
+        {
+            std::cout << "Size mismatch! Eigen vs custom: " << eigenVec.size() << ' ' << customVec.size() << std::endl;
+            return 0;
+        }
+
+        for(int i = 0; i < eigenVec.size(); i++)
+        {
+            if(eigenVec[i] - customVec[i] > 0.00001)
+            {
+                std::cout << "Value mismatch! Eigen vs custom: " << eigenVec[i] << ' ' << customVec[i] << std::endl;
+            }
+        }
     }
+    std::cout << "Average results over " << count << " runs" << std::endl;
+    std::cout << "Eigen vs custom: " << eigenTime/(double)count << ' ' << customTime/(double)count << std::endl;
+    std::cout << "Ratio: " << (customTime/(double)count) / (eigenTime/(double)count) << std::endl;
     return 0;
 }
 
-void matmulEigen()
+Eigen::VectorXd matmulEigen()
 {
     std::cout << "Eigen running on " << Eigen::nbThreads() << " threads" << std::endl;
     using std::chrono::high_resolution_clock;
@@ -97,9 +117,11 @@ void matmulEigen()
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms_double = t2 - t1;
     std::cout << "Eigen: "  << ms_double.count() << std::endl;
+    eigenTime += ms_double.count();
+    return out;
 }
 
-void matmulCustom()
+std::vector<double> matmulCustom()
 {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration_cast;
@@ -145,6 +167,7 @@ void matmulCustom()
     auto t2 = high_resolution_clock::now();
     duration<double, std::milli> ms_double = t2 - t1;
     std::cout << "Matmul scalar: "  << ms_double.count() << std::endl;
+    customTime += ms_double.count();
 
 //    t1 = high_resolution_clock::now();
 //    for(int i = 0; i < innerRepCount; i++)
@@ -178,6 +201,8 @@ void matmulCustom()
         }
     }
 #endif
+
+    return outScalar;
 }
 
 void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out)
