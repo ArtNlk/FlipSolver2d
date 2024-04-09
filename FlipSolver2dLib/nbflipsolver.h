@@ -32,6 +32,8 @@ protected:
 
     void gridUpdate() override;
 
+    void pruneNarrowBand();
+
     void initialFluidSeed();
 
     void fluidSdfFromInitialFluid();

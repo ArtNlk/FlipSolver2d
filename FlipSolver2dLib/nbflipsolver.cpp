@@ -33,12 +33,12 @@ void NBFlipSolver::step()
     m_stats.endStage(PARTICLE_REBIN);
     particleToGrid();
     m_fluidVelocityGrid.extrapolate(10);
+    m_savedFluidVelocityGrid = m_fluidVelocityGrid;
     m_stats.endStage(PARTICLE_TO_GRID);
 
     gridUpdate();
 
     m_stats.endStage(GRID_UPDATE);
-    m_savedFluidVelocityGrid = m_fluidVelocityGrid;
 
     m_pressureMatrix = getPressureProjectionMatrix();
     m_pressureSolver.compute(m_pressureMatrix);
@@ -66,6 +66,7 @@ void NBFlipSolver::step()
 void NBFlipSolver::advect()
 {
     FlipSolver::advect();
+    pruneNarrowBand();
 
     Vertex offsetU(0.f,0.5f);
     Vertex offsetV(0.5f,0.f);
@@ -149,10 +150,10 @@ void NBFlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights
                 for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
                 {
                     Vertex position = currentBin.particlePosition(particleIdx);
-                    if(m_fluidSdf.lerpolateAt(position) < m_combinationBand)
-                    {
-                       continue;
-                    }
+                    // if(m_fluidSdf.lerpolateAt(position) < m_combinationBand)
+                    // {
+                    //    continue;
+                    // }
 
                     float weightU = simmath::quadraticBSpline(position.x() - static_cast<float>(i2d.i),
                                                               position.y() - (static_cast<float>(i2d.j) + 0.5f));
@@ -278,6 +279,34 @@ void NBFlipSolver::gridUpdate()
 
     updateMaterials();
     applyBodyForces();
+}
+
+void NBFlipSolver::pruneNarrowBand()
+{
+    for(ParticleBin& bin : m_markerParticles.bins().data())
+    {
+        std::vector<Vertex>& positions = bin.positions();
+
+        for(int particleIdx = 0; particleIdx < positions.size(); particleIdx++)
+        {
+            Vertex& position = positions[particleIdx];
+            int i = position.x();
+            int j = position.y();
+            float sdf = m_fluidSdf.lerpolateAt(position);
+            if(!m_materialGrid.isSource(i,j) && sdf < m_narrowBand)
+            {
+                bin.markForDeath(particleIdx);
+                continue;
+            }
+
+            if((m_materialGrid.isSource(i,j) || sdf < m_resamplingBand)
+                && m_fluidParticleCounts.at(i,j) > 2*m_particlesPerCell)
+            {
+                bin.markForDeath(particleIdx);
+                continue;
+            }
+        }
+    }
 }
 
 void NBFlipSolver::initialFluidSeed()
