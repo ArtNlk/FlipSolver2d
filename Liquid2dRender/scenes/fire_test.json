@@ -3,7 +3,7 @@
     "simType": "fire",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 128,
+    "resolution": 256,
     "fps": 30,
     "maxSubsteps": 10,
     "seed": 0,
