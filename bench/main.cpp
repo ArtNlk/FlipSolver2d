@@ -18,7 +18,7 @@ const int innerRepCount = 100000;
 
 double eigenTime = 0.0;
 double customTime = 0.0;
-const int count = 100;
+const int count = 20;
 
 struct MatCoeffs
 {

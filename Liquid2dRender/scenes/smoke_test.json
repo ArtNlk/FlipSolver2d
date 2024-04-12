@@ -3,7 +3,7 @@
     "simType": "smoke",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 128,
+    "resolution": 256,
     "fps": 30,
     "maxSubsteps": 10,
     "seed": 0,
@@ -15,7 +15,7 @@
     "buoyancyFactor": 1,
     "sootFactor": 0.5,
     "globalAcceleration": [9.8,0],
-    "parameterHandlingMethod": "grid"
+    "parameterHandlingMethod": "particle"
   },
   "solver": {
     "objects": [
