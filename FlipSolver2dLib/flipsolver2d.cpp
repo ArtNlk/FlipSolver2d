@@ -118,34 +118,6 @@ void FlipSolver::project()
     applyPressuresToVelocityField(m_solverResult);
 }
 
-LinearSolver::MatElementProvider FlipSolver::getPressureMatrixElementProvider()
-{
-    return std::bind(&FlipSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
-}
-
-LinearSolver::SparseMatRowElements FlipSolver::getMatFreeElementForLinIdx(unsigned int i)
-{
-    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
-    std::array<int,4> neighbors = immidiateNeighbors(static_cast<int>(i));
-    std::vector<FluidMaterial>& materials = m_materialGrid.data();
-
-    LinearSolver::SparseMatRowElements output;
-    output.fill(std::pair<int, double>(0,0.0));
-    output[4].first = i;
-
-    if(fluidTest(materials[i]))
-    {
-        for(unsigned int i = 0; i < neighbors.size(); i++)
-        {
-            output[i].first = neighbors[i];
-            output[i].second = -scale * fluidTest(materials[neighbors[i]]);
-            output[4].second += scale * !solidTest(materials[neighbors[i]]);
-        }
-    }
-
-    return output;
-}
-
 void FlipSolver::applyViscosity()
 {
     //updateLinearFluidViscosityMapping();

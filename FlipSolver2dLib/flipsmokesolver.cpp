@@ -322,38 +322,6 @@ void FlipSmokeSolver::seedInitialFluid()
     }
 }
 
-LinearSolver::MatElementProvider FlipSmokeSolver::getPressureMatrixElementProvider()
-{
-    return std::bind(&FlipSmokeSolver::getMatFreeElementForLinIdx,this,std::placeholders::_1);
-}
-
-LinearSolver::SparseMatRowElements FlipSmokeSolver::getMatFreeElementForLinIdx(unsigned int i)
-{
-    double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
-    std::array<int,4> neighbors = immidiateNeighbors(static_cast<int>(i));
-    std::vector<FluidMaterial>& materials = m_materialGrid.data();
-
-    LinearSolver::SparseMatRowElements output;
-    output.fill(std::pair<int, double>(0,0.0));
-    output[4].first = i;
-
-    if(!solidTest(materials[i]))
-    {
-        for(unsigned int i = 0; i < neighbors.size(); i++)
-        {
-            if(neighbors[i] < 0 || neighbors[i] >= materials.size())
-            {
-                continue;
-            }
-            output[i].first = neighbors[i];
-            output[i].second = -scale * fluidTest(materials[neighbors[i]]);
-            output[4].second += scale * !solidTest(materials[neighbors[i]]);
-        }
-    }
-
-    return output;
-}
-
 Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSmokeSolver::getPressureProjectionMatrix()
 {
     Eigen::SparseMatrix<double,Eigen::RowMajor> output = Eigen::SparseMatrix<double>();

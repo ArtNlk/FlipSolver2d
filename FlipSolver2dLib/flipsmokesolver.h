@@ -46,10 +46,6 @@ protected:
     void applyPressuresToVelocityField(Eigen::VectorXd &pressures) override;
 
     void seedInitialFluid() override;
-
-    LinearSolver::MatElementProvider getPressureMatrixElementProvider() override;
-
-    LinearSolver::SparseMatRowElements getMatFreeElementForLinIdx(unsigned int i);
     
     Eigen::SparseMatrix<double,Eigen::RowMajor> getPressureProjectionMatrix() override;
 
