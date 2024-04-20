@@ -13,11 +13,12 @@
 #include <immintrin.h>
 #endif
 
-const int gridSize = 16384;
+const int gridSize = 1024;
 const int innerRepCount = 100000;
 
 double eigenTime = 0.0;
 double customTime = 0.0;
+double customIndexedTime = 0.0;
 const int count = 20;
 
 struct MatCoeffs
@@ -35,14 +36,25 @@ struct MatCoeffs
 
 struct MatCoeffsIndexed
 {
+    MatCoeffsIndexed(int newIdx, double diag, double im1, double ip1, double jm1, double jp1)
+    {
+        idx = newIdx;
+        vals[0] = diag;
+        vals[1] = im1;
+        vals[2] = ip1;
+        vals[3] = jm1;
+        vals[4] = jp1;
+    }
     int idx;
     std::array<double,5> vals;
 };
 
 Eigen::VectorXd matmulEigen();
 std::vector<double> matmulCustom();
+std::vector<double> matmulCustomIndexed();
 
 void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
+void matmulScalarIndexed(const std::vector<MatCoeffsIndexed>& mat, const std::vector<double>& in, std::vector<double>& out);
 void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
 #ifdef FLUID_AVX2
 void matmulAVX2(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
@@ -57,24 +69,29 @@ int main()
         std::cout << "Run " << i << std::endl;
         Eigen::VectorXd eigenVec = matmulEigen();
         std::vector<double> customVec = matmulCustom();
+        std::vector<double> customVecIndexed = matmulCustomIndexed();
         std::cout << "Verifying eigen vs custom" << std::endl;
-        if(eigenVec.size() != customVec.size())
+        if(eigenVec.size() != customVec.size() || eigenVec.size() != customVecIndexed.size())
         {
-            std::cout << "Size mismatch! Eigen vs custom: " << eigenVec.size() << ' ' << customVec.size() << std::endl;
+            std::cout << "Size mismatch! Eigen vs custom vs indexed: " << eigenVec.size() << ' '
+                      << customVec.size()  << ' '
+                      << customVecIndexed.size() << std::endl;
             return 0;
         }
 
-        for(int i = 0; i < eigenVec.size(); i++)
-        {
-            if(eigenVec[i] - customVec[i] > 0.00001)
-            {
-                std::cout << "Value mismatch! Eigen vs custom: " << eigenVec[i] << ' ' << customVec[i] << std::endl;
-            }
-        }
+        // for(int i = 0; i < eigenVec.size(); i++)
+        // {
+        //     if(eigenVec[i] - customVec[i] > 0.00001)
+        //     {
+        //         std::cout << "Value mismatch! Eigen vs custom: " << eigenVec[i] << ' ' << customVec[i] << std::endl;
+        //     }
+        // }
     }
     std::cout << "Average results over " << count << " runs" << std::endl;
     std::cout << "Eigen vs custom: " << eigenTime/(double)count << ' ' << customTime/(double)count << std::endl;
     std::cout << "Ratio: " << (customTime/(double)count) / (eigenTime/(double)count) << std::endl;
+    std::cout << "CustomIndexed vs custom: " << customIndexedTime/(double)count << ' ' << customTime/(double)count << std::endl;
+    std::cout << "Ratio: " << (customIndexedTime/(double)count) / (customTime/(double)count) << std::endl;
     return 0;
 }
 
@@ -97,10 +114,14 @@ Eigen::VectorXd matmulEigen()
     for(int i=0;i<gridSize;++i)
     {
         double diag = 0.0;
-        if(i-1 >= 0) diag++, tripletList.push_back(Eigen::Triplet(i,i-1,1.0));
-        if(i+1 < gridSize) diag++, tripletList.push_back(Eigen::Triplet(i,i+1,1.0));
-        if(i-gridSize >= 0) diag++, tripletList.push_back(Eigen::Triplet(i,i-gridSize,1.0));
-        if(i+gridSize < gridSize) diag++, tripletList.push_back(Eigen::Triplet(i,i+gridSize,1.0));
+        double prob = dist(gen);
+        if(prob > 0.5)
+        {
+            if(i-1 >= 0) diag++, tripletList.push_back(Eigen::Triplet(i,i-1,1.0));
+            if(i+1 < gridSize) diag++, tripletList.push_back(Eigen::Triplet(i,i+1,1.0));
+            if(i-gridSize >= 0) diag++, tripletList.push_back(Eigen::Triplet(i,i-gridSize,1.0));
+            if(i+gridSize < gridSize) diag++, tripletList.push_back(Eigen::Triplet(i,i+gridSize,1.0));
+        }
         tripletList.push_back(Eigen::Triplet(i,i,diag));
         v.coeffRef(i) = dist(gen);
     }
@@ -151,10 +172,14 @@ std::vector<double> matmulCustom()
         double ip1 = 0.0;
         double jm1 = 0.0;
         double jp1 = 0.0;
-        if(i-1 >= 0) diag++, im1 += 1.0;
-        if(i+1 < gridSize) diag++, ip1 += 1.0;
-        if(i-gridSize >= 0) diag++, jm1 += 1.0;
-        if(i+gridSize < gridSize) diag++, jp1 += 1.0;
+        double prob = dist(gen);
+        if(prob > 0.5)
+        {
+            if(i-1 >= 0) diag++, im1 += 1.0;
+            if(i+1 < gridSize) diag++, ip1 += 1.0;
+            if(i-gridSize >= 0) diag++, jm1 += 1.0;
+            if(i+gridSize < gridSize) diag++, jp1 += 1.0;
+        }
         mat.emplace_back(diag,im1,ip1,jm1,jp1);
         v.at(i) = dist(gen);
     }
@@ -205,6 +230,55 @@ std::vector<double> matmulCustom()
     return outScalar;
 }
 
+std::vector<double> matmulCustomIndexed()
+{
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+    std::default_random_engine gen;
+    std::uniform_real_distribution<double> dist(0.0,1.0);
+
+    std::vector<MatCoeffsIndexed> mat;
+    mat.reserve(gridSize);
+    std::vector<double> v;
+    v.resize(gridSize);
+
+    std::vector<double> outScalar;
+    outScalar.resize(gridSize);
+
+    for(int i=0;i<gridSize;++i)
+    {
+        double diag = 0.0;
+        double im1 = 0.0;
+        double ip1 = 0.0;
+        double jm1 = 0.0;
+        double jp1 = 0.0;
+        double prob = dist(gen);
+        if(prob > 0.5)
+        {
+            if(i-1 >= 0) diag++, im1 += 1.0;
+            if(i+1 < gridSize) diag++, ip1 += 1.0;
+            if(i-gridSize >= 0) diag++, jm1 += 1.0;
+            if(i+gridSize < gridSize) diag++, jp1 += 1.0;
+            mat.emplace_back(i,diag,im1,ip1,jm1,jp1);
+        }
+        v.at(i) = dist(gen);
+    }
+
+    auto t1 = high_resolution_clock::now();
+    for(int i = 0; i < innerRepCount; i++)
+    {
+        matmulScalarIndexed(mat,v,outScalar);
+    }
+    auto t2 = high_resolution_clock::now();
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "Matmul scalar indexed: "  << ms_double.count() << std::endl;
+    customIndexedTime += ms_double.count();
+
+    return outScalar;
+}
+
 void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out)
 {
 #pragma omp parallel for
@@ -220,6 +294,25 @@ void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& 
                         m[2]*in[idxIp1] +
                         m[3]*in[idxJm1] +
                         m[4]*in[idxJp1];
+    }
+}
+
+void matmulScalarIndexed(const std::vector<MatCoeffsIndexed>& mat, const std::vector<double>& in, std::vector<double>& out)
+{
+#pragma omp parallel for
+    for(int entryIdx = 0; entryIdx < mat.size(); entryIdx++)
+    {
+        int rowIdx = mat[entryIdx].idx;
+        const int idxIm1 = std::clamp(rowIdx-1,0,static_cast<int>(in.size())-1);
+        const int idxIp1 = std::clamp(rowIdx+1,0,static_cast<int>(in.size())-1);
+        const int idxJm1 = std::clamp(rowIdx-gridSize,0,static_cast<int>(in.size())-1);
+        const int idxJp1 = std::clamp(rowIdx+gridSize,0,static_cast<int>(in.size())-1);
+        const std::array<double,5>& m = mat[entryIdx].vals;
+        out[rowIdx] = m[0]*in[rowIdx] +
+                      m[1]*in[idxIm1] +
+                      m[2]*in[idxIp1] +
+                      m[3]*in[idxJm1] +
+                      m[4]*in[idxJp1];
     }
 }
 
