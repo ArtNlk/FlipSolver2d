@@ -23,13 +23,13 @@ LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth)
 
 }
 
-bool LinearSolver::solve(const StaticMatrix &matrixIn, std::vector<double> &result, const std::vector<double> &vec, std::shared_ptr<IPreconditioner> precond, IPreconditioner::PreconditionerData* data, int iterLimit, double tol)
+bool LinearSolver::solve(const StaticMatrix &matrixIn,
+                         std::vector<double> &result,
+                         const std::vector<double> &vec,
+                         int iterLimit,
+                         double tol)
 {
    result.assign(result.size(),0);
-   if(precond == nullptr)
-   {
-       return false;
-   }
    if (VOps::i().isZero(vec))
    {
        std::cout << "Solver skipped zeros vector" << '\n';
@@ -65,10 +65,9 @@ bool LinearSolver::solve(const StaticMatrix &matrixIn, std::vector<double> &resu
            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
            return true;
        }
-       //aux = residual;
+       aux = residual;
        //applyICPrecond(precond,residual,aux);
        //applyIPPrecond(&matrix,&residual,&aux);
-       precond->apply(residual,aux,data);
        double newSigma = VOps::i().dot(aux,residual);
        double beta = newSigma/(sigma);
        VOps::i().addMul(search,aux,search,beta);
@@ -175,79 +174,4 @@ DynamicMatrix LinearSolver::calcPrecond(const DynamicMatrix &matrix)
     }
 
     return output;
-}
-
-void StubPreconditioner::apply(const std::vector<double> &in, std::vector<double> &out, PreconditionerData *data)
-{
-    out.assign(in.begin(),in.end());
-}
-
-IPPreconditioner::IPPreconditioner(LinearIndexable2d indexer) :
-    m_indexer(indexer)
-{
-
-}
-
-void IPPreconditioner::apply(const std::vector<double> &in, std::vector<double> &out, PreconditionerData *data)
-{
-    if(data == nullptr)
-    {
-        std::cout << "IPP data null!" << std::endl;
-        return;
-    }
-
-    IPPreconditionerData* ippData = dynamic_cast<IPPreconditionerData*>(data);
-    std::vector<double> temp(in.size(),0.0);
-
-    std::vector<Range> ranges = ThreadPool::i()->splitRange(in.size(),128);
-
-    for(Range& range : ranges)
-    {
-        ThreadPool::i()->enqueue(&IPPreconditioner::firstStepIPPMatmulThread,this,range,
-                                 std::ref(in),std::ref(temp),std::ref(ippData->m));
-        //nomatVMulThread(range,elementProvider,vin,vout);
-    }
-    ThreadPool::i()->wait();
-
-    for(Range& range : ranges)
-    {
-        ThreadPool::i()->enqueue(&IPPreconditioner::secondStepIPPMatmulThread,this,range,
-                                 std::ref(temp),std::ref(out),std::ref(ippData->m));
-        //nomatVMulThread(range,elementProvider,vin,vout);
-    }
-    ThreadPool::i()->wait();
-}
-
-void IPPreconditioner::firstStepIPPMatmulThread(Range r, const std::vector<double> &in, std::vector<double> &out, StaticMatrix &m)
-{
-    for(int i = r.start; i < r.end; i++)
-    {
-        auto neighbors = m_indexer.immidiateNeighbors(i);
-        double diag = m.getValue(i,i);
-        if(std::abs(diag) < 0.0001)
-        {
-            out[i] = in[i];
-            continue;
-        }
-        double v1 = in[neighbors[1]];
-        double v2 = in[neighbors[3]];
-        out[i] = in[i] - (v1 * m.getValue(i,neighbors[1])
-                                          + v2 * m.getValue(i,neighbors[3])) / diag;
-    }
-}
-
-void IPPreconditioner::secondStepIPPMatmulThread(Range r, const std::vector<double> &in, std::vector<double> &out, StaticMatrix &m)
-{
-    for(int i = r.start; i < r.end; i++)
-    {
-        auto neighbors = m_indexer.immidiateNeighbors(i);
-        double diag = m.getValue(i,i);
-        if(std::abs(diag) < 0.0001)
-        {
-            out[i] = in[i];
-            continue;
-        }
-        out[i] = in[i] - (in[neighbors[0]] * m.getValue(i,neighbors[0])
-                                          + in[neighbors[2]] * m.getValue(i,neighbors[2])) / diag;
-    }
 }

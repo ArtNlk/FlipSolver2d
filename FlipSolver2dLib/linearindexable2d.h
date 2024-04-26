@@ -105,6 +105,21 @@ public:
         return linearIdx + iOffset * m_sizeJ + jOffset;
     }
 
+    inline size_t linearIdxOfOffset(size_t linearIdx, int iOffset, int jOffset) const
+    {
+        return linearIdx + iOffset * m_sizeJ + jOffset;
+    }
+
+    inline size_t iLinearOffset()
+    {
+        return m_sizeJ;
+    }
+
+    inline size_t jLinearOffset()
+    {
+        return 1;
+    }
+
     inline bool inBounds(Index2d index) const
     {
         return (index.i >= 0 && index.i < m_sizeI && index.j >= 0 && index.j < m_sizeJ);

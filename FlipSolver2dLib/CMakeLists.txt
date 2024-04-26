@@ -22,7 +22,8 @@ set(HEADERS
     staggeredvelocitygrid.h
     flipfiresolver.h
     nbflipsolver.h
-    markerparticlesystem.h)
+    markerparticlesystem.h
+    pressuredata.h)
 
 set(SOURCES
     linearindexable2d.cpp

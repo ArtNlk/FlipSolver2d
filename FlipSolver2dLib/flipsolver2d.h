@@ -364,9 +364,6 @@ protected:
     Eigen::VectorXd m_solverResult;
 
     LinearSolver m_pcgSolver;
-    std::shared_ptr<IPreconditioner> m_projectPreconditioner;
-    std::shared_ptr<IPreconditioner> m_densityPreconditioner;
-    std::shared_ptr<IPreconditioner> m_viscosityPreconditioner;
 
     float m_stepDt;
     float m_frameDt;
