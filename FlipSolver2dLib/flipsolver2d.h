@@ -303,11 +303,11 @@ protected:
 
     void updateVelocityFromSolids();
 
-    virtual void applyPressuresToVelocityField(Eigen::VectorXd &pressures);
+    virtual void applyPressuresToVelocityField(const std::vector<double> &pressures);
 
-    void applyPressureThreadU(Range range, const Eigen::VectorXd &pressures);
+    void applyPressureThreadU(Range range, const std::vector<double> &pressures);
 
-    void applyPressureThreadV(Range range,const Eigen::VectorXd &pressures);
+    void applyPressureThreadV(Range range,const std::vector<double> &pressures);
     
     Vertex rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid, float dt);
 

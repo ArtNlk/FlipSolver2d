@@ -19,7 +19,7 @@ NBFlipSolver::NBFlipSolver(const NBFlipParameters *p):
     m_resamplingBand(-1.f)
 {
     m_projectTolerance = 1e-6;
-    m_pressureSolver.setTolerance(m_projectTolerance);
+    //m_pressureSolver.setTolerance(m_projectTolerance);
 }
 
 void NBFlipSolver::step()
@@ -40,9 +40,9 @@ void NBFlipSolver::step()
 
     m_stats.endStage(GRID_UPDATE);
 
-    m_pressureMatrix = getPressureProjectionMatrix();
-    m_pressureSolver.compute(m_pressureMatrix);
-    m_stats.endStage(DECOMPOSITION);
+    // m_pressureMatrix = getPressureProjectionMatrix();
+    // m_pressureSolver.compute(m_pressureMatrix);
+    // m_stats.endStage(DECOMPOSITION);
 
     project();
     m_stats.endStage(PRESSURE);

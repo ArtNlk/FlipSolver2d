@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include "dynamicmatrix.h"
 #include "flipsolver2d.h"
+#include "pressuredata.h"
 
 struct SmokeSolverParameters : FlipSolverParameters
 {
@@ -31,7 +32,7 @@ protected:
 
     void centeredParamsToGrid() override;
 
-    void calcPressureRhs(Eigen::VectorXd &rhs) override;
+    void calcPressureRhs(std::vector<double> &rhs) override;
 
     void particleUpdate() override;
 
@@ -43,11 +44,11 @@ protected:
 
     void eulerAdvectParameters() override;
 
-    void applyPressuresToVelocityField(Eigen::VectorXd &pressures) override;
+    void applyPressuresToVelocityField(const std::vector<double> &pressures) override;
 
     void seedInitialFluid() override;
     
-    Eigen::SparseMatrix<double,Eigen::RowMajor> getPressureProjectionMatrix() override;
+    IndexedPressureParameters getPressureProjectionMatrix() override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
 

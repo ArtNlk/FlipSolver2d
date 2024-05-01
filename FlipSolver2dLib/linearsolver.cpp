@@ -13,6 +13,7 @@
 #include "dynamicmatrix.h"
 #include "grid2d.h"
 #include "materialgrid.h"
+#include "pressuredata.h"
 #include "vmath.h"
 #include "linearsolver_sse42.h"
 
@@ -23,7 +24,7 @@ LinearSolver::LinearSolver()
 
 }
 
-bool LinearSolver::solve(const StaticMatrix &matrixIn,
+bool LinearSolver::solve(const IndexedPressureParameters &matrixIn,
                          std::vector<double> &result,
                          const std::vector<double> &vec,
                          int iterLimit,
@@ -49,7 +50,7 @@ bool LinearSolver::solve(const StaticMatrix &matrixIn,
    double err = 0.0;
    for (int i = 0; i < iterLimit; i++)
    {
-       aux = matrixIn * search;
+       matrixIn.multiply(search, aux);
        double alpha = sigma/(VOps::i().dot(aux,search) + 1e-8);
        VOps::i().addMul(result,result,search,alpha);
        VOps::i().subMul(residual,residual,aux,alpha);

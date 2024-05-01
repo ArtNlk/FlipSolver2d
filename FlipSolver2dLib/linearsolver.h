@@ -18,8 +18,11 @@ public:
     LinearSolver();
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
 
-    bool solve(const StaticMatrix &matrixIn, std::vector<double> &result,
-               const std::vector<double> &vec, int iterLimit = 20, double tol = 1e-6);
+    bool solve(const IndexedPressureParameters &matrixIn,
+               std::vector<double> &result,
+               const std::vector<double> &vec,
+               int iterLimit = 20,
+               double tol = 1e-6);
 
     friend class LinearSolver_sse42;
 

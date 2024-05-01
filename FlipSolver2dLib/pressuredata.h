@@ -109,6 +109,31 @@ struct IndexedPressureParameterUnit
         values[4] = jp1;
     }
 
+    double& diag()
+    {
+        return values[0];
+    }
+
+    double& iNeg()
+    {
+        return values[1];
+    }
+
+    double& iPos()
+    {
+        return values[2];
+    }
+
+    double& jNeg()
+    {
+        return values[3];
+    }
+
+    double& jPos()
+    {
+        return values[4];
+    }
+
     inline double multiply(const PressureVector& vec,
                            const LinearIndexable2d& indexer) const
     {
@@ -125,6 +150,22 @@ struct IndexedPressureParameterUnit
                values[4]*vec.trueAt(jp1Idx);
     }
 
+    inline double multiply(const std::vector<double>& vec,
+                           const LinearIndexable2d& indexer) const
+    {
+        const size_t im1Idx = indexer.linearIdxOfOffset(unitIndex+1,-1,0);
+        const size_t ip1Idx = indexer.linearIdxOfOffset(unitIndex+1,1,0);
+        const size_t jm1Idx = indexer.linearIdxOfOffset(unitIndex+1,0,-1);
+        const size_t jp1Idx = indexer.linearIdxOfOffset(unitIndex+1,0,1);
+        const size_t centerIdx = unitIndex;
+
+        return values[0]*(centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
+               values[1]*(im1Idx < vec.size() ? vec.at(im1Idx) : 0.0) +
+               values[2]*(ip1Idx < vec.size() ? vec.at(ip1Idx) : 0.0) +
+               values[3]*(jm1Idx < vec.size() ? vec.at(jm1Idx) : 0.0) +
+               values[4]*(jp1Idx < vec.size() ? vec.at(jp1Idx) : 0.0);
+    }
+
     size_t unitIndex;
     std::array<double,5> values;
 };
@@ -132,7 +173,8 @@ struct IndexedPressureParameterUnit
 class IndexedPressureParameters
 {
 public:
-    IndexedPressureParameters(size_t size)
+    IndexedPressureParameters(size_t size, LinearIndexable2d& indexer) :
+    m_indexer(indexer)
     {
         m_data.reserve(size);
     }
@@ -142,8 +184,35 @@ public:
         m_data.push_back(unit);
     }
 
+    void multiply(const std::vector<double>& in, std::vector<double>& out) const
+    {
+        ASSERT(in.size() == out.size());
+
+        if(m_data.empty())
+        {
+            out = in;
+            return;
+        }
+
+        //size_t nextVectorIndex = m_data[0].unitIndex;
+        size_t nextDataIndex = 0;
+        for(size_t idx = 0; idx < in.size(); idx++)
+        {
+            if(nextDataIndex < m_data.size() && m_data[nextDataIndex].unitIndex == idx)
+            {
+                out[idx] = m_data[nextDataIndex].multiply(in,m_indexer);
+                nextDataIndex++;
+            }
+            else
+            {
+                out[idx] = in[idx];
+            }
+        }
+    }
+
 protected:
     std::vector<IndexedPressureParameterUnit> m_data;
+    LinearIndexable2d m_indexer;
 };
 
 #endif // PRESSUREDATA_H
