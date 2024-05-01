@@ -41,7 +41,6 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_testGrid(p->gridSizeI,p->gridSizeJ),
     m_rhs(),
     m_solverResult(),
-    m_pcgSolver(m_materialGrid,10),
     m_stepDt(1.f / p->fps),
     m_frameDt(1.f / p->fps), m_dx(p->dx),
     m_fluidDensity(p->fluidDensity),
@@ -80,20 +79,18 @@ FlipSolver::~FlipSolver()
 void FlipSolver::project()
 {
     //using precond = Eigen::IncompleteLUT<double>;
-    m_rhs.resize(cellCount());
-    m_solverResult.resize(cellCount());
+    std::vector<double> rhs(cellCount(), 0.0);
+    std::vector<double> solverResult(cellCount(), 0.0);
 
-    calcPressureRhs(m_rhs);
+    calcPressureRhs(rhs);
 //    //debug() << "Calculated rhs: " << rhs;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
 
-    m_solverResult = m_pressureSolver.solve(m_rhs).eval();
-
-    if(m_pressureSolver.info()!=Eigen::Success) {
+    if(!m_pressureSolver.solve(mat,solverResult,rhs, m_pcgIterLimit, m_projectTolerance)) {
         std::cout << "Pressure solver solving failed!\n";
         return;
     }
-    std::cout << "Pressure done with " << m_pressureSolver.iterations() << " iterations\n";
+    //std::cout << "Pressure done with " << m_pressureSolver.iterations() << " iterations\n";
 //    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,&pd, m_pcgIterLimit, m_projectTolerance))
 //    {
 //        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
@@ -208,23 +205,23 @@ void FlipSolver::advect()
 
 void FlipSolver::densityCorrection()
 {
-    m_pressureSolver.setTolerance(1e-4);
-    updateDensityGrid();
+    //m_pressureSolver.setTolerance(1e-4);
+    // updateDensityGrid();
 
-    calcDensityCorrectionRhs(m_rhs);
-    if(m_pressureSolver.info()!=Eigen::Success) {
-        std::cout << "Density solver decomposition failed!\n";
-        return;
-    }
+    // calcDensityCorrectionRhs(m_rhs);
+    // if(m_pressureSolver.info()!=Eigen::Success) {
+    //     std::cout << "Density solver decomposition failed!\n";
+    //     return;
+    // }
 
-    m_solverResult = m_pressureSolver.solve(m_rhs);
-    if(m_pressureSolver.info()!=Eigen::Success) {
-        std::cout << "Density solver solving failed!\n";
-        return;
-    }
-    std::cout << "Density done with " << m_pressureSolver.iterations() << " iterations\n";
+    // m_solverResult = m_pressureSolver.solve(m_rhs);
+    // if(m_pressureSolver.info()!=Eigen::Success) {
+    //     std::cout << "Density solver solving failed!\n";
+    //     return;
+    // }
+    // std::cout << "Density done with " << m_pressureSolver.iterations() << " iterations\n";
 
-    adjustParticlesByDensity();
+    // adjustParticlesByDensity();
 }
 
 void FlipSolver::updateDensityGrid()
@@ -456,13 +453,13 @@ void FlipSolver::step()
     advect();
     m_stats.endStage(ADVECTION);
 
-    m_pressureMatrix = getPressureProjectionMatrix();
-    m_pressureSolver.compute(m_pressureMatrix);
-    if(m_pressureSolver.info()!=Eigen::Success) {
-        std::cout << "Pressure solver decomposition failed!\n";
-        return;
-    }
-    m_stats.endStage(DECOMPOSITION);
+    // m_pressureMatrix = getPressureProjectionMatrix();
+    // m_pressureSolver.compute(m_pressureMatrix);
+    // if(m_pressureSolver.info()!=Eigen::Success) {
+    //     std::cout << "Pressure solver decomposition failed!\n";
+    //     return;
+    // }
+    // m_stats.endStage(DECOMPOSITION);
 
     pruneParticles();
     m_markerParticles.rebinParticles();
@@ -483,7 +480,7 @@ void FlipSolver::step()
     applyBodyForces();
     m_stats.endStage(AFTER_TRANSFER);
 
-    m_pressureSolver.setTolerance(1e-6);
+    //m_pressureSolver.setTolerance(1e-6);
     project();
     m_stats.endStage(PRESSURE);
 
@@ -824,11 +821,9 @@ void FlipSolver::firstFrameInit()
     seedInitialFluid();
 }
 
-Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSolver::getPressureProjectionMatrix()
+IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
 {
-    Eigen::SparseMatrix<double,Eigen::RowMajor> output = Eigen::SparseMatrix<double>();
-    output.resize(cellCount(),cellCount());
-    output.reserve(Eigen::VectorXi::Constant(cellCount(),6));
+    IndexedPressureParameters output(cellCount()*0.33);
 
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
@@ -838,12 +833,13 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSolver::getPressureProjectionMat
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
-            const int linIdx = indexer.linearIndex(i,j);
             if(!m_materialGrid.isFluid(i,j))
             {
-                output.insert(linIdx,linIdx) = 1.f;
                 continue;
             }
+            const int linIdx = indexer.linearIndex(i,j);
+            IndexedPressureParameterUnit unit;
+            unit.unitIndex = linIdx;
 
             const int linIdxAx = indexer.linearIdxOfOffset(linIdx,1,0);
             const int linIdxAy = indexer.linearIdxOfOffset(linIdx,0,1);
@@ -1026,9 +1022,9 @@ int FlipSolver::cellCount()
     return m_sizeI * m_sizeJ;
 }
 
-void FlipSolver::calcPressureRhs(Eigen::VectorXd &rhs)
+void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
 {
-    double scale = 1.f/m_dx;
+    const double scale = 1.f/m_dx;
 
     for (int i = 0; i < m_sizeI; i++)
     {
@@ -1047,11 +1043,11 @@ void FlipSolver::calcPressureRhs(Eigen::VectorXd &rhs)
                 val += m_materialGrid.isSolid(i,j+1) *
                                           scale * static_cast<double>(m_fluidVelocityGrid.v(i,j+1) - 0);
 
-                rhs.coeffRef(linearIndex(i,j)) = val;
+                rhs.at(linearIndex(i,j)) = val;
             }
             else
             {
-                rhs.coeffRef(linearIndex(i,j)) = 0.0;
+                rhs.at(linearIndex(i,j)) = 0.0;
             }
         }
     }

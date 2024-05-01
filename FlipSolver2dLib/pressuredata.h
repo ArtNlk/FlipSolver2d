@@ -84,6 +84,16 @@ protected:
 
 struct IndexedPressureParameterUnit
 {
+    IndexedPressureParameterUnit() :
+        unitIndex(std::numeric_limits<size_t>::max())
+    {
+        values[0] = 0.0;
+        values[1] = 0.0;
+        values[2] = 0.0;
+        values[3] = 0.0;
+        values[4] = 0.0;
+    }
+
     IndexedPressureParameterUnit(size_t newIdx,
                                  double diag,
                                  double im1,
@@ -119,10 +129,13 @@ struct IndexedPressureParameterUnit
     std::array<double,5> values;
 };
 
-class IndexedPressurePrameters
+class IndexedPressureParameters
 {
 public:
-    IndexedPressurePrameters(size_t size);
+    IndexedPressureParameters(size_t size)
+    {
+        m_data.reserve(size);
+    }
 
     void add(IndexedPressureParameterUnit& unit)
     {

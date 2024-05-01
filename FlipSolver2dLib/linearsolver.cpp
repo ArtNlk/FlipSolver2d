@@ -18,7 +18,7 @@
 
 #include "logger.h"
 
-LinearSolver::LinearSolver(MaterialGrid &materialGrid, int maxMultigridDepth)
+LinearSolver::LinearSolver()
 {
 
 }

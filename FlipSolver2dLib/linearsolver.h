@@ -15,7 +15,7 @@
 class LinearSolver
 {
 public:
-    LinearSolver(MaterialGrid& materialGrid, int maxMultigridDepth);
+    LinearSolver();
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
 
     bool solve(const StaticMatrix &matrixIn, std::vector<double> &result,

@@ -281,13 +281,13 @@ protected:
 
     virtual void step();
 
-    virtual void calcPressureRhs(Eigen::VectorXd &rhs);
+    virtual void calcPressureRhs(std::vector<double> &rhs);
 
     void calcViscosityRhs(Eigen::VectorXd &rhs, Grid2d<float> &sourceGrid);
 
     void calcDensityCorrectionRhs(Eigen::VectorXd &rhs);
     
-    virtual Eigen::SparseMatrix<double, Eigen::RowMajor> getPressureProjectionMatrix();
+    virtual IndexedPressureParameters getPressureProjectionMatrix();
     
     Eigen::SparseMatrix<double, Eigen::RowMajor> getViscosityMatrix();
 
@@ -363,8 +363,6 @@ protected:
     Eigen::VectorXd m_rhs;
     Eigen::VectorXd m_solverResult;
 
-    LinearSolver m_pcgSolver;
-
     float m_stepDt;
     float m_frameDt;
     double m_dx;
@@ -391,7 +389,8 @@ protected:
     //using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
     using precond = InversePoissonPreconditioner<double, Eigen::Upper>;
     Eigen::SparseMatrix<double,Eigen::RowMajor> m_pressureMatrix;
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
+    // Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
+    LinearSolver m_pressureSolver;
 
     //Eigen::SparseMatrix<double,Eigen::RowMajor> m_viscosityMatrix;
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Upper> m_viscositySolver;
