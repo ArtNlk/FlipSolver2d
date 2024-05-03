@@ -67,7 +67,8 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     Eigen::setNbThreads(ThreadPool::i()->threadCount());
     m_randEngine = std::mt19937(p->seed);
     m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
-    m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-2;
+    //m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-2;
+    m_projectTolerance = 1e-6;
     m_rhs.resize(linearSize());
     m_solverResult.resize(linearSize());
 }
@@ -87,6 +88,20 @@ void FlipSolver::project()
     IndexedPressureParameters params = getPressureProjectionMatrix();
 //    //debug() << "Calculated rhs: " << rhs;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
+
+    std::cout << "========================" << std::endl;
+    std::cout << sizeI() << ',' << sizeJ() << std::endl;
+    for(int i = 0; i < params.data().size(); i++)
+    {
+        auto& unit = params.data()[i];
+        std::cout << unit.unitIndex << ':'
+                << unit.diag() << ' '
+                << unit.iNeg() << ' '
+                << unit.iPos() << ' '
+                << unit.jNeg() << ' '
+                << unit.jPos() << std::endl;
+    }
+    std::cout << "========================" << std::endl;
 
     if(!m_pressureSolver.solve(params,solverResult,rhs, m_pcgIterLimit, m_projectTolerance)) {
         std::cout << "Pressure solver solving failed!\n";
@@ -843,8 +858,8 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
             IndexedPressureParameterUnit unit;
             unit.unitIndex = linIdx;
 
-            const int linIdxAx = indexer.linearIdxOfOffset(linIdx,1,0);
-            const int linIdxAy = indexer.linearIdxOfOffset(linIdx,0,1);
+            const int linIdxPosAx = indexer.linearIdxOfOffset(linIdx,1,0);
+            const int linIdxPosAy = indexer.linearIdxOfOffset(linIdx,0,1);
             const int linIdxNegAx = indexer.linearIdxOfOffset(linIdx,-1,0);
             const int linIdxNegAy = indexer.linearIdxOfOffset(linIdx,0,-1);
 
@@ -865,7 +880,7 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
             if(m_materialGrid.isFluid(i+1,j))
             {
                 diag += scale;
-                if(inBounds(linIdxAx))
+                if(inBounds(linIdxPosAx))
                 {
                     unit.iPos() = -scale;
                 }
@@ -890,7 +905,7 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
             if(m_materialGrid.isFluid(i,j+1))
             {
                 diag += scale;
-                if(inBounds(linIdxAy))
+                if(inBounds(linIdxPosAy))
                 {
                     unit.jPos() = -scale;
                 }
@@ -997,7 +1012,7 @@ void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
         {
             if (m_materialGrid.isFluid(i,j))
             {
-                double val = -scale * divergenceAt(i,j);
+                double val = scale * divergenceAt(i,j);
 
                 val -= m_materialGrid.isSolid(i-1,j) *
                                           scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
@@ -1153,6 +1168,11 @@ void FlipSolver::applyPressuresToVelocityField(const std::vector<double> &pressu
         ThreadPool::i()->enqueue(&FlipSolver::applyPressureThreadV,this,range,std::ref(pressures));
     }
     ThreadPool::i()->wait();
+
+    for(int i = 0; i < pressures.size(); i++)
+    {
+        m_testGrid.data().at(i) = pressures.at(i);
+    }
 
 //    if(anyNanInf(m_fluidVelocityGrid.velocityGridU().data()))
 //    {

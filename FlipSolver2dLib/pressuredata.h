@@ -153,17 +153,17 @@ struct IndexedPressureParameterUnit
     inline double multiply(const std::vector<double>& vec,
                            const LinearIndexable2d& indexer) const
     {
-        const size_t im1Idx = indexer.linearIdxOfOffset(unitIndex+1,-1,0);
-        const size_t ip1Idx = indexer.linearIdxOfOffset(unitIndex+1,1,0);
-        const size_t jm1Idx = indexer.linearIdxOfOffset(unitIndex+1,0,-1);
-        const size_t jp1Idx = indexer.linearIdxOfOffset(unitIndex+1,0,1);
-        const size_t centerIdx = unitIndex;
+        const int im1Idx = indexer.linearIdxOfOffset((int)unitIndex,-1,0);
+        const int ip1Idx = indexer.linearIdxOfOffset((int)unitIndex,1,0);
+        const int jm1Idx = indexer.linearIdxOfOffset((int)unitIndex,0,-1);
+        const int jp1Idx = indexer.linearIdxOfOffset((int)unitIndex,0,1);
+        const int centerIdx = (int)unitIndex;
 
-        return values[0]*(centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
-               values[1]*(im1Idx < vec.size() ? vec.at(im1Idx) : 0.0) +
-               values[2]*(ip1Idx < vec.size() ? vec.at(ip1Idx) : 0.0) +
-               values[3]*(jm1Idx < vec.size() ? vec.at(jm1Idx) : 0.0) +
-               values[4]*(jp1Idx < vec.size() ? vec.at(jp1Idx) : 0.0);
+        return values[0]*(centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
+               values[1]*(im1Idx >= 0 && im1Idx < vec.size() ? vec.at(im1Idx) : 0.0) +
+               values[2]*(ip1Idx >= 0 && ip1Idx < vec.size() ? vec.at(ip1Idx) : 0.0) +
+               values[3]*(jm1Idx >= 0 && jm1Idx < vec.size() ? vec.at(jm1Idx) : 0.0) +
+               values[4]*(jp1Idx >= 0 && jp1Idx < vec.size() ? vec.at(jp1Idx) : 0.0);
     }
 
     size_t unitIndex;
@@ -182,6 +182,11 @@ public:
     void add(IndexedPressureParameterUnit& unit)
     {
         m_data.push_back(unit);
+    }
+
+    auto& data()
+    {
+        return m_data;
     }
 
     void multiply(const std::vector<double>& in, std::vector<double>& out) const
