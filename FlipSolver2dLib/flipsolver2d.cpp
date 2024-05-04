@@ -89,19 +89,35 @@ void FlipSolver::project()
 //    //debug() << "Calculated rhs: " << rhs;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
 
-    std::cout << "========================" << std::endl;
-    std::cout << sizeI() << ',' << sizeJ() << std::endl;
-    for(int i = 0; i < params.data().size(); i++)
-    {
-        auto& unit = params.data()[i];
-        std::cout << unit.unitIndex << ':'
-                << unit.diag() << ' '
-                << unit.iNeg() << ' '
-                << unit.iPos() << ' '
-                << unit.jNeg() << ' '
-                << unit.jPos() << std::endl;
-    }
-    std::cout << "========================" << std::endl;
+    // std::cout << "========================" << std::endl;
+    // std::cout << sizeI() << ',' << sizeJ() << std::endl;
+    // for(int i = 0; i < params.data().size(); i++)
+    // {
+    //     auto& unit = params.data()[i];
+    //     std::cout << unit.unitIndex << ':'
+    //             << unit.diag() << ' '
+    //             << unit.iNeg() << ' '
+    //             << unit.iPos() << ' '
+    //             << unit.jNeg() << ' '
+    //             << unit.jPos() << std::endl;
+    // }
+    // std::cout << "========================" << std::endl;
+
+    // std::cout << "==========VEC IN==========" << std::endl;
+    // for(int i = 0; i < rhs.size(); i++)
+    // {
+    //     std::cout << rhs[i] << std::endl;
+    // }
+    // std::cout << "=========VEC IN===========" << std::endl;
+
+    // params.multiply(rhs,solverResult);
+
+    // std::cout << "=========VEC OUT============" << std::endl;
+    // for(int i = 0; i < solverResult.size(); i++)
+    // {
+    //     std::cout << solverResult[i] << std::endl;
+    // }
+    // std::cout << "========VEC OUT=============" << std::endl;
 
     if(!m_pressureSolver.solve(params,solverResult,rhs, m_pcgIterLimit, m_projectTolerance)) {
         std::cout << "Pressure solver solving failed!\n";
