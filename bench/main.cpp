@@ -55,7 +55,10 @@ std::vector<double> matmulCustomIndexed();
 
 void matmulScalar(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
 void matmulScalarIndexed(const std::vector<MatCoeffsIndexed>& mat, const std::vector<double>& in, std::vector<double>& out);
+
+#ifdef FLUID_SSE
 void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
+#endif
 #ifdef FLUID_AVX2
 void matmulAVX2(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out);
 #endif
@@ -316,6 +319,7 @@ void matmulScalarIndexed(const std::vector<MatCoeffsIndexed>& mat, const std::ve
     }
 }
 
+#ifdef FLUID_SSE
 void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out)
 {
 #pragma omp parallel for
@@ -355,6 +359,7 @@ void matmulSSE(const std::vector<MatCoeffs>& mat, const std::vector<double>& in,
 //                      m[4]*in[idxJp1];
     }
 }
+#endif
 
 #ifdef FLUID_AVX2
 void matmulAVX2(const std::vector<MatCoeffs>& mat, const std::vector<double>& in, std::vector<double>& out)

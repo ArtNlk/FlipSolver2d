@@ -123,6 +123,13 @@ void FlipSolver::project()
         std::cout << "Pressure solver solving failed!\n";
         return;
     }
+
+    // std::cout << "=========VEC OUT============" << std::endl;
+    // for(int i = 0; i < solverResult.size(); i++)
+    // {
+    //     std::cout << solverResult[i] << std::endl;
+    // }
+    // std::cout << "========VEC OUT=============" << std::endl;
     //std::cout << "Pressure done with " << m_pressureSolver.iterations() << " iterations\n";
 //    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,&pd, m_pcgIterLimit, m_projectTolerance))
 //    {
@@ -1187,7 +1194,7 @@ void FlipSolver::applyPressuresToVelocityField(const std::vector<double> &pressu
 
     for(int i = 0; i < pressures.size(); i++)
     {
-        m_testGrid.data().at(i) = pressures.at(i);
+        m_testGrid.data().at(i) = pressures.at(i) / 100.0;
     }
 
 //    if(anyNanInf(m_fluidVelocityGrid.velocityGridU().data()))
