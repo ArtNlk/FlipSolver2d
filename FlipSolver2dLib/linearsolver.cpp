@@ -55,11 +55,11 @@ bool LinearSolver::solve(const IndexedPressureParameters &matrixIn,
        VOps::i().addMul(result,result,search,alpha);
        VOps::i().subMul(residual,residual,aux,alpha);
        err = VOps::i().maxAbs(residual);
-       if(i % 5 == 0)
-       {
-           std::cout << "Solver: " << i << " : " << err << "\n";
-           debug() << "Solver: " << i << " : " << err;
-       }
+       // if(i % 5 == 0)
+       // {
+       //     std::cout << "Solver: " << i << " : " << err << "\n";
+       //     debug() << "Solver: " << i << " : " << err;
+       // }
        if (err <= tol)
        {
            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;

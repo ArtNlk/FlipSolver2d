@@ -863,7 +863,7 @@ void FlipSolver::firstFrameInit()
 
 IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
 {
-    IndexedPressureParameters output(cellCount()*0.33, *this);
+    IndexedPressureParameters output(linearSize()*0.33, *this);
 
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
@@ -1035,7 +1035,7 @@ void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
         {
             if (m_materialGrid.isFluid(i,j))
             {
-                double val = scale * divergenceAt(i,j);
+                double val = -scale * divergenceAt(i,j);
 
                 val -= m_materialGrid.isSolid(i-1,j) *
                                           scale * static_cast<double>(m_fluidVelocityGrid.u(i,j) - 0);
