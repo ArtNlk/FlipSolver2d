@@ -19,7 +19,7 @@ if(POOL_SINGLE_THREAD)
     add_compile_definitions(ENQUEUE_IS_RUN)
 endif()
 
-set(FLUID_ACCEL "none") #sse, avx, avx2, avx512
+set(FLUID_ACCEL "sse") #sse, avx, avx2, avx512
 
 if(FLUID_ACCEL STREQUAL "sse")
     add_compile_definitions(FLUID_SSE)

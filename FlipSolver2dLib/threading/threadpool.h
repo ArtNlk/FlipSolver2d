@@ -15,6 +15,12 @@
 
 struct Range
 {
+    Range(size_t _start, size_t _end):
+        start(_start),
+        end(_end)
+    {
+
+    }
     size_t start;
     size_t end;
 

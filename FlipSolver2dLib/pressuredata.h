@@ -2,10 +2,12 @@
 #define PRESSUREDATA_H
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include "customassert.h"
 #include "linearindexable2d.h"
+#include "threadpool.h"
 
 class PressureVector
 {
@@ -82,76 +84,53 @@ protected:
     std::vector<double> m_data;
 };
 
+enum NeighborMask : uint8_t
+{
+    I_NEG_NEIGHBOR_BIT = 1<<0,
+    I_POS_NEIGHBOR_BIT = 1<<1,
+    J_NEG_NEIGHBOR_BIT = 1<<2,
+    J_POS_NEIGHBOR_BIT = 1<<3
+    // K_NEG_NEIGHBOR_BIT = 1<<4
+    // K_POS_NEIGHBOR_BIT = 1<<5
+};
+
 struct IndexedPressureParameterUnit
 {
     IndexedPressureParameterUnit() :
-        unitIndex(std::numeric_limits<size_t>::max())
+        unitIndex(std::numeric_limits<size_t>::max()),
+        fluidNeighborMask(0),
+        nonsolidNeighborCount(0)
     {
-        values[0] = 0.0;
-        values[1] = 0.0;
-        values[2] = 0.0;
-        values[3] = 0.0;
-        values[4] = 0.0;
+
     }
 
-    IndexedPressureParameterUnit(size_t newIdx,
-                                 double diag,
-                                 double im1,
-                                 double ip1,
-                                 double jm1,
-                                 double jp1) :
-        unitIndex(newIdx)
+    void setNeighbor(NeighborMask bit, bool flag)
     {
-        values[0] = diag;
-        values[1] = im1;
-        values[2] = ip1;
-        values[3] = jm1;
-        values[4] = jp1;
+        if (flag) {
+            fluidNeighborMask |= bit;
+        } else {
+            fluidNeighborMask &= ~bit;
+        }
     }
 
-    double& diag()
-    {
-        return values[0];
-    }
+    // inline double multiply(const PressureVector& vec,
+    //                        const LinearIndexable2d& indexer) const
+    // {
+    //     const size_t im1Idx = std::clamp(indexer.linearIdxOfOffset(unitIndex+1,-1,0),size_t(0),vec.trueSize());
+    //     const size_t ip1Idx = std::clamp(indexer.linearIdxOfOffset(unitIndex+1,1,0),size_t(0),vec.trueSize());
+    //     const size_t jm1Idx = std::clamp(indexer.linearIdxOfOffset(unitIndex+1,0,-1),size_t(0),vec.trueSize());
+    //     const size_t jp1Idx = std::clamp(indexer.linearIdxOfOffset(unitIndex+1,0,1),size_t(0),vec.trueSize());
+    //     const size_t centerIdx = unitIndex+1;
 
-    double& iNeg()
-    {
-        return values[1];
-    }
-
-    double& iPos()
-    {
-        return values[2];
-    }
-
-    double& jNeg()
-    {
-        return values[3];
-    }
-
-    double& jPos()
-    {
-        return values[4];
-    }
-
-    inline double multiply(const PressureVector& vec,
-                           const LinearIndexable2d& indexer) const
-    {
-        const size_t im1Idx = std::clamp(indexer.linearIdxOfOffset(unitIndex+1,-1,0),size_t(0),vec.trueSize());
-        const size_t ip1Idx = std::clamp(indexer.linearIdxOfOffset(unitIndex+1,1,0),size_t(0),vec.trueSize());
-        const size_t jm1Idx = std::clamp(indexer.linearIdxOfOffset(unitIndex+1,0,-1),size_t(0),vec.trueSize());
-        const size_t jp1Idx = std::clamp(indexer.linearIdxOfOffset(unitIndex+1,0,1),size_t(0),vec.trueSize());
-        const size_t centerIdx = unitIndex+1;
-
-        return values[0]*vec.trueAt(centerIdx) +
-               values[1]*vec.trueAt(im1Idx) +
-               values[2]*vec.trueAt(ip1Idx) +
-               values[3]*vec.trueAt(jm1Idx) +
-               values[4]*vec.trueAt(jp1Idx);
-    }
+    //     return values[0]*vec.trueAt(centerIdx) +
+    //            values[1]*vec.trueAt(im1Idx) +
+    //            values[2]*vec.trueAt(ip1Idx) +
+    //            values[3]*vec.trueAt(jm1Idx) +
+    //            values[4]*vec.trueAt(jp1Idx);
+    // }
 
     inline double multiply(const std::vector<double>& vec,
-                           const LinearIndexable2d& indexer) const
+                           const LinearIndexable2d& indexer, const double scale) const
     {
         const int im1Idx = indexer.linearIdxOfOffset((int)unitIndex,-1,0);
         const int ip1Idx = indexer.linearIdxOfOffset((int)unitIndex,1,0);
@@ -159,22 +138,24 @@ struct IndexedPressureParameterUnit
         const int jp1Idx = indexer.linearIdxOfOffset((int)unitIndex,0,1);
         const int centerIdx = (int)unitIndex;
 
-        return values[0]*(centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
-               values[1]*(im1Idx >= 0 && im1Idx < vec.size() ? vec.at(im1Idx) : 0.0) +
-               values[2]*(ip1Idx >= 0 && ip1Idx < vec.size() ? vec.at(ip1Idx) : 0.0) +
-               values[3]*(jm1Idx >= 0 && jm1Idx < vec.size() ? vec.at(jm1Idx) : 0.0) +
-               values[4]*(jp1Idx >= 0 && jp1Idx < vec.size() ? vec.at(jp1Idx) : 0.0);
+        return (scale * nonsolidNeighborCount)*(centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
+               (-scale*(fluidNeighborMask&I_NEG_NEIGHBOR_BIT))*(im1Idx >= 0 && im1Idx < vec.size() ? vec.at(im1Idx) : 0.0) +
+               (-scale*((fluidNeighborMask&I_POS_NEIGHBOR_BIT)>>1))*(ip1Idx >= 0 && ip1Idx < vec.size() ? vec.at(ip1Idx) : 0.0) +
+               (-scale*((fluidNeighborMask&J_NEG_NEIGHBOR_BIT)>>2))*(jm1Idx >= 0 && jm1Idx < vec.size() ? vec.at(jm1Idx) : 0.0) +
+               (-scale*((fluidNeighborMask&J_POS_NEIGHBOR_BIT)>>3))*(jp1Idx >= 0 && jp1Idx < vec.size() ? vec.at(jp1Idx) : 0.0);
     }
 
     size_t unitIndex;
-    std::array<double,5> values;
+    uint8_t fluidNeighborMask;
+    uint8_t nonsolidNeighborCount;
 };
 
 class IndexedPressureParameters
 {
 public:
-    IndexedPressureParameters(size_t size, LinearIndexable2d& indexer) :
-    m_indexer(indexer)
+    IndexedPressureParameters(size_t size, LinearIndexable2d& indexer, double scale) :
+    m_indexer(indexer),
+    m_scale(scale)
     {
         m_data.reserve(size);
     }
@@ -182,6 +163,17 @@ public:
     void add(IndexedPressureParameterUnit& unit)
     {
         m_data.push_back(unit);
+    }
+
+    void endThreadDataRange()
+    {
+        if(m_threadDataRanges.empty())
+        {
+            m_threadDataRanges.push_back(Range(0,m_data.size()));
+            return;
+        }
+
+        m_threadDataRanges.push_back(Range(m_threadDataRanges.back().end,m_data.size()));
     }
 
     auto& data()
@@ -199,13 +191,41 @@ public:
             return;
         }
 
-        //size_t nextVectorIndex = m_data[0].unitIndex;
-        size_t nextDataIndex = 0;
-        for(size_t idx = 0; idx < in.size(); idx++)
+        std::vector<Range> ranges = ThreadPool::i()->splitRange(in.size());
+
+        //multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
+
+        for(int i = 0; i < ranges.size(); i++)
         {
-            if(nextDataIndex < m_data.size() && m_data[nextDataIndex].unitIndex == idx)
+            if(i >= m_threadDataRanges.size())
             {
-                out[idx] = m_data[nextDataIndex].multiply(in,m_indexer);
+                ThreadPool::i()->enqueue(&IndexedPressureParameters::multiplyThread,this,
+                                         ranges.at(i),Range(0,0),std::cref(in),std::ref(out));
+
+                continue;
+            }
+            ThreadPool::i()->enqueue(&IndexedPressureParameters::multiplyThread,this,
+                                     ranges.at(i),m_threadDataRanges.at(i),std::cref(in),std::ref(out));
+        }
+        ThreadPool::i()->wait();
+    }
+
+protected:
+    void multiplyThread(Range vecRange, Range dataRange, const std::vector<double>& in, std::vector<double>& out) const
+    {
+        if(dataRange.size() == 0)
+        {
+            std::copy(in.begin() + vecRange.start, in.begin() + vecRange.end,out.begin() + vecRange.start);
+        }
+
+        //size_t nextVectorIndex = m_data[0].unitIndex;
+        size_t nextDataIndex = dataRange.start;
+        for(size_t idx = vecRange.start; idx < vecRange.end; idx++)
+        {
+            if(nextDataIndex < m_data.size() && nextDataIndex < dataRange.end
+                && m_data[nextDataIndex].unitIndex == idx)
+            {
+                out[idx] = m_data[nextDataIndex].multiply(in, m_indexer, m_scale);
                 nextDataIndex++;
             }
             else
@@ -215,9 +235,10 @@ public:
         }
     }
 
-protected:
     std::vector<IndexedPressureParameterUnit> m_data;
+    std::vector<Range> m_threadDataRanges;
     LinearIndexable2d m_indexer;
+    double m_scale;
 };
 
 #endif // PRESSUREDATA_H

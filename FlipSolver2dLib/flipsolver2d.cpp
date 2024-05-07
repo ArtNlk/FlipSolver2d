@@ -89,53 +89,10 @@ void FlipSolver::project()
 //    //debug() << "Calculated rhs: " << rhs;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
 
-    // std::cout << "========================" << std::endl;
-    // std::cout << sizeI() << ',' << sizeJ() << std::endl;
-    // for(int i = 0; i < params.data().size(); i++)
-    // {
-    //     auto& unit = params.data()[i];
-    //     std::cout << unit.unitIndex << ':'
-    //             << unit.diag() << ' '
-    //             << unit.iNeg() << ' '
-    //             << unit.iPos() << ' '
-    //             << unit.jNeg() << ' '
-    //             << unit.jPos() << std::endl;
-    // }
-    // std::cout << "========================" << std::endl;
-
-    // std::cout << "==========VEC IN==========" << std::endl;
-    // for(int i = 0; i < rhs.size(); i++)
-    // {
-    //     std::cout << rhs[i] << std::endl;
-    // }
-    // std::cout << "=========VEC IN===========" << std::endl;
-
-    // params.multiply(rhs,solverResult);
-
-    // std::cout << "=========VEC OUT============" << std::endl;
-    // for(int i = 0; i < solverResult.size(); i++)
-    // {
-    //     std::cout << solverResult[i] << std::endl;
-    // }
-    // std::cout << "========VEC OUT=============" << std::endl;
-
     if(!m_pressureSolver.solve(params,solverResult,rhs, m_pcgIterLimit, m_projectTolerance)) {
         std::cout << "Pressure solver solving failed!\n";
         return;
     }
-
-    // std::cout << "=========VEC OUT============" << std::endl;
-    // for(int i = 0; i < solverResult.size(); i++)
-    // {
-    //     std::cout << solverResult[i] << std::endl;
-    // }
-    // std::cout << "========VEC OUT=============" << std::endl;
-    //std::cout << "Pressure done with " << m_pressureSolver.iterations() << " iterations\n";
-//    if(!m_pcgSolver.solve(mat,m_pressures.data(),m_rhs,m_projectPreconditioner,&pd, m_pcgIterLimit, m_projectTolerance))
-//    {
-//        std::cout << "PCG Solver pressure: Iteration limit exhaustion!\n";
-//    }
-//    auto provider = getPressureMatrixElementProvider();
 
 //    if(!m_pcgSolver.mfcgSolve(provider,m_pressures.data(),m_rhs,m_pcgIterLimit,1e-2))
 //    {
@@ -863,21 +820,31 @@ void FlipSolver::firstFrameInit()
 
 IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
 {
-    IndexedPressureParameters output(linearSize()*0.33, *this);
-
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
+    IndexedPressureParameters output(linearSize()*0.33, *this, scale);
+
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
+
+    std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
+    size_t currRangeIdx = 0;
 
     for(int i = 0; i < m_sizeI; i++)
     {
         for(int j = 0; j < m_sizeJ; j++)
         {
+            const int linIdx = indexer.linearIndex(i,j);
+
             if(!m_materialGrid.isFluid(i,j))
             {
+                if(linIdx >= threadRanges.at(currRangeIdx).end)
+                {
+                    output.endThreadDataRange();
+                    currRangeIdx++;
+                }
                 continue;
             }
-            const int linIdx = indexer.linearIndex(i,j);
+
             IndexedPressureParameterUnit unit;
             unit.unitIndex = linIdx;
 
@@ -890,57 +857,54 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
             //X Neighbors
             if(m_materialGrid.isFluid(i-1,j))
             {
-                diag += scale;
-                if(inBounds(linIdxNegAx))
-                {
-                    unit.iNeg() = -scale;
-                }
+                unit.nonsolidNeighborCount++;
+                unit.setNeighbor(I_NEG_NEIGHBOR_BIT, inBounds(linIdxNegAx));
             }else if(m_materialGrid.isEmpty(i-1,j))
             {
-                diag += scale;
+                unit.nonsolidNeighborCount++;
             }
 
             if(m_materialGrid.isFluid(i+1,j))
             {
-                diag += scale;
-                if(inBounds(linIdxPosAx))
-                {
-                    unit.iPos() = -scale;
-                }
+                unit.nonsolidNeighborCount++;
+                unit.setNeighbor(I_POS_NEIGHBOR_BIT, inBounds(linIdxPosAx));
             } else if(m_materialGrid.isEmpty(i+1,j))
             {
-                diag += scale;
+                unit.nonsolidNeighborCount++;
             }
 
             //Y Neighbors
             if(m_materialGrid.isFluid(i,j-1))
             {
-                diag += scale;
-                if(inBounds(linIdxNegAy))
-                {
-                    unit.jNeg() = -scale;
-                }
+                unit.nonsolidNeighborCount++;
+                unit.setNeighbor(J_NEG_NEIGHBOR_BIT, inBounds(linIdxNegAy));
             }else if(m_materialGrid.isEmpty(i,j-1))
             {
-                diag += scale;
+                unit.nonsolidNeighborCount++;
             }
 
             if(m_materialGrid.isFluid(i,j+1))
             {
-                diag += scale;
-                if(inBounds(linIdxPosAy))
-                {
-                    unit.jPos() = -scale;
-                }
+                unit.nonsolidNeighborCount++;
+                unit.setNeighbor(J_POS_NEIGHBOR_BIT, inBounds(linIdxPosAy));
             } else if(m_materialGrid.isEmpty(i,j+1))
             {
-                diag += scale;
+                unit.nonsolidNeighborCount++;
             }
 
-            unit.diag() = diag;
+            if(linIdx >= threadRanges.at(currRangeIdx).end)
+            {
+                output.endThreadDataRange();
+                currRangeIdx++;
+            }
 
             output.add(unit);
         }
+    }
+
+    if(currRangeIdx != threadRanges.size())
+    {
+        output.endThreadDataRange();
     }
 
     return output;
