@@ -215,7 +215,8 @@ protected:
     {
         if(dataRange.size() == 0)
         {
-            std::copy(in.begin() + vecRange.start, in.begin() + vecRange.end,out.begin() + vecRange.start);
+            //std::copy(in.begin() + vecRange.start, in.begin() + vecRange.end,out.begin() + vecRange.start);
+            return;
         }
 
         //size_t nextVectorIndex = m_data[0].unitIndex;
@@ -230,7 +231,7 @@ protected:
             }
             else
             {
-                out[idx] = in[idx];
+                //out[idx] = in[idx];
             }
         }
     }
