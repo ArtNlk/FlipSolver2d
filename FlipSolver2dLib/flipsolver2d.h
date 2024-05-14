@@ -7,19 +7,20 @@
 #include <random>
 #include <memory>
 
+#include "PressureIPPCoeficients.h"
+#include "emitter.h"
+#include "geometry2d.h"
 #include "inversepoissonpreconditioner.h"
 #include "linearindexable2d.h"
+#include "linearsolver.h"
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
 #include "obstacle.h"
-#include "linearsolver.h"
 #include "sdfgrid.h"
-#include "staggeredvelocitygrid.h"
-#include "threadpool.h"
-#include "staticmatrix.h"
-#include "geometry2d.h"
-#include "emitter.h"
 #include "sink.h"
+#include "staggeredvelocitygrid.h"
+#include "staticmatrix.h"
+#include "threadpool.h"
 
 #include <Eigen/Sparse>
 
@@ -288,6 +289,8 @@ protected:
     void calcDensityCorrectionRhs(Eigen::VectorXd &rhs);
     
     virtual IndexedPressureParameters getPressureProjectionMatrix();
+
+    virtual IndexedIPPCoefficients getIPPCoefficients(const IndexedPressureParameters& mat);
     
     Eigen::SparseMatrix<double, Eigen::RowMajor> getViscosityMatrix();
 

@@ -23,7 +23,8 @@ set(HEADERS
     flipfiresolver.h
     nbflipsolver.h
     markerparticlesystem.h
-    pressuredata.h)
+    pressuredata.h
+    PressureIPPCoeficients.h)
 
 set(SOURCES
     linearindexable2d.cpp

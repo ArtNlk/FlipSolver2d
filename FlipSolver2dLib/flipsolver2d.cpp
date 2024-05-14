@@ -8,6 +8,7 @@
 #include <ostream>
 #include <queue>
 
+#include "PressureIPPCoeficients.h"
 #include "grid2d.h"
 #include "index2d.h"
 #include "linearindexable2d.h"
@@ -86,10 +87,11 @@ void FlipSolver::project()
 
     calcPressureRhs(rhs);
     IndexedPressureParameters params = getPressureProjectionMatrix();
+    IndexedIPPCoefficients precond = getIPPCoefficients(params);
 //    //debug() << "Calculated rhs: " << rhs;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
 
-    if(!m_pressureSolver.solve(params,solverResult,rhs, m_pcgIterLimit, m_projectTolerance)) {
+    if(!m_pressureSolver.solve(params,precond,solverResult,rhs, m_pcgIterLimit, m_projectTolerance)) {
         std::cout << "Pressure solver solving failed!\n";
         return;
     }
@@ -899,6 +901,98 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
             }
 
             output.add(unit);
+        }
+    }
+
+    if(currRangeIdx != threadRanges.size())
+    {
+        output.endThreadDataRange();
+    }
+
+    return output;
+}
+
+IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParameters& mat)
+{
+    const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
+
+    IndexedIPPCoefficients output(linearSize()*0.33, *this);
+
+    LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
+
+    std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
+    size_t currRangeIdx = 0;
+
+    size_t matEntryIdx = 0;
+
+    for(int i = 0; i < m_sizeI; i++)
+    {
+        for(int j = 0; j < m_sizeJ; j++)
+        {
+            const int linIdx = indexer.linearIndex(i,j);
+
+            if(!m_materialGrid.isFluid(i,j))
+            {
+                if(linIdx >= threadRanges.at(currRangeIdx).end)
+                {
+                    output.endThreadDataRange();
+                    currRangeIdx++;
+                }
+                continue;
+            }
+
+            IndexedIPPCoefficientUnit unit;
+            unit.unitIndex = linIdx;
+
+            const double invscale = scale/(mat.data().at(matEntryIdx).nonsolidNeighborCount*scale);
+
+            const int jNegLinIdx = indexer.linearIdxOfOffset((int)linIdx,0,-1);
+            const int jNegP1LinIdx = indexer.linearIdxOfOffset((int)linIdx,0,-1)+1;
+            const int iNegLinIdx = indexer.linearIdxOfOffset((int)linIdx,-1,0);
+            const int iPosLinIdx = indexer.linearIdxOfOffset((int)linIdx,1,0);
+            const int jPosM1LinIdx = indexer.linearIdxOfOffset((int)linIdx,0,1)-1;
+            const int jPosLinIdx = indexer.linearIdxOfOffset((int)linIdx,0,1);
+
+            if(jNegLinIdx >= 0 && m_materialGrid.isFluid(jNegLinIdx))
+            {
+                unit.jNeg = invscale;
+            }
+
+            if(jNegP1LinIdx >= 0 && m_materialGrid.isFluid(jNegP1LinIdx))
+            {
+                unit.jNegP1 = invscale*invscale;
+            }
+
+            if(iNegLinIdx >= 0 && m_materialGrid.isFluid(iNegLinIdx))
+            {
+                unit.iNeg = invscale;
+            }
+
+            unit.diag = (invscale*invscale)*2.0 + 1.0;
+
+            if(iPosLinIdx >= 0 && m_materialGrid.isFluid(iPosLinIdx))
+            {
+                unit.iPos = invscale;
+            }
+
+            if(jPosM1LinIdx >= 0 && m_materialGrid.isFluid(jPosM1LinIdx))
+            {
+                unit.jPosM1 = invscale*invscale;
+            }
+
+            if(jPosLinIdx >= 0 && m_materialGrid.isFluid(jPosLinIdx))
+            {
+                unit.jPos = invscale;
+            }
+
+            if(linIdx >= threadRanges.at(currRangeIdx).end)
+            {
+                output.endThreadDataRange();
+                currRangeIdx++;
+            }
+
+            output.add(unit);
+            matEntryIdx++;
         }
     }
 

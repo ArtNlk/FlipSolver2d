@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "PressureIPPCoeficients.h"
 #include "dynamicmatrix.h"
 #include "grid2d.h"
 #include "materialgrid.h"
@@ -25,6 +26,7 @@ LinearSolver::LinearSolver()
 }
 
 bool LinearSolver::solve(const IndexedPressureParameters &matrixIn,
+                         const IndexedIPPCoefficients &precond,
                          std::vector<double> &result,
                          const std::vector<double> &vec,
                          int iterLimit,
@@ -66,7 +68,8 @@ bool LinearSolver::solve(const IndexedPressureParameters &matrixIn,
            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
            return true;
        }
-       aux = residual;
+       //aux = residual;
+       precond.multiply(residual, aux);
        //applyICPrecond(precond,residual,aux);
        //applyIPPrecond(&matrix,&residual,&aux);
        double newSigma = VOps::i().dot(aux,residual);

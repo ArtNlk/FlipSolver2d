@@ -176,7 +176,7 @@ public:
         m_threadDataRanges.push_back(Range(m_threadDataRanges.back().end,m_data.size()));
     }
 
-    auto& data()
+    const auto& data() const
     {
         return m_data;
     }

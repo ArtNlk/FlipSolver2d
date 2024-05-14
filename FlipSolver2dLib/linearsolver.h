@@ -11,6 +11,7 @@
 #include "staticmatrix.h"
 
 #include "pressuredata.h"
+#include "PressureIPPCoeficients.h"
 
 class LinearSolver
 {
@@ -19,6 +20,7 @@ public:
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
 
     bool solve(const IndexedPressureParameters &matrixIn,
+               const IndexedIPPCoefficients &precond,
                std::vector<double> &result,
                const std::vector<double> &vec,
                int iterLimit = 20,

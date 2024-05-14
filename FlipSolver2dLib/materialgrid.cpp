@@ -66,6 +66,36 @@ bool MaterialGrid::isSink(int i, int j) const
     return sinkTest(getAt(i,j));
 }
 
+bool MaterialGrid::isFluid(size_t i) const
+{
+    return fluidTest(m_data.at(i));
+}
+
+bool MaterialGrid::isStrictFluid(size_t i) const
+{
+    return strictFluidTest(m_data.at(i));
+}
+
+bool MaterialGrid::isSolid(size_t i) const
+{
+    return solidTest(m_data.at(i));
+}
+
+bool MaterialGrid::isEmpty(size_t i) const
+{
+    return emptyTest(m_data.at(i));
+}
+
+bool MaterialGrid::isSource(size_t i) const
+{
+    return sourceTest(m_data.at(i));
+}
+
+bool MaterialGrid::isSink(size_t i) const
+{
+    return sinkTest(m_data.at(i));
+}
+
 bool MaterialGrid::uVelocitySampleInside(int i, int j) const
 {
     return (!isEmpty(i,j) && !isEmpty(i-1, j));
