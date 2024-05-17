@@ -16,6 +16,7 @@
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
 #include "obstacle.h"
+#include "pressuredata.h"
 #include "sdfgrid.h"
 #include "sink.h"
 #include "staggeredvelocitygrid.h"
@@ -286,7 +287,7 @@ protected:
 
     void calcViscosityRhs(Eigen::VectorXd &rhs, Grid2d<float> &sourceGrid);
 
-    void calcDensityCorrectionRhs(Eigen::VectorXd &rhs);
+    void calcDensityCorrectionRhs(std::vector<double> &rhs);
     
     virtual IndexedPressureParameters getPressureProjectionMatrix();
 
@@ -365,6 +366,8 @@ protected:
     Grid2d<float> m_testGrid;
     Eigen::VectorXd m_rhs;
     Eigen::VectorXd m_solverResult;
+    std::vector<double> m_pressureRhs;
+    std::vector<double> m_pressureSolverResult;
 
     float m_stepDt;
     float m_frameDt;
@@ -391,7 +394,8 @@ protected:
 
     //using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
     using precond = InversePoissonPreconditioner<double, Eigen::Upper>;
-    Eigen::SparseMatrix<double,Eigen::RowMajor> m_pressureMatrix;
+    IndexedPressureParameters m_pressureMatrix;
+    IndexedIPPCoefficients m_pressurePrecond;
     // Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
     LinearSolver m_pressureSolver;
 
