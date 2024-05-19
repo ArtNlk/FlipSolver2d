@@ -46,9 +46,14 @@ protected:
 
     void applyPressuresToVelocityField(const std::vector<double> &pressures) override;
 
+    void applyPressureThreadU(Range range, const std::vector<double> &pressures);
+
+    void applyPressureThreadV(Range range,const std::vector<double> &pressures);
+
     void seedInitialFluid() override;
     
     IndexedPressureParameters getPressureProjectionMatrix() override;
+    IndexedIPPCoefficients getIPPCoefficients(const IndexedPressureParameters& mat) override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
 

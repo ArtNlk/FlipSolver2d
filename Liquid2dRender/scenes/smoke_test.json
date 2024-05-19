@@ -9,6 +9,7 @@
     "seed": 0,
     "particlesPerCell": 4,
     "picRatio": 0.03,
+    "pcgIterLimit": 1000,
     "cflNumber": 5,
     "temperatureDecayRate": 0.3,
     "concentrationDecayRate": 0.05,
