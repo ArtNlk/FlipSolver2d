@@ -87,14 +87,14 @@ void FlipSolver::project()
     std::vector<double> solverResult(cellCount(), 0.0);
 
     calcPressureRhs(rhs);
-    IndexedPressureParameters params = getPressureProjectionMatrix();
-    IndexedIPPCoefficients precond = getIPPCoefficients(params);
 //    //debug() << "Calculated rhs: " << rhs;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
 
-    if(!m_pressureSolver.solve(params,precond,solverResult,rhs, m_pcgIterLimit, m_projectTolerance)) {
-        std::cout << "Pressure solver solving failed!\n";
-        return;
+    if(!m_pressureSolver.solve(m_pressureMatrix,m_pressurePrecond,
+                                solverResult,rhs,
+                                m_pcgIterLimit, m_projectTolerance)) {
+        std::cout << "Pressure solver solving failed! Expect bogus pressures\n";
+
     }
 
 //    if(!m_pcgSolver.mfcgSolve(provider,m_pressures.data(),m_rhs,m_pcgIterLimit,1e-2))
@@ -460,9 +460,12 @@ void FlipSolver::step()
     m_markerParticles.rebinParticles();
     m_stats.endStage(PARTICLE_REBIN);
 
-    //Assumption: particles are adjusted not enough to require rebinning
-    densityCorrection();
-    m_stats.endStage(DENSITY);
+    if(!m_viscosityEnabled)
+    {
+        //Assumption: particles are adjusted not enough to require rebinning
+        densityCorrection();
+        m_stats.endStage(DENSITY);
+    }
 
     gridUpdate();
     m_stats.endStage(GRID_UPDATE);
@@ -480,13 +483,13 @@ void FlipSolver::step()
     m_stats.endStage(PRESSURE);
 
     updateVelocityFromSolids();
-   if(m_viscosityEnabled)
-   {
+    if(m_viscosityEnabled)
+    {
         applyViscosity();
         m_stats.endStage(VISCOSITY);
-        project();
-        m_stats.endStage(REPRESSURE);
-   }
+        //project();
+        //m_stats.endStage(REPRESSURE);
+    }
     m_fluidVelocityGrid.extrapolate(10);
     particleUpdate();
     m_stats.endStage(PARTICLE_UPDATE);
