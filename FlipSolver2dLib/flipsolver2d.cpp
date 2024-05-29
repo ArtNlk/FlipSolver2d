@@ -487,8 +487,8 @@ void FlipSolver::step()
     {
         applyViscosity();
         m_stats.endStage(VISCOSITY);
-        //project();
-        //m_stats.endStage(REPRESSURE);
+        project();
+        m_stats.endStage(REPRESSURE);
     }
     m_fluidVelocityGrid.extrapolate(10);
     particleUpdate();
@@ -681,6 +681,10 @@ void FlipSolver::reseedParticles()
             {
                 continue;
             }
+
+            ParticleBin& bin = m_markerParticles.binForGridIdx(i,j);
+            auto& viscVec = bin.particleProperties<float>(m_viscosityPropertyIndex);
+
             if(m_materialGrid.isSource(i,j))
             {
                 for(int p = 0; p < additionalParticles; p++)
@@ -690,9 +694,9 @@ void FlipSolver::reseedParticles()
                     //Vertex velocity = Vertex();
                     int emitterId = m_emitterId.at(i,j);
                     float viscosity = m_sources[emitterId].viscosity();
-                    m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
+                    size_t pIdx = m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
                     //size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
-                    //particleViscosities[pIdx] = viscosity;
+                    viscVec[pIdx] = viscosity;
                 }
             }
 //            else if(m_fluidSdf.at(i,j) < -1.f)
@@ -719,15 +723,17 @@ void FlipSolver::seedInitialFluid()
         {
             if(m_materialGrid.isStrictFluid(i,j))
             {
+                ParticleBin& bin = m_markerParticles.binForGridIdx(i,j);
+                auto& viscVec = bin.particleProperties<float>(m_viscosityPropertyIndex);
+
                 for(int p = 0; p < m_particlesPerCell; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
                     Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
                     float viscosity = m_viscosityGrid.interpolateAt(pos);
 
-                    m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
-                    //size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
-                    //particleViscosities.at(pIdx) = viscosity;
+                    size_t pIdx = m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
+                    viscVec.at(pIdx) = viscosity;
                 }
             }
         }
@@ -903,7 +909,7 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
         }
     }
 
-    if(currRangeIdx != threadRanges.size())
+    if(currRangeIdx < threadRanges.size())
     {
         output.endThreadDataRange();
     }

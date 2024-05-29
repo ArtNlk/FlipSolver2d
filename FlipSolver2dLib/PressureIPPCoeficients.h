@@ -95,7 +95,8 @@ public:
 
         std::vector<Range> ranges = ThreadPool::i()->splitRange(in.size());
 
-        //multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
+        multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
+        return;
 
         for(int i = 0; i < ranges.size(); i++)
         {

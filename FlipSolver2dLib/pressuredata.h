@@ -193,17 +193,19 @@ public:
 
         std::vector<Range> ranges = ThreadPool::i()->splitRange(in.size());
 
-        //multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
+        // multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
+
+        // return;
 
         for(int i = 0; i < ranges.size(); i++)
         {
-            if(i >= m_threadDataRanges.size())
-            {
-                ThreadPool::i()->enqueue(&IndexedPressureParameters::multiplyThread,this,
-                                         ranges.at(i),Range(0,0),std::cref(in),std::ref(out));
+            // if(i >= m_threadDataRanges.size())
+            // {
+            //     ThreadPool::i()->enqueue(&IndexedPressureParameters::multiplyThread,this,
+            //                              ranges.at(i),Range(0,0),std::cref(in),std::ref(out));
 
-                continue;
-            }
+            //     continue;
+            // }
             ThreadPool::i()->enqueue(&IndexedPressureParameters::multiplyThread,this,
                                      ranges.at(i),m_threadDataRanges.at(i),std::cref(in),std::ref(out));
         }
@@ -231,7 +233,7 @@ protected:
             }
             else
             {
-                //out[idx] = in[idx];
+                out[idx] = in[idx];
             }
         }
     }
