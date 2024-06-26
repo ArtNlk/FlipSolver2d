@@ -95,8 +95,8 @@ public:
 
         std::vector<Range> ranges = ThreadPool::i()->splitRange(in.size());
 
-        multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
-        return;
+        // multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
+        // return;
 
         for(int i = 0; i < ranges.size(); i++)
         {
@@ -104,11 +104,11 @@ public:
             {
                 ThreadPool::i()->enqueue(&IndexedIPPCoefficients::multiplyThread,this,
                                          ranges.at(i),Range(0,0),std::cref(in),std::ref(out));
-
                 continue;
             }
             ThreadPool::i()->enqueue(&IndexedIPPCoefficients::multiplyThread,this,
                                      ranges.at(i),m_threadDataRanges.at(i),std::cref(in),std::ref(out));
+            ThreadPool::i()->wait();
         }
         ThreadPool::i()->wait();
     }
@@ -118,7 +118,7 @@ protected:
     {
         if(dataRange.size() == 0)
         {
-            //std::copy(in.begin() + vecRange.start, in.begin() + vecRange.end,out.begin() + vecRange.start);
+            std::copy(in.begin() + vecRange.start, in.begin() + vecRange.end,out.begin() + vecRange.start);
             return;
         }
 

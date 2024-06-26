@@ -569,7 +569,8 @@ void FlipSolver::updateSolids()
 
 void FlipSolver::updateSources()
 {
-    float dx = m_dx;
+    const float dx = m_dx;
+    const float hdx = dx / 2.0;
     for (int i = 0; i < m_sizeI; i++)
     {
         for (int j = 0; j < m_sizeJ; j++)
@@ -577,7 +578,7 @@ void FlipSolver::updateSources()
             for(int emitterIdx = 0; emitterIdx < m_sources.size(); emitterIdx++)
             {
                 Emitter& e = m_sources[emitterIdx];
-                if(e.geometry().signedDistance(i*dx,j*dx) <= 0.f)
+                if(e.geometry().signedDistance(i*dx + hdx,j*dx + hdx) <= 0.f)
                 {
                     m_materialGrid.at(i,j) = FluidMaterial::SOURCE;
                     m_emitterId.at(i,j) = emitterIdx;

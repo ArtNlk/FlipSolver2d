@@ -199,13 +199,12 @@ public:
 
         for(int i = 0; i < ranges.size(); i++)
         {
-            // if(i >= m_threadDataRanges.size())
-            // {
-            //     ThreadPool::i()->enqueue(&IndexedPressureParameters::multiplyThread,this,
-            //                              ranges.at(i),Range(0,0),std::cref(in),std::ref(out));
-
-            //     continue;
-            // }
+            if(i >= m_threadDataRanges.size())
+            {
+                ThreadPool::i()->enqueue(&IndexedPressureParameters::multiplyThread,this,
+                                         ranges.at(i),Range(0,0),std::cref(in),std::ref(out));
+                continue;
+            }
             ThreadPool::i()->enqueue(&IndexedPressureParameters::multiplyThread,this,
                                      ranges.at(i),m_threadDataRanges.at(i),std::cref(in),std::ref(out));
         }
@@ -217,7 +216,7 @@ protected:
     {
         if(dataRange.size() == 0)
         {
-            //std::copy(in.begin() + vecRange.start, in.begin() + vecRange.end,out.begin() + vecRange.start);
+            std::copy(in.begin() + vecRange.start, in.begin() + vecRange.end,out.begin() + vecRange.start);
             return;
         }
 
