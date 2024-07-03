@@ -435,13 +435,13 @@ void FlipSolver::afterTransfer()
             {
                 int emitterId = m_emitterId.at(i,j);
                 m_viscosityGrid.at(i,j) = m_sources[emitterId].viscosity();
-//                if(m_sources[emitterId].velocityTransfer())
-//                {
+               if(m_sources[emitterId].velocityTransfer())
+               {
                     m_fluidVelocityGrid.setU(i,j,m_sources[emitterId].velocity().x() / m_dx);
                     m_fluidVelocityGrid.setV(i,j,m_sources[emitterId].velocity().y() / m_dx);
                     m_fluidVelocityGrid.setUValidity(i,j,true);
                     m_fluidVelocityGrid.setVValidity(i,j,true);
-//                }
+               }
             }
         }
     }
@@ -688,12 +688,15 @@ void FlipSolver::reseedParticles()
 
             if(m_materialGrid.isSource(i,j))
             {
+                int emitterId = m_emitterId.at(i,j);
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
-                    //Vertex velocity = Vertex();
-                    int emitterId = m_emitterId.at(i,j);
+                    Vertex velocity = Vertex();
+                    if(m_sources[emitterId].velocityTransfer())
+                    {
+                        velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    }
                     float viscosity = m_sources[emitterId].viscosity();
                     size_t pIdx = m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
                     //size_t pIdx = m_markerParticles.addMarkerParticle(pos,velocity);
@@ -1038,13 +1041,12 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> FlipSolver::getViscosityMatrix()
                 output.coeffRef(idx,idx) = 1.0;
                 continue;
             }
-            float v = 0.1f;
 
-            ip1Neighbor *= v * scale;
-            jp1Neighbor *= v * scale;
-            im1Neighbor *= v * scale;
-            jm1Neighbor *= v * scale;
-            diag *= v * scale;
+            ip1Neighbor *= (m_materialGrid.isSolid(i+1,j) ? m_viscosityGrid.at(i,j) : m_viscosityGrid.at(i+1,j)) * scale;
+            jp1Neighbor *= (m_materialGrid.isSolid(i, j+1) ? m_viscosityGrid.at(i,j) : m_viscosityGrid.at(i,j+1)) * scale;
+            im1Neighbor *= (m_materialGrid.isSolid(i-1, j) ? m_viscosityGrid.at(i,j) : m_viscosityGrid.at(i-1,j)) * scale;
+            jm1Neighbor *= (m_materialGrid.isSolid(i, j-1) ? m_viscosityGrid.at(i,j) : m_viscosityGrid.at(i,j-1)) * scale;
+            diag *= m_viscosityGrid.at(i,j) * scale;
             diag += 1.;
 
             output.coeffRef(idx,idx) = diag;

@@ -3,7 +3,7 @@
     "simType": "flip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
-    "resolution": 50,
+    "resolution": 128,
     "fps": 30,
     "maxSubsteps": 10,
     "seed": 0,
@@ -74,8 +74,10 @@
         },
         {
         "type": "source",
+        "enabled": false,
         "viscosity": 0.1,
         "velocity": [5,0],
+        "transferVelocity": false,
         "verts": [
           [5,10],
           [5,15],
@@ -87,6 +89,7 @@
         "type": "source",
         "viscosity": 10,
         "velocity": [5,0],
+        "transferVelocity": false,
         "verts": [
           [20,25],
           [20,30],

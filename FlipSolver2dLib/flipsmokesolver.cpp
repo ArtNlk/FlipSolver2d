@@ -175,10 +175,15 @@ void FlipSmokeSolver::reseedParticles()
 
             if(m_materialGrid.isSource(i,j))
             {
+                int emitterId = m_emitterId.at(i,j);
                 for(int p = 0; p < additionalParticles; p++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    Vertex velocity = Vertex();
+                    if(m_sources[emitterId].velocityTransfer())
+                    {
+                        velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    }
                     //                    int emitterId = m_emitterId.at(i,j);
                     //                    //float viscosity = m_sources[emitterId].viscosity();
                     //                    float conc = m_sources[emitterId].concentrartion();

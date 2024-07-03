@@ -229,7 +229,12 @@ void NBFlipSolver::reseedParticles()
                 {
                     continue;
                 }
-                for(int p = 0; p < additionalParticles; p++)
+
+                int emitterId = m_emitterId.at(i,j);
+                ParticleBin& bin = m_markerParticles.binForGridIdx(i,j);
+                auto& viscVec = bin.particleProperties<float>(m_viscosityPropertyIndex);
+
+                for(int pIdx = 0; pIdx < additionalParticles; pIdx++)
                 {
                     Vertex pos = jitteredPosInCell(i,j);
                     float newSdf = m_fluidSdf.lerpolateAt(pos);
@@ -238,9 +243,11 @@ void NBFlipSolver::reseedParticles()
                     {
                         continue;
                     }
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
-                    //Vertex velocity = Vertex();
-                    int emitterId = m_emitterId.at(i,j);
+                    Vertex velocity = Vertex();
+                    if(m_sources[emitterId].velocityTransfer())
+                    {
+                        velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    }
                     float viscosity = 0.f;
                     if(emitterId != -1)
                     {
@@ -254,6 +261,7 @@ void NBFlipSolver::reseedParticles()
                     //float temp = m_sources[emitterId].temperature();
                     m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
                     // particleViscosities[pIdx] = viscosity;
+                    viscVec[pIdx] = viscosity;
                 }
             }
         }
