@@ -24,7 +24,9 @@ set(HEADERS
     nbflipsolver.h
     markerparticlesystem.h
     pressuredata.h
-    PressureIPPCoeficients.h)
+    PressureIPPCoeficients.h
+    viscositymodel.h
+    inversepoissonpreconditioner.h)
 
 set(SOURCES
     linearindexable2d.cpp
@@ -48,7 +50,7 @@ set(SOURCES
     flipfiresolver.cpp
     nbflipsolver.cpp
     markerparticlesystem.cpp
-    inversepoissonpreconditioner.h
+    viscositymodel.cpp
 )
 
 set(SSE42_HEADERS

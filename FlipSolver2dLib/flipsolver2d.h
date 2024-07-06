@@ -22,6 +22,7 @@
 #include "staggeredvelocitygrid.h"
 #include "staticmatrix.h"
 #include "threadpool.h"
+#include "viscositymodel.h"
 
 #include <Eigen/Sparse>
 
@@ -49,6 +50,7 @@ struct FlipSolverParameters
     int gridSizeJ;
     float sceneScale;
     bool viscosityEnabled;
+    bool useHeavyViscosity;
     SimulationMethod simulationMethod;
     ParameterHandlingMethod parameterHandlingMethod;
 };
@@ -292,8 +294,6 @@ protected:
     virtual IndexedPressureParameters getPressureProjectionMatrix();
 
     virtual IndexedIPPCoefficients getIPPCoefficients(const IndexedPressureParameters& mat);
-    
-    Eigen::SparseMatrix<double, Eigen::RowMajor> getViscosityMatrix();
 
     Vertex jitteredPosInCell(int i, int j);
 
@@ -368,6 +368,8 @@ protected:
     Eigen::VectorXd m_solverResult;
     std::vector<double> m_pressureRhs;
     std::vector<double> m_pressureSolverResult;
+
+    std::shared_ptr<ViscosityModel> m_viscosityModel;
 
     float m_stepDt;
     float m_frameDt;
