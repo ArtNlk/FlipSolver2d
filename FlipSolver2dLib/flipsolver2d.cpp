@@ -126,61 +126,12 @@ void FlipSolver::project()
 
 void FlipSolver::applyViscosity()
 {
-    //updateLinearFluidViscosityMapping();
-    const double scale = 1.0;
-    Eigen::VectorXd rhs;
-    Eigen::VectorXd result;
-    rhs.resize(m_fluidVelocityGrid.velocityGridU().linearSize() +
-               m_fluidVelocityGrid.velocityGridV().linearSize());
-
-    result.resize(m_fluidVelocityGrid.velocityGridU().linearSize() +
-                  m_fluidVelocityGrid.velocityGridV().linearSize());
-
-    auto viscosityMatrix = m_viscosityModel->getMatrix(m_fluidVelocityGrid.velocityGridU(),
-                                                       m_fluidVelocityGrid.velocityGridV(),
-                                                       m_viscosityGrid,
-                                                       m_materialGrid,
-                                                       m_stepDt,
-                                                       m_dx,
-                                                       m_fluidDensity);
-
-    m_viscositySolver.setTolerance(1e-4);
-    //m_viscositySolver.setMaxIterations(500);
-    m_viscositySolver.compute(viscosityMatrix);
-    if(m_viscositySolver.info()!=Eigen::Success) {
-        std::cout << "Viscosity solver decomposition failed!\n";
-        return;
-    }
-
-    calcViscosityRhs(rhs,m_fluidVelocityGrid.velocityGridU());
-    result = m_viscositySolver.solve(rhs);
-    if(m_viscositySolver.info()!=Eigen::Success) {
-        std::cout << "Viscosity solver U solving failed!\n";
-        return;
-    }
-    std::cout << "Viscosity done with " << m_viscositySolver.iterations() << " iterations\n" << std::endl;
-
-    int vBaseIndex = m_fluidVelocityGrid.velocityGridU().linearSize();
-    for (int i = 0; i < m_sizeI; i++)
-    {
-        for (int j = 0; j < m_sizeJ; j++)
-        {
-            int idxU = m_fluidVelocityGrid.velocityGridU().linearIndex(i,j);
-            int idxV = m_fluidVelocityGrid.velocityGridV().linearIndex(i,j);
-            m_fluidVelocityGrid.setU(i,j,result[idxU]);
-            m_fluidVelocityGrid.setV(i,j,result[vBaseIndex + idxV]);
-        }
-    }
-
-    if(anyNanInf(m_fluidVelocityGrid.velocityGridU().data()))
-    {
-        std::cout << "NaN or inf in U velocity after viscosity!\n" << std::flush;
-    }
-
-    if(anyNanInf(m_fluidVelocityGrid.velocityGridV().data()))
-    {
-        std::cout << "NaN or inf in V velocity after viscosity!\n" << std::flush;
-    }
+    m_viscosityModel->apply(m_fluidVelocityGrid,
+                            m_viscosityGrid,
+                            m_materialGrid,
+                            m_stepDt,
+                            m_dx,
+                            m_fluidDensity);
 }
 
 void FlipSolver::advect()
@@ -1060,34 +1011,6 @@ void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
     }
 }
 
-void FlipSolver::calcViscosityRhs(Eigen::VectorXd &rhs, Grid2d<float>& sourceGrid)
-{
-    LinearIndexable2d& uIndexer = m_fluidVelocityGrid.velocityGridU();
-    LinearIndexable2d& vIndexer = m_fluidVelocityGrid.velocityGridV();
-    int vBaseIndex = uIndexer.linearSize();
-
-    for (int i = 0; i < m_sizeI+1; i++)
-    {
-        for (int j = 0; j < m_sizeJ+1; j++)
-        {
-            int idxU = uIndexer.linearIndex(i,j);
-            int idxV = vIndexer.linearIndex(i,j);
-
-            if(idxU != -1)
-            {
-                float u = m_fluidVelocityGrid.getU(i,j);
-                rhs[idxU] = m_fluidDensity * u;
-            }
-
-            if(idxV != -1)
-            {
-                float v = m_fluidVelocityGrid.getV(i,j);
-                rhs[vBaseIndex + idxV] = m_fluidDensity * v;
-            }
-        }
-    }
-}
-
 void FlipSolver::calcDensityCorrectionRhs(std::vector<double> &rhs)
 {
     const double scale = 1.0/m_stepDt;
@@ -1493,9 +1416,6 @@ void FlipSolver::centeredParamsToGrid()
 
 void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
 {
-    // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
-    //                                           (m_viscosityPropertyIndex);
-
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
@@ -1505,6 +1425,8 @@ void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
             if(binIdx >= 0)
             {
                 ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
+                auto& viscVec = currentBin.particleProperties<float>(m_viscosityPropertyIndex);
+
                 for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
                 {
                     Vertex position = currentBin.particlePosition(particleIdx);
@@ -1513,7 +1435,7 @@ void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
                     if(std::abs(weightCentered) > 1e-6f)
                     {
                         cWeights.at(i2d.i,i2d.j) += weightCentered;
-                        //m_viscosityGrid.at(i2d.i,i2d.j) += weightCentered * particleViscosities.at(particleIdx);
+                        m_viscosityGrid.at(i2d.i,i2d.j) += weightCentered * viscVec.at(particleIdx);
                         m_knownCenteredParams.at(i2d.i,i2d.j) = true;
                     }
                 }

@@ -2,8 +2,8 @@
 #define VISCOSITYMODEL_H
 
 #include "grid2d.h"
-#include "linearindexable2d.h"
 #include "materialgrid.h"
+#include "staggeredvelocitygrid.h"
 #include <Eigen/Sparse>
 
 class ViscosityModel
@@ -15,34 +15,58 @@ public:
 
     virtual ~ViscosityModel() = default;
 
-    virtual MatrixType getMatrix(const LinearIndexable2d& indexerU,
-                                 const LinearIndexable2d& indexerV,
-                                 const Grid2d<float>& viscosityGrid,
-                                 const MaterialGrid& materialGrid,
-                                 const float dt,
-                                 const float dx,
-                                 const float density) = 0;
+    virtual void apply(StaggeredVelocityGrid& velocityGrid,
+                     const Grid2d<float>& viscosityGrid,
+                     const MaterialGrid& materialGrid,
+                     float dt,
+                     float dx,
+                     float density) = 0;
+protected:
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Upper> m_viscositySolver;
 };
 
 class LightViscosityModel : public ViscosityModel
 {
-    MatrixType getMatrix(const LinearIndexable2d& indexerU,
-                        const LinearIndexable2d& indexerV,
-                        const Grid2d<float>& viscosityGrid,
-                        const MaterialGrid& materialGrid,
-                        const float dt,
-                        const float dx,
-                        const float density) override;
-};
+    void apply(StaggeredVelocityGrid& velocityGrid,
+               const Grid2d<float>& viscosityGrid,
+               const MaterialGrid& materialGrid,
+               float dt,
+               float dx,
+               float density) override;
 
-class HeavyViscosityModel : public ViscosityModel
-{
-    MatrixType getMatrix(const LinearIndexable2d& indexerU,
-                         const LinearIndexable2d& indexerV,
+    MatrixType getMatrix(StaggeredVelocityGrid& velocityGrid,
                          const Grid2d<float>& viscosityGrid,
                          const MaterialGrid& materialGrid,
                          const float dt,
                          const float dx,
-                         const float density) override;
+                         const float density);
+
+    void fillRhs(Eigen::VectorXd& rhs,
+                 const Grid2d<float>& velocityGrid,
+                 const LinearIndexable2d& indexer,
+                 float density);
+
+    void applyResult(Grid2d<float>& velocityGrid, const LinearIndexable2d& indexer, const Eigen::VectorXd& result, float density);
+};
+
+class HeavyViscosityModel : public ViscosityModel
+{
+    void apply(StaggeredVelocityGrid& velocityGrid,
+               const Grid2d<float>& viscosityGrid,
+               const MaterialGrid& materialGrid,
+               float dt,
+               float dx,
+               float density) override;
+
+    MatrixType getMatrix(StaggeredVelocityGrid& velocityGrid,
+                   const Grid2d<float>& viscosityGrid,
+                   const MaterialGrid& materialGrid,
+                   float dt,
+                   float dx,
+                   float density);
+
+    Eigen::VectorXd getRhs(const StaggeredVelocityGrid& velocityGrid, float density);
+
+    void applyResult(StaggeredVelocityGrid& velocityGrid, const Eigen::VectorXd& result);
 };
 #endif // VISCOSITYMODEL_H

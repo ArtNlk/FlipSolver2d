@@ -23,6 +23,16 @@ Grid2d<float> &StaggeredVelocityGrid::velocityGridV()
     return m_velocityGridV;
 }
 
+const Grid2d<float> &StaggeredVelocityGrid::velocityGridU() const
+{
+    return m_velocityGridU;
+}
+
+const Grid2d<float> &StaggeredVelocityGrid::velocityGridV() const
+{
+    return m_velocityGridV;
+}
+
 Grid2d<bool> &StaggeredVelocityGrid::uSampleValidityGrid()
 {
     return m_uSampleValidity;

@@ -13,6 +13,9 @@ public:
     Grid2d<float>& velocityGridU();
     Grid2d<float>& velocityGridV();
 
+    const Grid2d<float>& velocityGridU() const;
+    const Grid2d<float>& velocityGridV() const;
+
     Grid2d<bool>& uSampleValidityGrid();
     Grid2d<bool>& vSampleValidityGrid();
 

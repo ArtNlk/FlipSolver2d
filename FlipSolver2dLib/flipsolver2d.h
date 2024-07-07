@@ -287,8 +287,6 @@ protected:
 
     virtual void calcPressureRhs(std::vector<double> &rhs);
 
-    void calcViscosityRhs(Eigen::VectorXd &rhs, Grid2d<float> &sourceGrid);
-
     void calcDensityCorrectionRhs(std::vector<double> &rhs);
     
     virtual IndexedPressureParameters getPressureProjectionMatrix();
@@ -400,9 +398,6 @@ protected:
     IndexedIPPCoefficients m_pressurePrecond;
     // Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
     LinearSolver m_pressureSolver;
-
-    //Eigen::SparseMatrix<double,Eigen::RowMajor> m_viscosityMatrix;
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Upper> m_viscositySolver;
 
     size_t m_testValuePropertyIndex;
     size_t m_viscosityPropertyIndex;

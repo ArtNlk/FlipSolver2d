@@ -1,118 +1,131 @@
 #include "viscositymodel.h"
+#include "Eigen/src/Core/Matrix.h"
 
-ViscosityModel::MatrixType LightViscosityModel::getMatrix(const LinearIndexable2d &indexerU,
-                                                         const LinearIndexable2d &indexerV,
-                                                         const Grid2d<float> &viscosityGrid,
-                                                         const MaterialGrid& materialGrid,
-                                                         const float dt,
-                                                         const float dx,
-                                                         const float density)
+void LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
+                              const Grid2d<float>& viscosityGrid,
+                              const MaterialGrid& materialGrid,
+                              float dt,
+                              float dx,
+                              float density)
+{
+    Eigen::VectorXd rhs;
+    Eigen::VectorXd result;
+    rhs.resize(viscosityGrid.linearSize());
+
+    result.resize(viscosityGrid.linearSize());
+
+    auto viscosityMatrix = getMatrix(velocityGrid,
+                                     viscosityGrid,
+                                     materialGrid,
+                                     dt,
+                                     dx,
+                                     density);
+
+    m_viscositySolver.setTolerance(1e-4);
+    //m_viscositySolver.setMaxIterations(500);
+    m_viscositySolver.compute(viscosityMatrix);
+    if(m_viscositySolver.info()!=Eigen::Success) {
+        std::cout << "Viscosity solver decomposition failed!\n";
+        return;
+    }
+
+    fillRhs(rhs,velocityGrid.velocityGridU(),viscosityGrid,density);
+    result = m_viscositySolver.solve(rhs);
+    if(m_viscositySolver.info()!=Eigen::Success) {
+        std::cout << "Viscosity solver U solving failed!\n";
+        return;
+    }
+    std::cout << "Viscosity U done with " << m_viscositySolver.iterations() << " iterations\n" << std::endl;
+
+    applyResult(velocityGrid.velocityGridU(), viscosityGrid, result, density);
+
+    fillRhs(rhs,velocityGrid.velocityGridV(),viscosityGrid,density);
+    result = m_viscositySolver.solve(rhs);
+    if(m_viscositySolver.info()!=Eigen::Success) {
+        std::cout << "Viscosity solver V solving failed!\n";
+        return;
+    }
+    std::cout << "Viscosity V done with " << m_viscositySolver.iterations() << " iterations\n";
+
+    applyResult(velocityGrid.velocityGridV(), viscosityGrid, result, density);
+
+    // if(anyNanInf(velocityGrid.velocityGridU().data()))
+    // {
+    //     std::cout << "NaN or inf in U velocity after viscosity!\n" << std::flush;
+    // }
+
+    // if(anyNanInf(velocityGrid.velocityGridV().data()))
+    // {
+    //     std::cout << "NaN or inf in V velocity after viscosity!\n" << std::flush;
+    // }
+}
+
+ViscosityModel::MatrixType LightViscosityModel::getMatrix(StaggeredVelocityGrid &velocityGrid,
+                                                          const Grid2d<float> &viscosityGrid,
+                                                          const MaterialGrid &materialGrid,
+                                                          float dt,
+                                                          float dx,
+                                                          float density)
 {
     const LinearIndexable2d& indexer = viscosityGrid;
-    const size_t size = indexerU.linearSize() * 2;
+
+    const size_t size = indexer.linearSize();
 
     Eigen::SparseMatrix<double,Eigen::RowMajor> output = Eigen::SparseMatrix<double>();
     output.resize(size,size);
     output.reserve(Eigen::VectorXi::Constant(size,10));
 
     const double scale = dt;
-    const size_t vBaseIndex = indexerU.linearSize();
+    //const double scale = 1.0;
 
-    for(int i = 0; i < indexer.sizeI()+1; i++)
+    for(int i = 0; i < indexer.sizeI(); i++)
     {
-        for(int j = 0; j < indexer.sizeJ()+1; j++)
+        for(int j = 0; j < indexer.sizeJ(); j++)
         {
-            int idxU = indexerU.linearIndex(i,j);
-            int idxV = indexerV.linearIndex(i,j);
-            float fi = static_cast<float>(i);
-            float fj = static_cast<float>(j);
+            int idx = indexer.linearIndex(i,j);
+
+            double diag = 4.0;
+            double ip1Neighbor = 1.0;
+            double jp1Neighbor = 1.0;
+            double im1Neighbor = 1.0;
+            double jm1Neighbor = 1.0;
 
             if(materialGrid.isSolid(i,j))
             {
-                if(idxU != -1)
-                {
-                    output.coeffRef(idxU,idxU) = 1.0;
-                }
-
-                if(idxV != -1)
-                {
-                    output.coeffRef(vBaseIndex + idxV,vBaseIndex + idxV) = 1.0;
-                }
+                output.coeffRef(idx,idx) = 1.0;
                 continue;
             }
 
-            if(idxU != -1)
+            ip1Neighbor *= (materialGrid.isSolid(i+1,j) ? viscosityGrid.at(i,j) : viscosityGrid.at(i+1,j)) * scale;
+            jp1Neighbor *= (materialGrid.isSolid(i, j+1) ? viscosityGrid.at(i,j) : viscosityGrid.at(i,j+1)) * scale;
+            im1Neighbor *= (materialGrid.isSolid(i-1, j) ? viscosityGrid.at(i,j) : viscosityGrid.at(i-1,j)) * scale;
+            jm1Neighbor *= (materialGrid.isSolid(i, j-1) ? viscosityGrid.at(i,j) : viscosityGrid.at(i,j-1)) * scale;
+            diag *= viscosityGrid.at(i,j) * scale;
+            diag += 1.;
+
+            output.coeffRef(idx,idx) = diag;
+            if(indexer.inBounds(i+1,j))
             {
-                double diag = 4.0;
-                double ip1Neighbor = scale * viscosityGrid.lerpolateAt(fi+1.0,fj);
-                double jp1Neighbor = scale * viscosityGrid.lerpolateAt(fi,fj+1.5);
-                double im1Neighbor = scale * viscosityGrid.lerpolateAt(fi-1.0,fj);
-                double jm1Neighbor = scale * viscosityGrid.lerpolateAt(fi,fj-0.5);
-
-                diag *= viscosityGrid.lerpolateAt(fi-0.5,fj) * scale;
-                diag += 1.;
-
-                output.coeffRef(idxU,idxU) = diag;
-                if(indexer.inBounds(i+1,j))
-                {
-                    output.coeffRef(idxU,indexer.linearIndex(i+1,j)) = ip1Neighbor;
-                    output.coeffRef(indexer.linearIndex(i+1,j),idxU) = ip1Neighbor;
-                }
-
-                if(indexer.inBounds(i,j+1))
-                {
-                    output.coeffRef(idxU,indexer.linearIndex(i,j+1)) = jp1Neighbor;
-                    output.coeffRef(indexer.linearIndex(i,j+1),idxU) = jp1Neighbor;
-                }
-
-                if(indexer.inBounds(i-1,j))
-                {
-                    output.coeffRef(idxU,indexer.linearIndex(i-1,j)) = im1Neighbor;
-                    output.coeffRef(indexer.linearIndex(i-1,j),idxU) = im1Neighbor;
-                }
-
-                if(indexer.inBounds(i,j-1))
-                {
-                    output.coeffRef(idxU,indexer.linearIndex(i,j-1)) = jm1Neighbor;
-                    output.coeffRef(indexer.linearIndex(i,j-1),idxU) = jm1Neighbor;
-                }
+                output.coeffRef(idx,indexer.linearIndex(i+1,j)) = ip1Neighbor;
+                output.coeffRef(indexer.linearIndex(i+1,j),idx) = ip1Neighbor;
             }
 
-            if(idxV != -1)
+            if(indexer.inBounds(i,j+1))
             {
-                double diag = 4.0;
-                double ip1Neighbor = scale * viscosityGrid.lerpolateAt(fi+1.5,fj);
-                double jp1Neighbor = scale * viscosityGrid.lerpolateAt(fi,fj+1.0);
-                double im1Neighbor = scale * viscosityGrid.lerpolateAt(fi-0.5,fj);
-                double jm1Neighbor = scale * viscosityGrid.lerpolateAt(fi,fj-1.0);
+                output.coeffRef(idx,indexer.linearIndex(i,j+1)) = jp1Neighbor;
+                output.coeffRef(indexer.linearIndex(i,j+1),idx) = jp1Neighbor;
+            }
 
-                diag *= viscosityGrid.lerpolateAt(fi,fj-0.5) * scale;
-                diag += 1.;
+            if(indexer.inBounds(i-1,j))
+            {
+                output.coeffRef(idx,indexer.linearIndex(i-1,j)) = im1Neighbor;
+                output.coeffRef(indexer.linearIndex(i-1,j),idx) = im1Neighbor;
+            }
 
-                output.coeffRef(vBaseIndex+idxV,vBaseIndex+idxV) = diag;
-                if(indexer.inBounds(i+1,j))
-                {
-                    output.coeffRef(vBaseIndex+idxV,indexer.linearIndex(i+1,j)) = ip1Neighbor;
-                    output.coeffRef(indexer.linearIndex(i+1,j),vBaseIndex+idxV) = ip1Neighbor;
-                }
-
-                if(indexer.inBounds(i,j+1))
-                {
-                    output.coeffRef(vBaseIndex+idxV,indexer.linearIndex(i,j+1)) = jp1Neighbor;
-                    output.coeffRef(indexer.linearIndex(i,j+1),vBaseIndex+idxV) = jp1Neighbor;
-                }
-
-                if(indexer.inBounds(i-1,j))
-                {
-                    output.coeffRef(vBaseIndex+idxV,indexer.linearIndex(i-1,j)) = im1Neighbor;
-                    output.coeffRef(indexer.linearIndex(i-1,j),vBaseIndex+idxV) = im1Neighbor;
-                }
-
-                if(indexer.inBounds(i,j-1))
-                {
-                    output.coeffRef(vBaseIndex+idxV,indexer.linearIndex(i,j-1)) = jm1Neighbor;
-                    output.coeffRef(indexer.linearIndex(i,j-1),vBaseIndex+idxV) = jm1Neighbor;
-                }
+            if(indexer.inBounds(i,j-1))
+            {
+                output.coeffRef(idx,indexer.linearIndex(i,j-1)) = jm1Neighbor;
+                output.coeffRef(indexer.linearIndex(i,j-1),idx) = jm1Neighbor;
             }
         }
     }
@@ -122,15 +135,77 @@ ViscosityModel::MatrixType LightViscosityModel::getMatrix(const LinearIndexable2
     return output;
 }
 
-ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(const LinearIndexable2d &indexerU,
-                                                          const LinearIndexable2d &indexerV,
-                                                          const Grid2d<float> &viscosityGrid,
-                                                          const MaterialGrid &materialGrid,
-                                                          const float dt,
-                                                          const float dx,
-                                                          const float density)
+void LightViscosityModel::fillRhs(Eigen::VectorXd& rhs, const Grid2d<float> &velocityGrid, const LinearIndexable2d &indexer, float density)
+{
+    for (int i = 0; i < indexer.sizeI(); i++)
+    {
+        for (int j = 0; j < indexer.sizeJ(); j++)
+        {
+            int idx = indexer.linearIndex(i,j);
+            rhs[idx] = density * velocityGrid.at(i,j);
+        }
+    }
+}
+
+void LightViscosityModel::applyResult(Grid2d<float> &velocityGrid, const LinearIndexable2d &indexer, const Eigen::VectorXd &result, float density)
+{
+    for (int i = 0; i < indexer.sizeI(); i++)
+    {
+        for (int j = 0; j < indexer.sizeJ(); j++)
+        {
+            int idx = indexer.linearIndex(i,j);
+            velocityGrid.setAt(i,j,result[idx]/density);
+        }
+    }
+}
+
+void HeavyViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
+                              const Grid2d<float>& viscosityGrid,
+                              const MaterialGrid& materialGrid,
+                              float dt,
+                              float dx,
+                              float density)
+{
+    Eigen::VectorXd rhs = getRhs(velocityGrid, density);
+    Eigen::VectorXd result;
+    result.resize(rhs.size());
+
+    auto viscosityMatrix = getMatrix(velocityGrid,
+                                   viscosityGrid,
+                                   materialGrid,
+                                   dt,
+                                   dx,
+                                   density);
+
+    m_viscositySolver.setTolerance(1e-4);
+    //m_viscositySolver.setMaxIterations(500);
+    m_viscositySolver.compute(viscosityMatrix);
+    if(m_viscositySolver.info()!=Eigen::Success) {
+        std::cout << "Viscosity solver decomposition failed!\n";
+        return;
+    }
+
+    result = m_viscositySolver.solve(rhs);
+    if(m_viscositySolver.info()!=Eigen::Success) {
+        std::cout << "Viscosity solver U solving failed!\n";
+        return;
+    }
+    std::cout << "Viscosity done with " << m_viscositySolver.iterations() << " iterations\n" << std::endl;
+
+    applyResult(velocityGrid, result);
+}
+
+ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid &velocityGrid,
+                                    const Grid2d<float> &viscosityGrid,
+                                    const MaterialGrid &materialGrid,
+                                    float dt,
+                                    float dx,
+                                    float density)
 {
     const LinearIndexable2d& indexer = viscosityGrid;
+    const LinearIndexable2d& indexerU = velocityGrid.velocityGridU();
+    const LinearIndexable2d& indexerV = velocityGrid.velocityGridV();
+
     const size_t size = indexerU.linearSize() +
                         indexerV.linearSize();
 
@@ -316,4 +391,75 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(const LinearIndexable2
     output.makeCompressed();
 
     return output;
+}
+
+Eigen::VectorXd HeavyViscosityModel::getRhs(const StaggeredVelocityGrid &velocityGrid, float density)
+{
+    const LinearIndexable2d& uIndexer = velocityGrid.velocityGridU();
+    const LinearIndexable2d& vIndexer = velocityGrid.velocityGridV();
+    int vBaseIndex = uIndexer.linearSize();
+
+    Eigen::VectorXd rhs;
+    rhs.resize(uIndexer.linearSize() +
+               vIndexer.linearSize());
+
+    for (int i = 0; i < uIndexer.sizeI(); i++)
+    {
+        for (int j = 0; j < uIndexer.sizeJ(); j++)
+        {
+            int idxU = uIndexer.linearIndex(i,j);
+
+            float u = velocityGrid.getU(i,j);
+            rhs[idxU] = density * u;
+        }
+    }
+
+    for (int i = 0; i < vIndexer.sizeI(); i++)
+    {
+        for (int j = 0; j < vIndexer.sizeJ(); j++)
+        {
+            int idxV = vIndexer.linearIndex(i,j);
+
+            float v = velocityGrid.getV(i,j);
+            rhs[vBaseIndex + idxV] = density * v;
+        }
+    }
+
+    return rhs;
+}
+
+void HeavyViscosityModel::applyResult(StaggeredVelocityGrid &velocityGrid,
+                                      const Eigen::VectorXd &result)
+{
+    const LinearIndexable2d& uIndexer = velocityGrid.velocityGridU();
+    const LinearIndexable2d& vIndexer = velocityGrid.velocityGridV();
+    int vBaseIndex = velocityGrid.velocityGridU().linearSize();
+
+    for (int i = 0; i < uIndexer.sizeI(); i++)
+    {
+        for (int j = 0; j < uIndexer.sizeJ(); j++)
+        {
+            int idxU = uIndexer.linearIndex(i,j);
+            velocityGrid.setU(i,j,result[idxU]);
+        }
+    }
+
+    for (int i = 0; i < vIndexer.sizeI(); i++)
+    {
+        for (int j = 0; j < vIndexer.sizeJ(); j++)
+        {
+            int idxV = vIndexer.linearIndex(i,j);
+            velocityGrid.setV(i,j,result[vBaseIndex + idxV]);
+        }
+    }
+
+    if(anyNanInf(velocityGrid.velocityGridU().data()))
+    {
+        std::cout << "NaN or inf in U velocity after viscosity!\n" << std::flush;
+    }
+
+    if(anyNanInf(velocityGrid.velocityGridV().data()))
+    {
+        std::cout << "NaN or inf in V velocity after viscosity!\n" << std::flush;
+    }
 }
