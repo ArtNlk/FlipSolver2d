@@ -979,14 +979,20 @@ void FluidRenderer::reloadParticlesFromTestValue()
 {
     int oldParticlesSize = m_particleVerts.size();
     m_particleVerts.clear();
-    // std::vector<float>& testValues = m_solver->markerParticles().particleProperties<float>(
-    //     m_solver->testValuePropertyIndex());
-    // for(size_t idx = 0; idx < m_solver->markerParticles().particleCount(); idx++)
-    // {
-    //     Vertex position = m_solver->markerParticles().positions()[idx];
-    //     Color pColor = Color(testValues[idx],testValues[idx],testValues[idx]);
-    //     addParticle(position,pColor);
-    // }
+
+    for(ParticleBin& bin : m_solver->markerParticles().bins().data())
+    {
+        std::vector<float>& testValues = bin.particleProperties<float>(
+            m_solver->testValuePropertyIndex());
+
+        for(size_t idx = 0; idx < bin.size(); idx++)
+        {
+            Vertex position = bin.positions()[idx];
+            Color pColor = Color(testValues[idx],testValues[idx],testValues[idx]);
+            addParticle(position,pColor);
+        }
+    }
+
     if(m_particleVerts.size() > oldParticlesSize)
     {
         setupParticleVerts();

@@ -1,6 +1,6 @@
 {
   "settings": {
-    "simType": "flip",
+    "simType": "nbflip",
     "domainSizeI": 50,
     "domainSizeJ": 50,
     "resolution": 128,
@@ -75,8 +75,8 @@
         },
         {
         "type": "source",
-        "enabled": false,
-        "viscosity": 0.1,
+        "enabled": true,
+        "viscosity": 0.01,
         "velocity": [5,0],
         "transferVelocity": false,
         "verts": [
@@ -88,7 +88,7 @@
         },
         {
         "type": "source",
-        "viscosity": 10,
+        "viscosity": 0.5,
         "velocity": [5,0],
         "transferVelocity": false,
         "verts": [

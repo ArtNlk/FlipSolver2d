@@ -38,13 +38,15 @@ protected:
 
     void fluidSdfFromInitialFluid();
 
-    void updateSdfFromSources();
+    void updateGridFromSources();
 
     void combineAdvectedGrids();
 
     void combineLevelset();
 
     void combineVelocityGrid();
+
+    void combineCenteredGrids();
     
     Vertex inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid& grid);
 
@@ -52,10 +54,23 @@ protected:
 
 protected:
 
+    inline float nbCombine(float grid, float particle, float sdf)
+    {
+        if(sdf > m_combinationBand)
+        {
+            return particle;
+        }
+        else
+        {
+            return grid;
+        }
+    };
+
     void centeredParamsToGrid() override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float> &cWeights);
 
+    Grid2d<float> m_advectedViscosity;
     StaggeredVelocityGrid m_advectedVelocity;
     SdfGrid m_advectedSdf;
     Grid2d<float> m_uWeights;

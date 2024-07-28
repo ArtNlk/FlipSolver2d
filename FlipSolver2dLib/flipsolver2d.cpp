@@ -1135,10 +1135,10 @@ void FlipSolver::applyPressuresToVelocityField(const std::vector<double> &pressu
     }
     ThreadPool::i()->wait();
 
-    for(int i = 0; i < pressures.size(); i++)
-    {
-        m_testGrid.data().at(i) = pressures.at(i) / 100.0;
-    }
+    // for(int i = 0; i < pressures.size(); i++)
+    // {
+    //     m_testGrid.data().at(i) = pressures.at(i) / 100.0;
+    // }
 
 //    if(anyNanInf(m_fluidVelocityGrid.velocityGridU().data()))
 //    {
