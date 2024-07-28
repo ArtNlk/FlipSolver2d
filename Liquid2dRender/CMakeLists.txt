@@ -96,7 +96,8 @@ file(GLOB SCENES
 
 set(CONFIG_FILE "./config.json")
 
-add_executable(LiquidRenderApp ${HEADERS} ${SOURCES} ${SCENES} ${CONFIG_FILE})
+add_executable(LiquidRenderApp ${HEADERS} ${SOURCES} ${SCENES} ${CONFIG_FILE}
+    scenes/level_eq.json)
 
 get_filename_component(filename ${CONFIG_FILE} NAME)
 file(READ "${CONFIG_FILE}" ignored)

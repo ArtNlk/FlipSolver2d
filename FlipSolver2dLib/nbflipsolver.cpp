@@ -245,7 +245,7 @@ void NBFlipSolver::reseedParticles()
                         continue;
                     }
                     Vertex velocity = Vertex();
-                    if(m_sources[emitterId].velocityTransfer())
+                    if(emitterId != -1 && m_sources[emitterId].velocityTransfer())
                     {
                         velocity = m_fluidVelocityGrid.velocityAt(pos);
                     }
