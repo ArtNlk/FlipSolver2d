@@ -108,7 +108,6 @@ public:
             }
             ThreadPool::i()->enqueue(&IndexedIPPCoefficients::multiplyThread,this,
                                      ranges.at(i),m_threadDataRanges.at(i),std::cref(in),std::ref(out));
-            ThreadPool::i()->wait();
         }
         ThreadPool::i()->wait();
     }
