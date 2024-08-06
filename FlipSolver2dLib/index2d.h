@@ -1,6 +1,19 @@
 #ifndef INDEX2D_H
 #define INDEX2D_H
 
+#ifndef HAVE_SSIZE_T
+#if defined(_WIN32) || defined(_WIN64)
+typedef ptrdiff_t ssize_t; // ssize_t equivalent on Windows
+#define HAVE_SSIZE_T
+#elif defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
+#include <sys/types.h>
+#define HAVE_SSIZE_T
+#else
+// Fallback definition if no other platform-specific definition is available
+typedef long ssize_t;
+#define HAVE_SSIZE_T
+#endif
+#endif
 
 struct Index2d
 {
@@ -10,14 +23,14 @@ struct Index2d
     {
     }
 
-    Index2d(int i, int j) :
+    Index2d(ssize_t i, ssize_t j) :
         i(i),
         j(j)
     {
     }
 
-    int i;
-    int j;
+    ssize_t i;
+    ssize_t j;
 };
 
 #endif // INDEX2D_H

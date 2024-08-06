@@ -177,19 +177,19 @@ struct RebinRecord
 class MarkerParticleSystem
 {
 public:
-    MarkerParticleSystem(int gridSizeI, int gridSizeJ, size_t binSize);
+    MarkerParticleSystem(size_t gridSizeI, size_t gridSizeJ, size_t binSize);
 
-    ParticleBin& binForGridIdx(int linIdx);
+    ParticleBin& binForGridIdx(size_t linIdx);
     ParticleBin& binForGridIdx(Index2d idx);
-    ParticleBin& binForGridIdx(int i, int j);
+    ParticleBin& binForGridIdx(size_t i, size_t j);
     ParticleBin& binForGridPosition(Vertex pos);
 
-    ParticleBin& binForBinIdx(int linIdx);
+    ParticleBin& binForBinIdx(size_t linIdx);
 
-    int gridToBinIdx(Index2d idx);
-    int gridToBinIdx(Vertex pos);
-    int gridToBinIdx(int linIdx);
-    int gridToBinIdx(int i, int j);
+    ssize_t gridToBinIdx(Index2d idx);
+    ssize_t gridToBinIdx(Vertex pos);
+    ssize_t gridToBinIdx(ssize_t linIdx);
+    ssize_t gridToBinIdx(ssize_t i, ssize_t j);
 
     Grid2d<ParticleBin>& bins();
 
@@ -219,11 +219,11 @@ public:
 
     Index2d binIdxForIdx(Index2d idx);
 
-    Index2d binIdxForIdx(int i, int j);
+    Index2d binIdxForIdx(ssize_t i, ssize_t j);
 
-    std::array<int,9> binsForGridCell(Index2d idx);
+    std::array<ssize_t,9> binsForGridCell(Index2d idx);
 
-    std::array<int,9> binsForGridCell(int i, int j);
+    std::array<ssize_t,9> binsForGridCell(ssize_t i, ssize_t j);
 
     size_t particleCount() const;
 

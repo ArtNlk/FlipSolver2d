@@ -84,7 +84,7 @@ float simmath::lerpVGrid(float i, float j, const Grid2d<float> &gridV)
     return simmath::lerp(v1,v2,iLerpFactor);
 }
 
-Vertex simmath::gradCenteredGrid(int i, int j, const Grid2d<float> &grid)
+Vertex simmath::gradCenteredGrid(ssize_t i, ssize_t j, const Grid2d<float> &grid)
 {
     float neighborIp1 = grid.getAt(i+1,j);
     float neighborIm1 = grid.getAt(i-1,j);
@@ -120,220 +120,6 @@ float simmath::avg(float a, float b)
     return (a+b)/2.f;
 }
 
-void simmath::fastSweep(Grid2d<float> &values, Grid2d<bool> &extrapFlags, std::function<float (Grid2d<float> &, Vertex &, void *)> &updateFunc, void *additionalParameters)
-{
-    int maxIter = 100;
-    float err = 0.0;
-    float maxError = 1e-4f;
-    for(int i = 0; i < values.sizeI(); i++)
-    {
-        for(int j = 0; j < values.sizeJ(); j++)
-        {
-            if(extrapFlags.at(i,j))
-            {
-                values.at(i,j) = 1e4f;
-            }
-        }
-    }
-
-    for(int iter = 0; iter < maxIter; iter++)
-    {
-        err = 0.f;
-        for(int i = 0; i < values.sizeI(); i++)
-        {
-            for(int j = 0; j < values.sizeJ(); j++)
-            {
-                if(extrapFlags.at(i,j))
-                {
-                    Vertex pos(i,j);
-                    float newValue = updateFunc(values, pos, additionalParameters);
-                    if(!std::isnan(newValue))
-                    {
-                        err = std::max(err,std::abs(newValue-values.at(i,j)));
-                        values.at(i,j) = newValue;
-                    }
-                }
-            }
-        }
-
-        for(int i = 0; i < values.sizeI(); i++)
-        {
-            for(int j = values.sizeJ() - 1; j >= 0; j--)
-            {
-                if(extrapFlags.at(i,j))
-                {
-                    Vertex pos(i,j);
-                    float newValue = updateFunc(values, pos,additionalParameters);
-                    if(!std::isnan(newValue))
-                    {
-                        err = std::max(err,std::abs(newValue-values.at(i,j)));
-                        values.at(i,j) = newValue;
-                    }
-                }
-            }
-        }
-
-        for(int i = values.sizeI() - 1; i >= 0; i--)
-        {
-            for(int j = 0; j < values.sizeJ(); j++)
-            {
-                if(extrapFlags.at(i,j))
-                {
-                    Vertex pos(i,j);
-                    float newValue = updateFunc(values, pos,additionalParameters);
-                    if(!std::isnan(newValue))
-                    {
-                        err = std::max(err,std::abs(newValue-values.at(i,j)));
-                        values.at(i,j) = newValue;
-                    }
-                }
-            }
-        }
-
-        for(int i = values.sizeI() - 1; i >= 0; i--)
-        {
-            for(int j = values.sizeJ() - 1; j >= 0; j--)
-            {
-                if(extrapFlags.at(i,j))
-                {
-                    Vertex pos(i,j);
-                    float newValue = updateFunc(values, pos,additionalParameters);
-                    if(!std::isnan(newValue))
-                    {
-                        err = std::max(err,std::abs(newValue-values.at(i,j)));
-                        values.at(i,j) = newValue;
-                    }
-                }
-            }
-        }
-
-        if(err <= maxError)
-        {
-            std::cout << "fast sweep finished err = " << err << " iter = " << iter << '\n';
-            return;
-        }
-    }
-    std::cout << "fast sweep out of iter! err = " << err << '\n';
-}
-
-float simmath::normalDerivLinearExapolationUpdate(Grid2d<float> &grid, Vertex &pos, void* /*unused*/)
-{
-    int i = static_cast<int>(pos.x());
-    int j = static_cast<int>(pos.y());
-    float h = grid.sizeI() * grid.sizeJ();
-    Vertex normal = simmath::gradCenteredGrid(i,j,grid).normalized();
-    bool normalXPositive = normal.x() > 0;
-    bool normalYPositive = normal.y() > 0;
-    Index2d iNeighborIndex = normalXPositive? Index2d(i-1,j) : Index2d(i+1,j);
-    Index2d jNeighborIndex = normalYPositive? Index2d(i,j-1) : Index2d(i,j+1);
-    float aySign = normalXPositive != normalYPositive? -1 : 1;
-
-    float ax = normal.x() * grid.getAt(iNeighborIndex);
-    float ay = normal.y() * grid.getAt(jNeighborIndex) * aySign;
-    float denom = normal.x() + (normal.y() * aySign);
-    return (ax+ay)/denom;
-}
-
-float simmath::sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex &pos, void *normalDerivGridPtr)
-{
-    Grid2d<float>* normalDerivGrid = static_cast<Grid2d<float>*>(normalDerivGridPtr);
-    int i = static_cast<int>(pos.x());
-    int j = static_cast<int>(pos.y());
-    Vertex normal = simmath::gradCenteredGrid(i,j,grid).normalized();
-    bool normalXPositive = normal.x() > 0;
-    bool normalYPositive = normal.y() > 0;
-
-    Index2d iNeighborIndex = normalXPositive? Index2d(i-1,j) : Index2d(i+1,j);
-
-    Index2d jNeighborIndex = normalYPositive? Index2d(i,j-1) : Index2d(i,j+1);
-
-    float aySign = normalXPositive != normalYPositive? -1 : 1;
-    float fSign = normalXPositive? 1 : -1;
-
-    float ax = normal.x() * grid.getAt(iNeighborIndex);
-    float ay = normal.y() * grid.getAt(jNeighborIndex) * aySign;
-    float fFactor = normalDerivGrid->getAt(i,j) * fSign;
-    float denom = normal.x() + (normal.y() * aySign);
-    return (ax+ay+fFactor)/denom;
-}
-
-Grid2d<float> simmath::calculateCenteredGridCurvature(Grid2d<float> &grid)
-{
-    Grid2d<float> output(grid.sizeI(), grid.sizeJ(), 0.f, grid.oobStrat());
-    Grid2d<float> tempI(grid.sizeI(), grid.sizeJ(), 0.f, OOBStrategy::OOB_EXTEND);
-    Grid2d<float> tempJ(grid.sizeI(), grid.sizeJ(), 0.f, OOBStrategy::OOB_EXTEND);
-
-//    for(int i = 0; i < grid.sizeI(); i++)
-//    {
-//        for(int j = 0; j < grid.sizeJ(); j++)
-//        {
-//            Vertex deriv = simmath::gradCenteredGrid(i,j,grid);
-//            float derivI = deriv.x();
-//            float derivJ = deriv.y();
-//            Vertex secondDeriv = simmath::secondPartialDerivOnedir(i,j,grid);
-//            float secondDerivI = secondDeriv.x();
-//            float secondDerivJ = secondDeriv.y();
-//            float secondDerivIj = simmath::secondPartialDerivIj(i,j,grid);
-
-//            float firstTerm = derivI*derivI*secondDerivJ;
-//            float secondTerm = 2.f*derivI*derivJ*secondDerivIj;
-//            float thirdTerm = derivJ*derivJ*secondDerivI;
-//            float denom = simmath::gradCenteredGrid(i,j,grid).distFromZero();
-//            denom = denom*denom*denom;
-
-//            output.at(i,j) = (firstTerm + secondTerm + thirdTerm) / denom;
-//        }
-//    }
-
-    for(int i = 0; i < grid.sizeI(); i++)
-    {
-        for(int j = 0; j < grid.sizeJ(); j++)
-        {
-            Vertex grad = simmath::gradCenteredGrid(i,j,grid);
-            Vertex normal = grad / grad.distFromZero();
-            tempI.at(i,j) = normal.x();
-            tempJ.at(i,j) = normal.y();
-        }
-    }
-
-    for(int i = 0; i < grid.sizeI(); i++)
-    {
-        for(int j = 0; j < grid.sizeJ(); j++)
-        {
-            output.at(i,j) = simmath::gradCenteredGrid(i,j,tempI).x();
-            output.at(i,j) += simmath::gradCenteredGrid(i,j,tempJ).y();
-        }
-    }
-
-    return output;
-}
-
-Vertex simmath::secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid, float dx)
-{
-    float currentValue = grid.at(i,j);
-    float ip1Value = grid.getAt(i+1,j);
-    float im1Value = grid.getAt(i-1,j);
-    float jp1Value = grid.getAt(i,j+1);
-    float jm1Value = grid.getAt(i,j-1);
-
-    float derivI = ip1Value - 2*currentValue + im1Value;
-    float derivJ = jp1Value - 2*currentValue + jm1Value;
-    float norm = dx*dx;
-
-    return Vertex(derivI/norm, derivJ/norm);
-}
-
-float simmath::secondPartialDerivIj(int i, int j, Grid2d<float> &grid, float dx)
-{
-    float ip1jp1Value = grid.getAt(i+1,j+1);
-    float im1jp1Value = grid.getAt(i-1,j+1);
-    float ip1jm1Value = grid.getAt(i+1,j-1);
-    float im1jm1Value = grid.getAt(i-1,j-1);
-
-    return 0.25f * (ip1jp1Value - im1jp1Value - ip1jm1Value + im1jm1Value) / (dx*dx);
-}
-
-
 float simmath::lerpCenteredGrid(Vertex &position, const Grid2d<float> &grid, Vertex gridOffset)
 {
     return lerpCenteredGrid(position.x(), position.y(), grid, gridOffset);
@@ -366,13 +152,13 @@ float simmath::lerpCenteredGrid(float i, float j, const Grid2d<float> &grid, Ver
 void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bool> &flagGrid,
                                       int extrapRadius, int neighborRadius, bool vonNeumannNeighborMode)
 {
-    int sizeI = extrapolatedGrid.sizeI();
-    int sizeJ = extrapolatedGrid.sizeJ();
+    size_t sizeI = extrapolatedGrid.sizeI();
+    size_t sizeJ = extrapolatedGrid.sizeJ();
     Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
-    std::queue<int> wavefront;
-    for(int i = 0; i < sizeI; i++)
+    std::queue<size_t> wavefront;
+    for(size_t i = 0; i < sizeI; i++)
     {
-        for(int j = 0; j < sizeJ; j++)
+        for(size_t j = 0; j < sizeJ; j++)
         {
             if(flagGrid.at(i,j))
             {
@@ -381,13 +167,13 @@ void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bo
         }
     }
 
-    for(int i = 0; i < sizeI; i++)
+    for(size_t i = 0; i < sizeI; i++)
     {
-        for(int j = 0; j < sizeJ; j++)
+        for(size_t j = 0; j < sizeJ; j++)
         {
             if(markers.at(i,j) != 0)
             {
-                for(int neighborIndex : extrapolatedGrid.getNeighborhood(i,j))
+                for(ssize_t neighborIndex : extrapolatedGrid.getNeighborhood(i,j))
                 {
                     if(neighborIndex == -1) continue;
                     if(markers.data().at(neighborIndex) == 0)
@@ -403,11 +189,11 @@ void simmath::breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bo
 
     while(!wavefront.empty())
     {
-        int index = wavefront.front();
-        std::array<int, 8> neighbors = extrapolatedGrid.getNeighborhood(index);
+        size_t index = wavefront.front();
+        std::array<ssize_t, 8> neighbors = extrapolatedGrid.getNeighborhood(index);
         double avg = 0;
         int count = 0;
-        for(int neighborIndex : neighbors)
+        for(ssize_t neighborIndex : neighbors)
         {
             if(neighborIndex == -1) continue;
             if(markers.data().at(neighborIndex) < markers.data().at(index))

@@ -31,18 +31,7 @@ namespace simmath
     void breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bool> &flagGrid,
                                           int extrapRadius, int neighborRadius, bool vonNeumannNeighborMode);
 
-    Vertex gradCenteredGrid(int i, int j, const Grid2d<float> &grid);
-
-    void fastSweep(Grid2d<float> &values,
-                   Grid2d<bool> &extrapFlags,
-                   std::function<float(Grid2d<float>&,Vertex&, void*)> &updateFunc,
-                   void* additionalParameters);
-
-    float normalDerivLinearExapolationUpdate(Grid2d<float> &grid, Vertex& pos, void*);
-    float sdfLinearExapolationUpdate(Grid2d<float> &grid, Vertex& pos, void* normalDerivGrid);
-    Grid2d<float> calculateCenteredGridCurvature(Grid2d<float>& grid);
-    Vertex secondPartialDerivOnedir(int i, int j, Grid2d<float> &grid, float dx);
-    float secondPartialDerivIj(int i, int j, Grid2d<float> &grid, float dx);
+    Vertex gradCenteredGrid(ssize_t i, ssize_t j, const Grid2d<float> &grid);
 }
 
 #endif // FUNCTIONS_H

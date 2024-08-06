@@ -141,8 +141,8 @@ void NBFlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
-        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
-        for(int binIdx : affectingBins)
+        std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {
@@ -535,8 +535,8 @@ void NBFlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
-        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
-        for(int binIdx : affectingBins)
+        std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {

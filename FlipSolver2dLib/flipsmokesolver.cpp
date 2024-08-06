@@ -456,11 +456,11 @@ IndexedIPPCoefficients FlipSmokeSolver::getIPPCoefficients(const IndexedPressure
 
     size_t matEntryIdx = 0;
 
-    for(int i = 0; i < m_sizeI; i++)
+    for(size_t i = 0; i < m_sizeI; i++)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        for(size_t j = 0; j < m_sizeJ; j++)
         {
-            const int linIdx = indexer.linearIndex(i,j);
+            const ssize_t linIdx = indexer.linearIndex(i,j);
 
             if(m_materialGrid.isSolid(i,j))
             {
@@ -477,12 +477,12 @@ IndexedIPPCoefficients FlipSmokeSolver::getIPPCoefficients(const IndexedPressure
 
             const double invscale = scale/(mat.data().at(matEntryIdx).nonsolidNeighborCount*scale);
 
-            const int jNegLinIdx = indexer.linearIdxOfOffset((int)linIdx,0,-1);
-            const int jNegP1LinIdx = indexer.linearIdxOfOffset((int)linIdx,0,-1)+1;
-            const int iNegLinIdx = indexer.linearIdxOfOffset((int)linIdx,-1,0);
-            const int iPosLinIdx = indexer.linearIdxOfOffset((int)linIdx,1,0);
-            const int jPosM1LinIdx = indexer.linearIdxOfOffset((int)linIdx,0,1)-1;
-            const int jPosLinIdx = indexer.linearIdxOfOffset((int)linIdx,0,1);
+            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
+            const ssize_t jNegP1LinIdx = indexer.linearIdxOfOffset(linIdx,0,-1)+1;
+            const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
+            const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(linIdx,1,0);
+            const ssize_t jPosM1LinIdx = indexer.linearIdxOfOffset(linIdx,0,1)-1;
+            const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
 
             if(jNegLinIdx >= 0 && m_materialGrid.isFluid(jNegLinIdx))
             {
@@ -546,8 +546,8 @@ void FlipSmokeSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeight
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
-        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
-        for(int binIdx : affectingBins)
+        std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {

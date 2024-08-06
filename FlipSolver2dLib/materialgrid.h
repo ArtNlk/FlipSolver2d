@@ -60,6 +60,18 @@ public:
 
     bool isSink(int i, int j) const;
 
+    bool isFluid(ssize_t i) const;
+
+    bool isStrictFluid(ssize_t i) const;
+
+    bool isSolid(ssize_t i) const;
+
+    bool isEmpty(ssize_t i) const;
+
+    bool isSource(ssize_t i) const;
+
+    bool isSink(ssize_t i) const;
+
     bool isFluid(size_t i) const;
 
     bool isStrictFluid(size_t i) const;

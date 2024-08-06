@@ -55,17 +55,6 @@ struct FlipSolverParameters
     ParameterHandlingMethod parameterHandlingMethod;
 };
 
-struct PairHash {
-public:
-  template <typename T, typename U>
-  std::size_t operator()(const std::pair<T, U> &x) const
-  {
-    std::size_t lhs = std::hash<T>()(x.first);
-    std::size_t rhs = std::hash<U>()(x.second);
-    return rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
-  }
-};
-
 enum SolverStage {
     ADVECTION = 0,
     DECOMPOSITION,
@@ -164,7 +153,7 @@ public:
 
     size_t particleCount();
 
-    int cellCount();
+    size_t cellCount();
 
     void stepFrame();
 
@@ -176,9 +165,9 @@ public:
 
     void updateInitialFluid();
 
-    int gridSizeI();
+    size_t gridSizeI();
 
-    int gridSizeJ();
+    size_t gridSizeJ();
 
     void addGeometry(Obstacle &geometry);
 
@@ -253,9 +242,9 @@ public:
 protected:
     void pruneParticles();
 
-    virtual double divergenceAt(int i, int j);
+    virtual double divergenceAt(size_t i, size_t j);
 
-    std::vector<int> validSolidNeighborIds(int i, int j);
+    std::vector<int> validSolidNeighborIds(ssize_t i, ssize_t j);
 
     virtual void firstFrameInit();
 
@@ -277,7 +266,7 @@ protected:
 
     void adjustParticlesByDensityThread(Range r);
 
-    void advectThread(Range range, std::vector<std::vector<RebinRecord> > &rebinningSets);
+    void advectThread(Range range, std::vector<std::vector<RebinRecord>> &rebinningSets);
 
     virtual void particleUpdate();
 
@@ -293,7 +282,7 @@ protected:
 
     virtual IndexedIPPCoefficients getIPPCoefficients(const IndexedPressureParameters& mat);
 
-    Vertex jitteredPosInCell(int i, int j);
+    Vertex jitteredPosInCell(size_t i, size_t j);
 
     virtual void reseedParticles();
 
@@ -340,8 +329,6 @@ protected:
     float maxGridVelocity();
 
     int m_frameNumber;
-    int m_validVVelocitySampleCount;
-    int m_validUVelocitySampleCount;
     MarkerParticleSystem m_markerParticles;
     std::mt19937 m_randEngine;
     std::vector<Obstacle> m_obstacles;
@@ -404,9 +391,6 @@ protected:
 
     float m_frameTime;
     float m_avgFrameMs;
-
-    std::unordered_map<std::pair<int,int>,int,PairHash> m_uVelocitySamplesMap;
-    std::unordered_map<std::pair<int,int>,int,PairHash> m_vVelocitySamplesMap;
 };
 
 #endif // FLIPSOLVER_H

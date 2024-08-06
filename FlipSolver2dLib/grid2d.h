@@ -17,7 +17,7 @@ template<class T>
 class Grid2d : public LinearIndexable2d
 {
 public:
-    Grid2d(int sizeI, int sizeJ,
+    Grid2d(size_t sizeI, size_t sizeJ,
            T initValue = T(), OOBStrategy oobStrat = OOB_ERROR,
            T oobVal = T(), Vertex gridOffset = Vertex(0.f,0.f)) :
         LinearIndexable2d(sizeI,sizeJ),
@@ -74,7 +74,7 @@ public:
         return Grid2d::lerp(this,i,j);
     }
 
-    typename std::vector<T>::reference at(int i, int j)
+    typename std::vector<T>::reference at(ssize_t i, ssize_t j)
     {
         ASSERT_BETWEEN(i,-1,m_sizeI);
         ASSERT_BETWEEN(j,-1,m_sizeJ);
@@ -88,7 +88,7 @@ public:
         return m_data[linearIndex(index)];
     }
 
-    const typename std::vector<T>::const_reference at(int i, int j) const
+    const typename std::vector<T>::const_reference at(ssize_t i, ssize_t j) const
     {
         ASSERT_BETWEEN(i,-1,m_sizeI);
         ASSERT_BETWEEN(j,-1,m_sizeJ);
@@ -107,7 +107,7 @@ public:
         setAt(idx, value);
     }
 
-    void setAt(int i, int j, T value)
+    void setAt(ssize_t i, ssize_t j, T value)
     {
         ASSERT_BETWEEN(i,-1,m_sizeI);
         ASSERT_BETWEEN(j,-1,m_sizeJ);
@@ -119,13 +119,13 @@ public:
         return getAt(index.i, index.j);
     }
 
-    T getAt(int i, int j) const
+    T getAt(ssize_t i, ssize_t j) const
     {
         switch(m_oobStrat)
         {
         case OOB_EXTEND:
-            i = std::clamp(i, 0,m_sizeI-1);
-            j = std::clamp(j,0,m_sizeJ -1);
+            i = std::clamp<ssize_t>(i, 0,m_sizeI-1);
+            j = std::clamp<ssize_t>(j,0,m_sizeJ -1);
             break;
         case OOB_CONST:
             if(!inBounds(i,j))
@@ -139,6 +139,26 @@ public:
             break;
         }
         int idx = linearIndex(i,j);
+        return m_data[idx];
+    }
+
+    T getAt(ssize_t idx) const
+    {
+        switch(m_oobStrat)
+        {
+        case OOB_EXTEND:
+            idx = std::clamp<ssize_t>(idx, 0, m_data.size()-1);
+            break;
+        case OOB_CONST:
+            if(!inBounds(idx))
+            {
+                return m_oobConst;
+            }
+            break;
+        case OOB_ERROR:
+            ASSERT_BETWEEN(idx,-1,m_data.size());
+            break;
+        }
         return m_data[idx];
     }
 
@@ -160,26 +180,6 @@ public:
     const std::vector<T> &data() const
     {
         return m_data;
-    }
-
-    void fillRect(T value, Index2d topLeft, Index2d bottomRight)
-    {
-        fillRect(value,topLeft.i,topLeft.j,bottomRight.i,bottomRight.j);
-    }
-
-    void fillRect(T value, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY)
-    {
-        topLeftX = std::max(0,topLeftX);
-        topLeftY = std::max(0,topLeftY);
-        bottomRightX = std::min(m_sizeI - 1,bottomRightX);
-        bottomRightY = std::min(m_sizeJ - 1,bottomRightY);
-        for(int i = topLeftX; i <= bottomRightX; i++)
-        {
-            for(int j = topLeftY; j <= bottomRightY; j++)
-            {
-                m_data[linearIndex(i,j)] = value;
-            }
-        }
     }
 
 protected:

@@ -1,17 +1,17 @@
 {
   "settings": {
-    "simType": "flip",
+    "simType": "nbflip",
     "domainSizeI": 75,
     "domainSizeJ": 50,
     "resolution": 128,
     "fps": 30,
-    "scale": 1,
+    "scale": 0.1,
     "maxSubsteps": 10,
     "seed": 0,
     "particlesPerCell": 4,
     "picRatio": 0.03,
     "cflNumber": 5,
-    "viscosityEnabled": true,
+    "viscosityEnabled": false,
     "globalAcceleration": [9.8,0]
   },
   "solver": {
@@ -99,6 +99,7 @@
         "type": "source",
         "viscosity": 0,
         "velocity": [5,0],
+        "transferVelocity": false,
         "verts": [
           [3,3],
           [3,10],

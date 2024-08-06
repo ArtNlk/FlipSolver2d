@@ -1,0 +1,65 @@
+{
+  "settings": {
+    "simType": "nbflip",
+    "domainSizeI": 10,
+    "domainSizeJ": 10,
+    "resolution": 128,
+    "fps": 30,
+    "scale": 0.1,
+    "maxSubsteps": 10,
+    "seed": 0,
+    "particlesPerCell": 4,
+    "picRatio": 0.03,
+    "cflNumber": 5,
+    "viscosityEnabled": true,
+    "globalAcceleration": [9.8,0]
+  },
+  "solver": {
+    "objects": [
+      {
+        "type": "source",
+        "viscosity": 0,
+        "velocity": [-1,-1],
+        "verts": [
+          [0,0],
+          [0,2],
+          [2,2],
+          [2,0]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "velocity": [-1,1],
+        "verts": [
+          [0,8],
+          [0,10],
+          [2,10],
+          [2,8]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "velocity": [1,1],
+        "verts": [
+          [8,8],
+          [8,10],
+          [10,10],
+          [10,8]
+        ]
+      },
+      {
+        "type": "source",
+        "viscosity": 0,
+        "velocity": [1,-1],
+        "verts": [
+          [8,0],
+          [8,2],
+          [10,2],
+          [10,0]
+        ]
+      }
+    ]
+  }
+}

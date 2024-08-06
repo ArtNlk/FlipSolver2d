@@ -3,7 +3,7 @@
 #include "grid2d.h"
 #include "mathfuncs.h"
 
-StaggeredVelocityGrid::StaggeredVelocityGrid(int sizeI, int sizeJ) :
+StaggeredVelocityGrid::StaggeredVelocityGrid(size_t sizeI, size_t sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
     m_velocityGridU(sizeI + 1, sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.5f,0.f)),
     m_velocityGridV(sizeI, sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.f, 0.5f)),
@@ -43,52 +43,52 @@ Grid2d<bool> &StaggeredVelocityGrid::vSampleValidityGrid()
     return m_vSampleValidity;
 }
 
-float &StaggeredVelocityGrid::u(int i, int j)
+float &StaggeredVelocityGrid::u(ssize_t i, ssize_t j)
 {
     return m_velocityGridU.at(i,j);
 }
 
-float &StaggeredVelocityGrid::v(int i, int j)
+float &StaggeredVelocityGrid::v(ssize_t i, ssize_t j)
 {
     return m_velocityGridV.at(i,j);
 }
 
-float StaggeredVelocityGrid::getU(int i, int j) const
+float StaggeredVelocityGrid::getU(ssize_t i, ssize_t j) const
 {
     return m_velocityGridU.getAt(i,j);
 }
 
-float StaggeredVelocityGrid::getV(int i, int j) const
+float StaggeredVelocityGrid::getV(ssize_t i, ssize_t j) const
 {
     return m_velocityGridV.getAt(i,j);
 }
 
-void StaggeredVelocityGrid::setU(int i, int j, float u)
+void StaggeredVelocityGrid::setU(ssize_t i, ssize_t j, float u)
 {
     m_velocityGridU.setAt(i,j,u);
 }
 
-void StaggeredVelocityGrid::setV(int i, int j, float v)
+void StaggeredVelocityGrid::setV(ssize_t i, ssize_t j, float v)
 {
     m_velocityGridV.setAt(i,j,v);
 }
 
-bool StaggeredVelocityGrid::getUValidity(int i, int j)
+bool StaggeredVelocityGrid::getUValidity(ssize_t i, ssize_t j)
 {
     return m_uSampleValidity.getAt(i,j);
 }
 
-bool StaggeredVelocityGrid::getVValidity(int i, int j)
+bool StaggeredVelocityGrid::getVValidity(ssize_t i, ssize_t j)
 {
     return m_vSampleValidity.getAt(i,j);
 }
 
-void StaggeredVelocityGrid::setUValidity(int i, int j, bool uValidity)
+void StaggeredVelocityGrid::setUValidity(ssize_t i, ssize_t j, bool uValidity)
 {
     m_uSampleValidity.setAt(i,j, uValidity);
 }
 
-void StaggeredVelocityGrid::setVValidity(int i, int j, bool vValidity)
+void StaggeredVelocityGrid::setVValidity(ssize_t i, ssize_t j, bool vValidity)
 {
     m_vSampleValidity.setAt(i,j, vValidity);
 }

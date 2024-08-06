@@ -6,7 +6,7 @@
 #include <variant>
 #include <vector>
 
-MarkerParticleSystem::MarkerParticleSystem(int gridSizeI, int gridSizeJ, size_t binSize):
+MarkerParticleSystem::MarkerParticleSystem(size_t gridSizeI, size_t gridSizeJ, size_t binSize):
     m_binSize(binSize),
     m_gridIndexer(gridSizeI, gridSizeJ),
     m_particleBins((gridSizeI / binSize) + (gridSizeI % binSize != 0),
@@ -19,7 +19,7 @@ MarkerParticleSystem::MarkerParticleSystem(int gridSizeI, int gridSizeJ, size_t 
     }
 }
 
-ParticleBin &MarkerParticleSystem::binForGridIdx(int linIdx)
+ParticleBin &MarkerParticleSystem::binForGridIdx(size_t linIdx)
 {
     return m_particleBins.data()[gridToBinIdx(linIdx)];
 }
@@ -29,7 +29,7 @@ ParticleBin &MarkerParticleSystem::binForGridIdx(Index2d idx)
     return binForGridIdx(idx.i, idx.j);
 }
 
-ParticleBin &MarkerParticleSystem::binForGridIdx(int i, int j)
+ParticleBin &MarkerParticleSystem::binForGridIdx(size_t i, size_t j)
 {
     return m_particleBins.data()[gridToBinIdx(i,j)];
 }
@@ -39,7 +39,7 @@ ParticleBin &MarkerParticleSystem::binForGridPosition(Vertex pos)
     return binForGridIdx(pos.x(), pos.y());
 }
 
-ParticleBin &MarkerParticleSystem::binForBinIdx(int linIdx)
+ParticleBin &MarkerParticleSystem::binForBinIdx(size_t linIdx)
 {
     return m_particleBins.data()[linIdx];
 }
@@ -94,21 +94,21 @@ Index2d MarkerParticleSystem::binIdxForIdx(Index2d idx)
     return binIdxForIdx(idx.i, idx.j);
 }
 
-Index2d MarkerParticleSystem::binIdxForIdx(int i, int j)
+Index2d MarkerParticleSystem::binIdxForIdx(ssize_t i, ssize_t j)
 {
     int binI = i/m_binSize;
     int binJ = j/m_binSize;
     return Index2d(binI, binJ);
 }
 
-std::array<int, 9> MarkerParticleSystem::binsForGridCell(Index2d idx)
+std::array<ssize_t, 9> MarkerParticleSystem::binsForGridCell(Index2d idx)
 {
     return binsForGridCell(idx.i, idx.j);
 }
 
-std::array<int, 9> MarkerParticleSystem::binsForGridCell(int i, int j)
+std::array<ssize_t, 9> MarkerParticleSystem::binsForGridCell(ssize_t i, ssize_t j)
 {
-    std::array<int,9> output({-1,-1,-1,-1,-1,-1,-1,-1,-1});
+    std::array<ssize_t,9> output({-1,-1,-1,-1,-1,-1,-1,-1,-1});
     int outputIdx = 0;
     Index2d centerBinIdx = binIdxForIdx(i,j);
     for(int iOffset = -1; iOffset <= 1; iOffset++)
@@ -138,22 +138,22 @@ size_t MarkerParticleSystem::particleCount() const
     return count;
 }
 
-int MarkerParticleSystem::gridToBinIdx(Index2d idx)
+ssize_t MarkerParticleSystem::gridToBinIdx(Index2d idx)
 {
     return gridToBinIdx(idx.i,idx.j);
 }
 
-int MarkerParticleSystem::gridToBinIdx(Vertex pos)
+ssize_t MarkerParticleSystem::gridToBinIdx(Vertex pos)
 {
     return gridToBinIdx(pos.x(), pos.y());
 }
 
-int MarkerParticleSystem::gridToBinIdx(int linIdx)
+ssize_t MarkerParticleSystem::gridToBinIdx(ssize_t linIdx)
 {
     return gridToBinIdx(m_gridIndexer.index2d(linIdx));
 }
 
-int MarkerParticleSystem::gridToBinIdx(int i, int j)
+ssize_t MarkerParticleSystem::gridToBinIdx(ssize_t i, ssize_t j)
 {
     return m_particleBins.linearIndex(binIdxForIdx(i,j));
 }

@@ -8,7 +8,7 @@
 class StaggeredVelocityGrid : public LinearIndexable2d
 {
 public:
-    StaggeredVelocityGrid(int sizeI, int sizeJ);
+    StaggeredVelocityGrid(size_t sizeI, size_t sizeJ);
 
     Grid2d<float>& velocityGridU();
     Grid2d<float>& velocityGridV();
@@ -19,25 +19,25 @@ public:
     Grid2d<bool>& uSampleValidityGrid();
     Grid2d<bool>& vSampleValidityGrid();
 
-    float &u(int i,int j);
+    float &u(ssize_t i,ssize_t j);
 
-    float &v(int i,int j);
+    float &v(ssize_t i,ssize_t j);
 
-    float getU(int i,int j) const;
+    float getU(ssize_t i,ssize_t j) const;
 
-    float getV(int i,int j) const;
+    float getV(ssize_t i,ssize_t j) const;
 
-    void setU(int i,int j, float u);
+    void setU(ssize_t i,ssize_t j, float u);
 
-    void setV(int i,int j, float v);
+    void setV(ssize_t i,ssize_t j, float v);
 
-    bool getUValidity(int i,int j);
+    bool getUValidity(ssize_t i,ssize_t j);
 
-    bool getVValidity(int i,int j);
+    bool getVValidity(ssize_t i,ssize_t j);
 
-    void setUValidity(int i,int j, bool uValidity);
+    void setUValidity(ssize_t i,ssize_t j, bool uValidity);
 
-    void setVValidity(int i,int j, bool vValidity);
+    void setVValidity(ssize_t i,ssize_t j, bool vValidity);
 
     float &u(Index2d idx);
 

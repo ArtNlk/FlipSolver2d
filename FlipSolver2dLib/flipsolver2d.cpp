@@ -27,8 +27,6 @@
 FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     LinearIndexable2d(p->gridSizeI, p->gridSizeJ),
     m_frameNumber(0),
-    m_validVVelocitySampleCount(0),
-    m_validUVelocitySampleCount(0),
     m_markerParticles(p->gridSizeI, p->gridSizeJ,5),
     m_fluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_savedFluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
@@ -139,13 +137,13 @@ void FlipSolver::advect()
     std::vector<Range> ranges = ThreadPool::i()->splitRange(m_markerParticles.bins().linearSize());
     std::vector<std::vector<RebinRecord>> rebinSets(m_markerParticles.bins().linearSize());
 
-    for(int i = 0; i < ranges.size(); i++)
+    for(size_t i = 0; i < ranges.size(); i++)
     {
         ThreadPool::i()->enqueue(&FlipSolver::advectThread,this,ranges.at(i),std::ref(rebinSets));
     }
     ThreadPool::i()->wait();
 
-    for(int binIdx = 0; binIdx < m_markerParticles.bins().linearSize(); binIdx++)
+    for(ssize_t binIdx = 0; binIdx < m_markerParticles.bins().linearSize(); binIdx++)
     {
         for(RebinRecord r : rebinSets[binIdx])
         {
@@ -199,10 +197,10 @@ void FlipSolver::updateDensityGridThread(Range r, Grid2d<float> &centeredWeights
     const float particleMass = (m_fluidDensity * cellVolume) / (static_cast<float>(m_particlesPerCell));
     auto& bins = m_markerParticles.bins();
 
-    for(int idx = r.start; idx < r.end; idx++)
+    for(ssize_t idx = r.start; idx < r.end; idx++)
     {
         Index2d cellIdx = m_densityGrid.index2d(idx);
-        for(int binIdx : m_markerParticles.binsForGridCell(cellIdx))
+        for(ssize_t binIdx : m_markerParticles.binsForGridCell(cellIdx))
         {
             if(binIdx == -1)
             {
@@ -268,10 +266,10 @@ void FlipSolver::adjustParticlesByDensityThread(Range r)
             }
 
             Vertex& position = currentBin.particlePosition(particleIdx);
-            int iCorr = std::clamp(static_cast<int>(position.x() - 0.5f),0,m_sizeI);
-            int jCorr = std::clamp(static_cast<int>(position.y() - 0.5f),0,m_sizeJ);
-            int i = std::clamp(static_cast<int>(position.x()),0,m_sizeI);
-            int j = std::clamp(static_cast<int>(position.y()),0,m_sizeJ);
+            ssize_t iCorr = std::clamp<ssize_t>(static_cast<int>(position.x() - 0.5f),0,m_sizeI);
+            ssize_t jCorr = std::clamp<ssize_t>(static_cast<int>(position.y() - 0.5f),0,m_sizeJ);
+            ssize_t i = std::clamp<ssize_t>(static_cast<int>(position.x()),0,m_sizeI);
+            ssize_t j = std::clamp<ssize_t>(static_cast<int>(position.y()),0,m_sizeJ);
 
             float pCurrentI = m_pressureSolverResult[linearIndex(iCorr,j)];
             float pCurrentJ = m_pressureSolverResult[linearIndex(i,jCorr)];
@@ -301,24 +299,24 @@ void FlipSolver::advectThread(Range range, std::vector<std::vector<RebinRecord>>
 {
     //std::vector<float>& testValues = m_markerParticles.particleProperties<float>(m_testValuePropertyIndex);
 
-    for(int binIdx = range.start; binIdx < range.end; binIdx++)
+    for(ssize_t binIdx = range.start; binIdx < range.end; binIdx++)
     {
         std::vector<RebinRecord>& rebinningSet = rebinningSets.at(binIdx);
         std::vector<Vertex>& positions = m_markerParticles.binForBinIdx(binIdx).positions();
 
-        for(int particleIdx = 0; particleIdx < positions.size(); particleIdx++)
+        for(ssize_t particleIdx = 0; particleIdx < positions.size(); particleIdx++)
         {
             Vertex& position = positions[particleIdx];
-            const int oldBinIdx = m_markerParticles.gridToBinIdx(position);
+            const ssize_t oldBinIdx = m_markerParticles.gridToBinIdx(position);
             position = rk4Integrate(position, m_fluidVelocityGrid, m_stepDt);
             if(m_solidSdf.interpolateAt(position.x(),position.y()) < 0.f)
             {
                 position = m_solidSdf.closestSurfacePoint(position);
             }
-            int pI = simmath::integr(position.x());
-            int pJ = simmath::integr(position.y());
+            ssize_t pI = simmath::integr(position.x());
+            ssize_t pJ = simmath::integr(position.y());
             //testValues[i] = false;
-            const int newBinIdx = m_markerParticles.gridToBinIdx(position);
+            const ssize_t newBinIdx = m_markerParticles.gridToBinIdx(position);
             if(!inBounds(pI,pJ) || m_materialGrid.isSink(pI,pJ))
             {
                 m_markerParticles.markForDeath(binIdx,particleIdx);
@@ -336,7 +334,7 @@ void FlipSolver::eulerAdvectionThread(Range range, const Grid2d<float> &inputGri
 {
     std::vector<float>& dataOut = outputGrid.data();
     std::vector<int>& emitterIdx = m_emitterId.data();
-    for(int idx = range.start; idx < range.end; idx++)
+    for(ssize_t idx = range.start; idx < range.end; idx++)
     {
         Index2d i2d = outputGrid.index2d(idx);
         Vertex currentPos = Vertex(i2d.i, i2d.j);
@@ -384,9 +382,9 @@ void FlipSolver::particleUpdate()
 
 void FlipSolver::afterTransfer()
 {
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             if(m_materialGrid.isSource(i,j))
             {
@@ -496,9 +494,9 @@ void FlipSolver::stepFrame()
 
 void FlipSolver::updateSolids()
 {
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             float dx = m_dx;
             float dist = std::numeric_limits<float>::max();
@@ -528,9 +526,9 @@ void FlipSolver::updateSources()
 {
     const float dx = m_dx;
     const float hdx = dx / 2.0;
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             for(int emitterIdx = 0; emitterIdx < m_sources.size(); emitterIdx++)
             {
@@ -549,9 +547,9 @@ void FlipSolver::updateSources()
 void FlipSolver::updateSinks()
 {
     float dx = m_dx;
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             for(Sink& s : m_sinks)
             {
@@ -568,9 +566,9 @@ void FlipSolver::updateSinks()
 void FlipSolver::updateInitialFluid()
 {
     float dx = m_dx;
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             for(Emitter& e : m_initialFluid)
             {
@@ -584,12 +582,12 @@ void FlipSolver::updateInitialFluid()
     }
 }
 
-int FlipSolver::gridSizeI()
+size_t FlipSolver::gridSizeI()
 {
     return m_sizeI;
 }
 
-int FlipSolver::gridSizeJ()
+size_t FlipSolver::gridSizeJ()
 {
     return m_sizeJ;
 }
@@ -624,9 +622,9 @@ void FlipSolver::reseedParticles()
     // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
     //                                           (m_viscosityPropertyIndex);
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             int particleCount = m_fluidParticleCounts.at(i,j);
             if(particleCount > m_particlesPerCell*2)
@@ -678,9 +676,9 @@ void FlipSolver::seedInitialFluid()
 {
     // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
     //                                           (m_viscosityPropertyIndex);
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             if(m_materialGrid.isStrictFluid(i,j))
             {
@@ -751,14 +749,14 @@ const SolverTimeStats &FlipSolver::timeStats() const
     return m_stats;
 }
 
-double FlipSolver::divergenceAt(int i, int j)
+double FlipSolver::divergenceAt(size_t i, size_t j)
 {
     return static_cast<double>(m_fluidVelocityGrid.u(i+1,j) - m_fluidVelocityGrid.u(i,j)
                                + m_fluidVelocityGrid.v(i,j+1) - m_fluidVelocityGrid.v(i,j)
                                + m_divergenceControl.at(i,j));
 }
 
-std::vector<int> FlipSolver::validSolidNeighborIds(int i, int j)
+std::vector<int> FlipSolver::validSolidNeighborIds(ssize_t i, ssize_t j)
 {
     std::vector<int> output;
     output.reserve(8);
@@ -797,11 +795,11 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
     std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
     size_t currRangeIdx = 0;
 
-    for(int i = 0; i < m_sizeI; i++)
+    for(size_t i = 0; i < m_sizeI; i++)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        for(size_t j = 0; j < m_sizeJ; j++)
         {
-            const int linIdx = indexer.linearIndex(i,j);
+            const size_t linIdx = indexer.linearIndex(i,j);
 
             if(!m_materialGrid.isFluid(i,j))
             {
@@ -816,10 +814,10 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
             IndexedPressureParameterUnit unit;
             unit.unitIndex = linIdx;
 
-            const int linIdxPosAx = indexer.linearIdxOfOffset(linIdx,1,0);
-            const int linIdxPosAy = indexer.linearIdxOfOffset(linIdx,0,1);
-            const int linIdxNegAx = indexer.linearIdxOfOffset(linIdx,-1,0);
-            const int linIdxNegAy = indexer.linearIdxOfOffset(linIdx,0,-1);
+            const ssize_t linIdxPosAx = indexer.linearIdxOfOffset(linIdx,1,0);
+            const ssize_t linIdxPosAy = indexer.linearIdxOfOffset(linIdx,0,1);
+            const ssize_t linIdxNegAx = indexer.linearIdxOfOffset(linIdx,-1,0);
+            const ssize_t linIdxNegAy = indexer.linearIdxOfOffset(linIdx,0,-1);
 
             double diag = 0.0;
             //X Neighbors
@@ -891,11 +889,11 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
 
     size_t matEntryIdx = 0;
 
-    for(int i = 0; i < m_sizeI; i++)
+    for(size_t i = 0; i < m_sizeI; i++)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        for(size_t j = 0; j < m_sizeJ; j++)
         {
-            const int linIdx = indexer.linearIndex(i,j);
+            const size_t linIdx = indexer.linearIndex(i,j);
 
             if(!m_materialGrid.isFluid(i,j))
             {
@@ -912,12 +910,12 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
 
             const double invscale = scale/(mat.data().at(matEntryIdx).nonsolidNeighborCount*scale);
 
-            const int jNegLinIdx = indexer.linearIdxOfOffset((int)linIdx,0,-1);
-            const int jNegP1LinIdx = indexer.linearIdxOfOffset((int)linIdx,0,-1)+1;
-            const int iNegLinIdx = indexer.linearIdxOfOffset((int)linIdx,-1,0);
-            const int iPosLinIdx = indexer.linearIdxOfOffset((int)linIdx,1,0);
-            const int jPosM1LinIdx = indexer.linearIdxOfOffset((int)linIdx,0,1)-1;
-            const int jPosLinIdx = indexer.linearIdxOfOffset((int)linIdx,0,1);
+            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
+            const ssize_t jNegP1LinIdx = indexer.linearIdxOfOffset(linIdx,0,-1)+1;
+            const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
+            const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(linIdx,1,0);
+            const ssize_t jPosM1LinIdx = indexer.linearIdxOfOffset(linIdx,0,1)-1;
+            const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
 
             if(jNegLinIdx >= 0 && m_materialGrid.isFluid(jNegLinIdx))
             {
@@ -975,7 +973,7 @@ size_t FlipSolver::particleCount()
     return m_markerParticles.particleCount();
 }
 
-int FlipSolver::cellCount()
+size_t FlipSolver::cellCount()
 {
     return m_sizeI * m_sizeJ;
 }
@@ -984,9 +982,9 @@ void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
 {
     const double scale = 1.f/m_dx;
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             if (m_materialGrid.isFluid(i,j))
             {
@@ -1015,9 +1013,9 @@ void FlipSolver::calcDensityCorrectionRhs(std::vector<double> &rhs)
 {
     const double scale = 1.0/m_stepDt;
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             if (m_materialGrid.isFluid(i,j))
             {
@@ -1031,7 +1029,7 @@ void FlipSolver::calcDensityCorrectionRhs(std::vector<double> &rhs)
     }
 }
 
-Vertex FlipSolver::jitteredPosInCell(int i, int j)
+Vertex FlipSolver::jitteredPosInCell(size_t i, size_t j)
 {
     static std::uniform_real_distribution<float> dist(0.f,1.f);
     float x = (static_cast<float>(i) + dist(m_randEngine));
@@ -1049,8 +1047,8 @@ void FlipSolver::countParticles()
         for(size_t particleIdx = 0; particleIdx < bin.size(); particleIdx++)
         {
             Vertex& position = bin.particlePosition(particleIdx);
-            int i = std::floor(position.x());
-            int j = std::floor(position.y());
+            ssize_t i = std::floor(position.x());
+            ssize_t j = std::floor(position.y());
             if(i2d.i == i && i2d.j == j)
             {
                 if(m_fluidParticleCounts.at(i2d) >= 2*m_particlesPerCell)
@@ -1073,9 +1071,9 @@ void FlipSolver::countParticles()
 
 void FlipSolver::updateMaterials()
 {
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             if(m_fluidSdf.at(i,j) < 0.f)
             {
@@ -1097,15 +1095,15 @@ void FlipSolver::updateMaterials()
 
 void FlipSolver::updateVelocityFromSolids()
 {
-    for (int i = 0; i < m_sizeI; i++)
+    for (size_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (size_t j = 0; j < m_sizeJ; j++)
         {
             std::vector<int> ids = validSolidNeighborIds(i,j);
             if(!ids.empty())
             {
                 float avg = 0;
-                for(int& id : ids)
+                for(int id : ids)
                 {
                     Obstacle& obj = m_obstacles[id];
                     avg += obj.friction();
@@ -1155,12 +1153,12 @@ void FlipSolver::applyPressureThreadU(Range range, const std::vector<double> &pr
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx);
 
-    for (unsigned int pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
+    for (size_t pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
     {
         Index2d i2d = index2d(pressureIdx);
         Index2d i2dim1 = Index2d(i2d.i - 1,   i2d.j);
         //Index2d i2djm1 = Index2d(i2d.m_i,       i2d.m_j - 1);
-        int pressureIndexIm1 = linearIndex(i2dim1);
+        ssize_t pressureIndexIm1 = linearIndex(i2dim1);
         double pCurrent = pressures.at(pressureIdx);
         double pIm1 = pressureIndexIm1 == -1 ? 0.0 : pressures.at(pressureIndexIm1);
         //U part
@@ -1186,12 +1184,12 @@ void FlipSolver::applyPressureThreadV(Range range, const std::vector<double> &pr
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx);
 
-    for (unsigned int pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
+    for (size_t pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
     {
         Index2d i2d = index2d(pressureIdx);
         Index2d i2djm1 = Index2d(i2d.i,   i2d.j - 1);
         //Index2d i2djm1 = Index2d(i2d.m_i,       i2d.m_j - 1);
-        int pressureIndexJm1 = linearIndex(i2djm1);
+        size_t pressureIndexJm1 = linearIndex(i2djm1);
         double pCurrent = pressures.at(pressureIdx);
         double pJm1 = pressureIndexJm1 == -1 ? 0.0 : pressures.at(pressureIndexJm1);
         //U part
@@ -1243,9 +1241,9 @@ void FlipSolver::particleToGrid()
 void FlipSolver::applyBodyForces()
 {
     const float factor = m_stepDt / m_dx;
-    for (int i = 0; i < m_sizeI + 1; i++)
+    for (size_t i = 0; i < m_sizeI + 1; i++)
     {
-        for (int j = 0; j < m_sizeJ + 1; j++)
+        for (size_t j = 0; j < m_sizeJ + 1; j++)
         {
             if(m_fluidVelocityGrid.velocityGridU().inBounds(i,j))
             {
@@ -1303,11 +1301,11 @@ void FlipSolver::updateSdfThread(Range range)
     for(size_t idx = range.start; idx < range.end; idx++)
     {
         Index2d i2d = m_fluidSdf.index2d(idx);
-        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
         float distSqrd = std::numeric_limits<float>::max();
         Vertex centerPoint = Vertex(static_cast<float>(i2d.i) + 0.5f,
                                     static_cast<float>(i2d.j) + 0.5f);
-        for(int binIdx : affectingBins)
+        for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {
@@ -1357,8 +1355,8 @@ void FlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights, 
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
-        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
-        for(int binIdx : affectingBins)
+        std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {
@@ -1419,8 +1417,8 @@ void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
-        std::array<int,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
-        for(int binIdx : affectingBins)
+        std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {
@@ -1456,13 +1454,13 @@ void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
 
 void FlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
 {
-    int sizeI = grid.sizeI();
-    int sizeJ = grid.sizeJ();
+    ssize_t sizeI = grid.sizeI();
+    ssize_t sizeJ = grid.sizeJ();
     Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
-    std::queue<int> wavefront;
-    for(int i = 0; i < sizeI; i++)
+    std::queue<size_t> wavefront;
+    for(ssize_t i = 0; i < sizeI; i++)
     {
-        for(int j = 0; j < sizeJ; j++)
+        for(ssize_t j = 0; j < sizeJ; j++)
         {
             if(grid.at(i,j) > 0.f)
             {
@@ -1471,13 +1469,13 @@ void FlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
         }
     }
 
-    for(int i = 0; i < sizeI; i++)
+    for(ssize_t i = 0; i < sizeI; i++)
     {
-        for(int j = 0; j < sizeJ; j++)
+        for(ssize_t j = 0; j < sizeJ; j++)
         {
             if(markers.at(i,j) != 0)
             {
-                for(int neighborIndex : grid.getNeighborhood(i,j))
+                for(ssize_t neighborIndex : grid.getNeighborhood(i,j))
                 {
                     if(neighborIndex == -1) continue;
                     if(markers.data().at(neighborIndex) == 0)
@@ -1493,11 +1491,11 @@ void FlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
 
     while(!wavefront.empty())
     {
-        int index = wavefront.front();
-        std::array<int, 8> neighbors = grid.getNeighborhood(index);
+        size_t index = wavefront.front();
+        std::array<ssize_t, 8> neighbors = grid.getNeighborhood(index);
         double avg = 0;
         int count = 0;
-        for(int neighborIndex : neighbors)
+        for(ssize_t neighborIndex : neighbors)
         {
             if(neighborIndex == -1) continue;
             if(markers.data().at(neighborIndex) < markers.data().at(index))
@@ -1519,14 +1517,14 @@ void FlipSolver::extrapolateLevelsetInside(SdfGrid &grid)
 
 void FlipSolver::extrapolateLevelsetOutside(SdfGrid &grid)
 {
-    int sizeI = grid.sizeI();
-    int sizeJ = grid.sizeJ();
+    size_t sizeI = grid.sizeI();
+    size_t sizeJ = grid.sizeJ();
     const float maxSdf = sizeI * sizeJ;
     Grid2d<int> markers(sizeI,sizeJ,std::numeric_limits<int>().max());
-    std::queue<int> wavefront;
-    for(int i = 0; i < sizeI; i++)
+    std::queue<size_t> wavefront;
+    for(ssize_t i = 0; i < sizeI; i++)
     {
-        for(int j = 0; j < sizeJ; j++)
+        for(ssize_t j = 0; j < sizeJ; j++)
         {
             if(grid.at(i,j) < maxSdf)
             {
@@ -1535,13 +1533,13 @@ void FlipSolver::extrapolateLevelsetOutside(SdfGrid &grid)
         }
     }
 
-    for(int i = 0; i < sizeI; i++)
+    for(ssize_t i = 0; i < sizeI; i++)
     {
-        for(int j = 0; j < sizeJ; j++)
+        for(ssize_t j = 0; j < sizeJ; j++)
         {
             if(markers.at(i,j) != 0)
             {
-                for(int neighborIndex : grid.getNeighborhood(i,j))
+                for(ssize_t neighborIndex : grid.getNeighborhood(i,j))
                 {
                     if(neighborIndex == -1) continue;
                     if(markers.data().at(neighborIndex) == 0)
@@ -1557,11 +1555,11 @@ void FlipSolver::extrapolateLevelsetOutside(SdfGrid &grid)
 
     while(!wavefront.empty())
     {
-        int index = wavefront.front();
-        std::array<int, 8> neighbors = grid.getNeighborhood(index);
+        size_t index = wavefront.front();
+        std::array<ssize_t, 8> neighbors = grid.getNeighborhood(index);
         double avg = 0;
         int count = 0;
-        for(int neighborIndex : neighbors)
+        for(ssize_t neighborIndex : neighbors)
         {
             if(neighborIndex == -1) continue;
             if(markers.data().at(neighborIndex) < markers.data().at(index))
@@ -1600,9 +1598,9 @@ float FlipSolver::maxParticleVelocity()
 float FlipSolver::maxGridVelocity()
 {
     float maxVelocitySqr = std::numeric_limits<float>::min();
-    for(int i = 0; i < m_sizeI; i++)
+    for(ssize_t i = 0; i < m_sizeI; i++)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        for(ssize_t j = 0; j < m_sizeJ; j++)
         {
             float vU = m_fluidVelocityGrid.getU(i,j);
             float vV = m_fluidVelocityGrid.getV(i,j);
