@@ -3,6 +3,7 @@
 
 #ifndef HAVE_SSIZE_T
 #if defined(_WIN32) || defined(_WIN64)
+#include <cstddef>
 typedef ptrdiff_t ssize_t; // ssize_t equivalent on Windows
 #define HAVE_SSIZE_T
 #elif defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
