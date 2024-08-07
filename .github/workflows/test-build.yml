@@ -1,4 +1,4 @@
-name: CMake ubuntu-latest build
+name: Cross-platform buildability
 
 on:
   push:
