@@ -17,12 +17,12 @@ public:
     {
     }
 
-    size_t sizeI() const
+    ssize_t sizeI() const
     {
         return m_sizeI;
     }
 
-    size_t sizeJ() const
+    ssize_t sizeJ() const
     {
         return m_sizeJ;
     }

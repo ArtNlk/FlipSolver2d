@@ -25,13 +25,13 @@ struct IndexedIPPCoefficientUnit
     inline double multiply(const std::vector<double>& vec,
                            const LinearIndexable2d& indexer) const
     {
-        const int jNegLinIdx = indexer.linearIdxOfOffset((int)unitIndex,0,-1);
-        const int jNegP1LinIdx = indexer.linearIdxOfOffset((int)unitIndex,0,-1)+1;
-        const int iNegLinIdx = indexer.linearIdxOfOffset((int)unitIndex,-1,0);
-        const int iPosLinIdx = indexer.linearIdxOfOffset((int)unitIndex,1,0);
-        const int jPosM1LinIdx = indexer.linearIdxOfOffset((int)unitIndex,0,1)-1;
-        const int jPosLinIdx = indexer.linearIdxOfOffset((int)unitIndex,0,1);
-        const int centerIdx = (int)unitIndex;
+        const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(unitIndex,0,-1);
+        const ssize_t jNegP1LinIdx = indexer.linearIdxOfOffset(unitIndex,0,-1)+1;
+        const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(unitIndex,-1,0);
+        const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(unitIndex,1,0);
+        const ssize_t jPosM1LinIdx = indexer.linearIdxOfOffset(unitIndex,0,1)-1;
+        const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(unitIndex,0,1);
+        const ssize_t centerIdx = unitIndex;
 
         return  diag   *(centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
                 jNeg   *(jNegLinIdx >= 0 && jNegLinIdx < vec.size() ? vec.at(jNegLinIdx) : 0.0) +
@@ -98,7 +98,7 @@ public:
         // multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
         // return;
 
-        for(int i = 0; i < ranges.size(); i++)
+        for(size_t i = 0; i < ranges.size(); i++)
         {
             if(i >= m_threadDataRanges.size())
             {

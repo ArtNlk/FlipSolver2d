@@ -132,11 +132,11 @@ struct IndexedPressureParameterUnit
     inline double multiply(const std::vector<double>& vec,
                            const LinearIndexable2d& indexer, const double scale) const
     {
-        const int im1Idx = indexer.linearIdxOfOffset((int)unitIndex,-1,0);
-        const int ip1Idx = indexer.linearIdxOfOffset((int)unitIndex,1,0);
-        const int jm1Idx = indexer.linearIdxOfOffset((int)unitIndex,0,-1);
-        const int jp1Idx = indexer.linearIdxOfOffset((int)unitIndex,0,1);
-        const int centerIdx = (int)unitIndex;
+        const ssize_t im1Idx = indexer.linearIdxOfOffset(unitIndex,-1,0);
+        const ssize_t ip1Idx = indexer.linearIdxOfOffset(unitIndex,1,0);
+        const ssize_t jm1Idx = indexer.linearIdxOfOffset(unitIndex,0,-1);
+        const ssize_t jp1Idx = indexer.linearIdxOfOffset(unitIndex,0,1);
+        const ssize_t centerIdx = unitIndex;
 
         return (scale * nonsolidNeighborCount)*(centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
                (-scale*(fluidNeighborMask&I_NEG_NEIGHBOR_BIT))*(im1Idx >= 0 && im1Idx < vec.size() ? vec.at(im1Idx) : 0.0) +
@@ -197,7 +197,7 @@ public:
 
         // return;
 
-        for(int i = 0; i < ranges.size(); i++)
+        for(size_t i = 0; i < ranges.size(); i++)
         {
             if(i >= m_threadDataRanges.size())
             {

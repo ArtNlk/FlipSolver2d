@@ -13,8 +13,7 @@ float Grid_sse42::cubicInterpF(const Grid2d<float> *grid, float i, float j)
     j -= 0.5;
     float iFactor = simmath::frac(i);
     float jFactor = simmath::frac(j);
-    int iInt = simmath::integr(i);
-    int jInt = simmath::integr(j);
+    ssize_t jInt = simmath::integr(j);
 
     float isqrd = iFactor*iFactor;
     float iqbd = isqrd*iFactor;
@@ -69,7 +68,7 @@ float Grid_sse42::cubicInterpF(const Grid2d<float> *grid, float i, float j)
 
     _temp = _mm_set1_ps(0.f);
 
-    int jCoord = jInt - 1;
+    ssize_t jCoord = jInt - 1;
     _gridVals = _mm_set_ps(grid->getAt(i+2,jCoord),grid->getAt(i+1,jCoord),
                            grid->getAt(i,jCoord),grid->getAt(i-1,jCoord));
     _temp = _mm_add_ps(_temp,_mm_dp_ps(_gridVals,_iWeights,0xF1));

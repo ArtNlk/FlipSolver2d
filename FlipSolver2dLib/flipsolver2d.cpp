@@ -760,9 +760,9 @@ std::vector<int> FlipSolver::validSolidNeighborIds(ssize_t i, ssize_t j)
 {
     std::vector<int> output;
     output.reserve(8);
-    for (int iOffset = -1; iOffset < 2; iOffset++)
+    for (ssize_t iOffset = -1; iOffset < 2; iOffset++)
     {
-        for (int jOffset = -1; jOffset < 2; jOffset++)
+        for (ssize_t jOffset = -1; jOffset < 2; jOffset++)
         {
             if(m_solidId.inBounds(i + iOffset, j + jOffset))
             {

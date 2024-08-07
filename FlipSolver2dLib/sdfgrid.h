@@ -7,7 +7,7 @@
 class SdfGrid : public Grid2d<float>
 {
 public:
-    SdfGrid(int sizeI, int sizeJ);
+    SdfGrid(size_t sizeI, size_t sizeJ);
 
     Vertex closestSurfacePoint(float i, float j);
     Vertex closestSurfacePoint(Vertex pos);

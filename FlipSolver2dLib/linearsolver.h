@@ -27,9 +27,5 @@ public:
                double tol = 1e-6);
 
     friend class LinearSolver_sse42;
-
-protected:
-    void applyICPrecond(const DynamicMatrix &precond, std::vector<double> const &in, std::vector<double> &out);
-    DynamicMatrix calcPrecond(const DynamicMatrix &matrix);
 };
 #endif // PCGSOLVER_H

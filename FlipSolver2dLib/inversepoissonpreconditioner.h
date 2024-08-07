@@ -50,7 +50,7 @@ public:
         invdiag.resize(mat.cols());
 
 #pragma omp parallel for
-        for(int j=0; j<mat.outerSize(); ++j)
+        for(ssize_t j=0; j<mat.outerSize(); ++j)
         {
             Eigen::SparseMatrix<double,Eigen::RowMajor>::InnerIterator it(mat,j);
             while(it && it.index()!=j) ++it;
@@ -62,7 +62,7 @@ public:
         m_mat = mat.template triangularView<Eigen::StrictlyLower>();
 
 #pragma omp parallel for
-        for(int j=0; j<m_mat.outerSize(); ++j)
+        for(ssize_t j=0; j<m_mat.outerSize(); ++j)
         {
             Eigen::SparseMatrix<double,Eigen::RowMajor>::InnerIterator it(m_mat,j);
             for(;it && it.index() < j; ++it)

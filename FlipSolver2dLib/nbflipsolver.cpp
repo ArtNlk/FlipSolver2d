@@ -212,9 +212,9 @@ void NBFlipSolver::reseedParticles()
     // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
     //                                           (m_viscosityPropertyIndex);
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             if(m_materialGrid.isSource(i,j) || (m_fluidSdf.at(i,j) < m_resamplingBand
                                                   && m_fluidSdf.at(i,j) > m_narrowBand))
@@ -260,7 +260,7 @@ void NBFlipSolver::reseedParticles()
                     }
                     //float conc = m_sources[emitterId].concentrartion();
                     //float temp = m_sources[emitterId].temperature();
-                    int pIdx = m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
+                    size_t pIdx = m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
                     // particleViscosities[pIdx] = viscosity;
                     viscVec[pIdx] = viscosity;
                     testVec[pIdx] = viscVec[pIdx];
@@ -297,11 +297,11 @@ void NBFlipSolver::pruneNarrowBand()
     {
         std::vector<Vertex>& positions = bin.positions();
 
-        for(int particleIdx = 0; particleIdx < positions.size(); particleIdx++)
+        for(size_t particleIdx = 0; particleIdx < positions.size(); particleIdx++)
         {
             Vertex& position = positions[particleIdx];
-            int i = position.x();
-            int j = position.y();
+            ssize_t i = position.x();
+            ssize_t j = position.y();
             float sdf = m_fluidSdf.lerpolateAt(position);
             if(!m_materialGrid.isSource(i,j) && sdf < m_narrowBand)
             {
@@ -324,9 +324,9 @@ void NBFlipSolver::initialFluidSeed()
     // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
     //                                           (m_viscosityPropertyIndex);
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             //if(m_fluidSdf.at(i,j) < 0.f)
             if(m_fluidSdf.at(i,j) < 0.f)
@@ -365,9 +365,9 @@ void NBFlipSolver::initialFluidSeed()
 
 void NBFlipSolver::fluidSdfFromInitialFluid()
 {
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             float dx = m_dx;
             float dist = std::numeric_limits<float>::max();
@@ -398,9 +398,9 @@ void NBFlipSolver::fluidSdfFromInitialFluid()
 
 void NBFlipSolver::updateGridFromSources()
 {
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             float dx = m_dx;
             float dist = std::numeric_limits<float>::max();
@@ -440,9 +440,9 @@ void NBFlipSolver::combineAdvectedGrids()
 void NBFlipSolver::combineLevelset()
 {
     const float h = 1.f;
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             //m_fluidSdf.at(i,j) = m_advectedSdf.at(i,j);
             m_fluidSdf.at(i,j) = std::min(m_advectedSdf.at(i,j) + h, m_fluidSdf.at(i,j));
@@ -452,9 +452,9 @@ void NBFlipSolver::combineLevelset()
 
 void NBFlipSolver::combineVelocityGrid()
 {
-    for (int i = 0; i < m_sizeI + 1; i++)
+    for (ssize_t i = 0; i < m_sizeI + 1; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             Vertex samplePosition = Vertex(i, 0.5f + j);
             float advectedVelocity = m_advectedVelocity.getU(i,j);
@@ -464,9 +464,9 @@ void NBFlipSolver::combineVelocityGrid()
         }
     }
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ + 1; j++)
+        for (ssize_t j = 0; j < m_sizeJ + 1; j++)
         {
             Vertex samplePosition = Vertex(0.5f + i, j);
             float advectedVelocity = m_advectedVelocity.getV(i,j);
@@ -479,9 +479,9 @@ void NBFlipSolver::combineVelocityGrid()
 
 void NBFlipSolver::combineCenteredGrids()
 {
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             Vertex samplePosition = Vertex(0.5f + i, j + 0.5);
             float advectedViscosity = m_advectedViscosity.at(i,j);

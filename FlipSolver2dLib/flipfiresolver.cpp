@@ -18,9 +18,9 @@ FlipFireSolver::FlipFireSolver(const FireSolverParameters *p):
 void FlipFireSolver::afterTransfer()
 {
     FlipSmokeSolver::afterTransfer();
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             if(m_materialGrid.isSource(i,j))
             {
@@ -91,7 +91,7 @@ void FlipFireSolver::gridCombustionUpdateThread(Range range)
     std::vector<float>& fuelData = m_fuel.data();
     std::vector<float>& testGridData = m_testGrid.data();
 
-    for(int i = range.start; i < range.end; i++)
+    for(size_t i = range.start; i < range.end; i++)
     {
         if(temperatureData.at(i) > m_ignitionTemperature && fuelData.at(i) > 0.f)
         {
@@ -107,9 +107,9 @@ void FlipFireSolver::gridCombustionUpdateThread(Range range)
 
 void FlipFireSolver::reseedParticles()
 {
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             int particleCount = m_fluidParticleCounts.at(i,j);
             if(particleCount > 20)

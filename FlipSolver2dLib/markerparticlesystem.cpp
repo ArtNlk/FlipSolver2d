@@ -96,8 +96,8 @@ Index2d MarkerParticleSystem::binIdxForIdx(Index2d idx)
 
 Index2d MarkerParticleSystem::binIdxForIdx(ssize_t i, ssize_t j)
 {
-    int binI = i/m_binSize;
-    int binJ = j/m_binSize;
+    ssize_t binI = i/m_binSize;
+    ssize_t binJ = j/m_binSize;
     return Index2d(binI, binJ);
 }
 
@@ -111,9 +111,9 @@ std::array<ssize_t, 9> MarkerParticleSystem::binsForGridCell(ssize_t i, ssize_t 
     std::array<ssize_t,9> output({-1,-1,-1,-1,-1,-1,-1,-1,-1});
     int outputIdx = 0;
     Index2d centerBinIdx = binIdxForIdx(i,j);
-    for(int iOffset = -1; iOffset <= 1; iOffset++)
+    for(ssize_t iOffset = -1; iOffset <= 1; iOffset++)
     {
-        for(int jOffset = -1; jOffset <= 1; jOffset++)
+        for(ssize_t jOffset = -1; jOffset <= 1; jOffset++)
         {
             if(m_particleBins.inBounds(centerBinIdx.i + iOffset, centerBinIdx.j + jOffset))
             {
@@ -160,7 +160,7 @@ ssize_t MarkerParticleSystem::gridToBinIdx(ssize_t i, ssize_t j)
 
 void MarkerParticleSystem::rebinParticlesThread(Range r)
 {
-    for(int i = r.start; i < r.end; i++)
+    for(size_t i = r.start; i < r.end; i++)
     {
         m_particleBins.data().at(i).rebinParticles(m_rebinningSet);
     }

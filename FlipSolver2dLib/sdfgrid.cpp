@@ -1,7 +1,7 @@
 #include "sdfgrid.h"
 #include "mathfuncs.h"
 
-SdfGrid::SdfGrid(int sizeI, int sizeJ) :
+SdfGrid::SdfGrid(size_t sizeI, size_t sizeJ) :
     Grid2d(sizeI,sizeJ, 0.f, OOBStrategy::OOB_EXTEND)
 {
 

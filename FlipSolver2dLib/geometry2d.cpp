@@ -55,8 +55,8 @@ float Geometry2d::signedDistance(Vertex point)
 {
     float sqrdDist = (point-m_verts[0]).dot(point-m_verts[0]);
     float s = 1.0;
-    int N = m_verts.size();
-    for( int i=0, j=N-1; i<N; j=i, i++ )
+    size_t N = m_verts.size();
+    for(size_t i=0, j=N-1; i<N; j=i, i++ )
     {
         Vertex e = m_verts[j] - m_verts[i];
         Vertex w = point - m_verts[i];

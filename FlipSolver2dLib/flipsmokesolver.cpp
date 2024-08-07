@@ -25,9 +25,9 @@ void FlipSmokeSolver::applyBodyForces()
     const float sootWeight = m_sootFactor;
     const float buoyancyInfluence = m_buoyancyFactor/m_ambientTemperature;
     const float factor = m_stepDt / m_dx;
-    for (int i = 0; i < m_sizeI + 1; i++)
+    for (ssize_t i = 0; i < m_sizeI + 1; i++)
     {
-        for (int j = 0; j < m_sizeJ + 1; j++)
+        for (ssize_t j = 0; j < m_sizeJ + 1; j++)
         {
             if(m_fluidVelocityGrid.velocityGridU().inBounds(i,j))
             {
@@ -74,9 +74,9 @@ void FlipSmokeSolver::calcPressureRhs(std::vector<double> &rhs)
 {
     const double scale = 1.f/m_dx;
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             if (!m_materialGrid.isSolid(i,j))
             {
@@ -153,9 +153,9 @@ void FlipSmokeSolver::reseedParticles()
     // std::vector<float>& particleViscosities = m_markerParticles.particleProperties<float>
     //                                           (m_viscosityPropertyIndex);
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             int particleCount = m_fluidParticleCounts.at(i,j);
             if(particleCount > 20)
@@ -243,7 +243,7 @@ void FlipSmokeSolver::applyPressuresToVelocityField(const std::vector<double> &p
     }
     ThreadPool::i()->wait();
 
-    for(int i = 0; i < pressures.size(); i++)
+    for(size_t i = 0; i < pressures.size(); i++)
     {
         m_testGrid.data().at(i) = pressures.at(i) / 100.0;
     }
@@ -263,12 +263,12 @@ void FlipSmokeSolver::applyPressureThreadU(Range range, const std::vector<double
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx);
 
-    for (unsigned int pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
+    for (size_t pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
     {
         Index2d i2d = index2d(pressureIdx);
         Index2d i2dim1 = Index2d(i2d.i - 1,   i2d.j);
         //Index2d i2djm1 = Index2d(i2d.m_i,       i2d.m_j - 1);
-        int pressureIndexIm1 = linearIndex(i2dim1);
+        ssize_t pressureIndexIm1 = linearIndex(i2dim1);
         double pCurrent = pressures.at(pressureIdx);
         double pIm1 = pressureIndexIm1 == -1 ? 0.0 : pressures.at(pressureIndexIm1);
         //U part
@@ -294,12 +294,12 @@ void FlipSmokeSolver::applyPressureThreadV(Range range, const std::vector<double
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx);
 
-    for (unsigned int pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
+    for (size_t pressureIdx = range.start; pressureIdx < range.end; pressureIdx++)
     {
         Index2d i2d = index2d(pressureIdx);
         Index2d i2djm1 = Index2d(i2d.i,   i2d.j - 1);
         //Index2d i2djm1 = Index2d(i2d.m_i,       i2d.m_j - 1);
-        int pressureIndexJm1 = linearIndex(i2djm1);
+        ssize_t pressureIndexJm1 = linearIndex(i2djm1);
         double pCurrent = pressures.at(pressureIdx);
         double pJm1 = pressureIndexJm1 == -1 ? 0.0 : pressures.at(pressureIndexJm1);
         //U part
@@ -326,9 +326,9 @@ void FlipSmokeSolver::seedInitialFluid()
     // std::vector<float>& particleConcentrations = m_markerParticles.particleProperties<float> (m_concentrationIndex);
     // std::vector<float>& particleTemperatures = m_markerParticles.particleProperties<float>(m_temperatureIndex);
 
-    for (int i = 0; i < m_sizeI; i++)
+    for (ssize_t i = 0; i < m_sizeI; i++)
     {
-        for (int j = 0; j < m_sizeJ; j++)
+        for (ssize_t j = 0; j < m_sizeJ; j++)
         {
             if (m_materialGrid.isStrictFluid(i, j))
             {
@@ -362,11 +362,11 @@ IndexedPressureParameters FlipSmokeSolver::getPressureProjectionMatrix()
     std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
     size_t currRangeIdx = 0;
 
-    for(int i = 0; i < m_sizeI; i++)
+    for(ssize_t i = 0; i < m_sizeI; i++)
     {
-        for(int j = 0; j < m_sizeJ; j++)
+        for(ssize_t j = 0; j < m_sizeJ; j++)
         {
-            const int linIdx = indexer.linearIndex(i,j);
+            const ssize_t linIdx = indexer.linearIndex(i,j);
 
             if(m_materialGrid.isSolid(i,j))
             {
@@ -381,10 +381,10 @@ IndexedPressureParameters FlipSmokeSolver::getPressureProjectionMatrix()
             IndexedPressureParameterUnit unit;
             unit.unitIndex = linIdx;
 
-            const int linIdxPosAx = indexer.linearIdxOfOffset(linIdx,1,0);
-            const int linIdxPosAy = indexer.linearIdxOfOffset(linIdx,0,1);
-            const int linIdxNegAx = indexer.linearIdxOfOffset(linIdx,-1,0);
-            const int linIdxNegAy = indexer.linearIdxOfOffset(linIdx,0,-1);
+            const ssize_t linIdxPosAx = indexer.linearIdxOfOffset(linIdx,1,0);
+            const ssize_t linIdxPosAy = indexer.linearIdxOfOffset(linIdx,0,1);
+            const ssize_t linIdxNegAx = indexer.linearIdxOfOffset(linIdx,-1,0);
+            const ssize_t linIdxNegAy = indexer.linearIdxOfOffset(linIdx,0,-1);
 
             double diag = 0.0;
             //X Neighbors
@@ -456,9 +456,9 @@ IndexedIPPCoefficients FlipSmokeSolver::getIPPCoefficients(const IndexedPressure
 
     size_t matEntryIdx = 0;
 
-    for(size_t i = 0; i < m_sizeI; i++)
+    for(ssize_t i = 0; i < m_sizeI; i++)
     {
-        for(size_t j = 0; j < m_sizeJ; j++)
+        for(ssize_t j = 0; j < m_sizeJ; j++)
         {
             const ssize_t linIdx = indexer.linearIndex(i,j);
 

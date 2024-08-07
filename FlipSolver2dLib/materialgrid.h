@@ -34,7 +34,7 @@ enum VelocitySampleState : char {IN_FLUID = 0b0100,
 class MaterialGrid : public Grid2d<FluidMaterial>
 {
 public:
-    MaterialGrid(int sizeI, int sizeJ, FluidMaterial oobMaterial);
+    MaterialGrid(ssize_t sizeI, ssize_t sizeJ, FluidMaterial oobMaterial);
 
     bool isFluid(Index2d idx) const;
 
@@ -48,17 +48,17 @@ public:
 
     bool isSink(Index2d idx) const;
 
-    bool isFluid(int i, int j) const;
+    bool isFluid(ssize_t i, ssize_t j) const;
 
-    bool isStrictFluid(int i, int j) const;
+    bool isStrictFluid(ssize_t i, ssize_t j) const;
 
-    bool isSolid(int i, int j) const;
+    bool isSolid(ssize_t i, ssize_t j) const;
 
-    bool isEmpty(int i, int j) const;
+    bool isEmpty(ssize_t i, ssize_t j) const;
 
-    bool isSource(int i, int j) const;
+    bool isSource(ssize_t i, ssize_t j) const;
 
-    bool isSink(int i, int j) const;
+    bool isSink(ssize_t i, ssize_t j) const;
 
     bool isFluid(ssize_t i) const;
 
@@ -84,17 +84,17 @@ public:
 
     bool isSink(size_t i) const;
 
-    bool uVelocitySampleInside(int i, int j) const;
+    bool uVelocitySampleInside(ssize_t i, ssize_t j) const;
 
-    bool vVelocitySampleInside(int i, int j) const;
+    bool vVelocitySampleInside(ssize_t i, ssize_t j) const;
 
-    bool uSampleAffectedBySolid(int i, int j) const;
+    bool uSampleAffectedBySolid(ssize_t i, ssize_t j) const;
 
-    bool vSampleAffectedBySolid(int i, int j) const;
+    bool vSampleAffectedBySolid(ssize_t i, ssize_t j) const;
 
-    VelocitySampleState uVelocitySampleState(int i, int j) const;
+    VelocitySampleState uVelocitySampleState(ssize_t i, ssize_t j) const;
 
-    VelocitySampleState vVelocitySampleState(int i, int j) const;
+    VelocitySampleState vVelocitySampleState(ssize_t i, ssize_t j) const;
 };
 
 #endif // MATERIALGRID_H
