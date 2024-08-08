@@ -69,6 +69,12 @@ set(AVX2_HEADERS
 set(AVX2_SOURCES
     vops_avx2.cpp)
 
+if(VECTORIZER_DEBUG AND UNIX)
+    add_compile_options(-fopt-info-vec-missed)
+elseif(VECTORIZER_DEBUG AND MSVC)
+    add_compile_options(/Qvec-report:2)
+endif()
+
 if(FLUID_ACCEL STREQUAL "sse")
     set(SOURCES ${SOURCES} ${SSE42_SOURCES})
     set(SOURCES ${SOURCES} ${SSE42_HEADERS})

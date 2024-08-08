@@ -47,6 +47,12 @@ PUBLIC
     ${CMAKE_SOURCE_DIR}/imgui/backends
 )
 
+if(VECTORIZER_DEBUG AND UNIX)
+    add_compile_options(-fopt-info-vec-missed)
+elseif(VECTORIZER_DEBUG AND MSVC)
+    add_compile_options(/Qvec-report:2)
+endif()
+
 #GLM
 FetchContent_Declare(
         glm
