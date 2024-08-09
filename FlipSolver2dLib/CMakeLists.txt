@@ -1,6 +1,7 @@
 add_subdirectory("./threading")
 
 set(HEADERS
+    util.h
     linearindexable2d.h
     index2d.h
     grid2d.h
@@ -70,7 +71,7 @@ set(AVX2_SOURCES
     vops_avx2.cpp)
 
 if(VECTORIZER_DEBUG AND UNIX)
-    add_compile_options(-fopt-info-vec-missed)
+    add_compile_options(-fopt-info-vec-all)
 elseif(VECTORIZER_DEBUG AND MSVC)
     add_compile_options(/Qvec-report:2)
 endif()

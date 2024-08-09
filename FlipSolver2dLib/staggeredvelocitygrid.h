@@ -39,6 +39,10 @@ public:
 
     void setVValidity(ssize_t i,ssize_t j, bool vValidity);
 
+    void updateUValidity(ssize_t i,ssize_t j, bool uValidity);
+
+    void updateVValidity(ssize_t i,ssize_t j, bool vValidity);
+
     float &u(Index2d idx);
 
     float &v(Index2d idx);

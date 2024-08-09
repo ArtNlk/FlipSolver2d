@@ -522,6 +522,7 @@ bool LiquidRenderApp::renderControlsPanel()
     {
         m_solver->stepFrame();
         m_lastFrameStats = m_solver->timeStats();
+        std::cout << "Stat: " << m_lastFrameStats.timings().at(PARTICLE_TO_GRID)/m_lastFrameStats.frameTime() * 100.f << std::endl;
         update = true;
         m_simStepsLeft--;
         if(m_recording)

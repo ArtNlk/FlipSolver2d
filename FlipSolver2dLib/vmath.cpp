@@ -142,8 +142,8 @@ VOps::VOps() :
     m_maxAbsThread(&VOps::maxAbsThread)
 {
 #ifdef FLUID_SSE
-        m_addMulThread = &VOps_sse42::addMulThread;
+        //m_addMulThread = &VOps_sse42::addMulThread;
 #elif defined FLUID_AVX
-        m_addMulThread = &VOps_avx::addMulThread;
+        //m_addMulThread = &VOps_avx::addMulThread;
 #endif
 }

@@ -1,12 +1,7 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-#include <functional>
-#include <queue>
-#include <type_traits>
-
 #include "geometry2d.h"
-#include "index2d.h"
 
 template<class T>
 class Grid2d;
@@ -17,8 +12,17 @@ namespace simmath
     int integr(float v);
     float lerp(float a, float b, float f);
     float avg(float a,float b);
-    float bSpline(float value);
-    float quadraticBSpline(float x, float y);
+    inline float bSpline(float value)
+    {
+        value = std::abs(value);
+        return (0.75f - value * value) * (value < 0.5f)
+               + (0.5f * (1.5f - value) * (1.5f - value)) * (value >= 0.5f && value < 1.5f);
+    }
+    inline float quadraticBSpline(float x, float y)
+    {
+        return simmath::bSpline(x) * simmath::bSpline(y) * simmath::bSpline(0.f);
+        //return simmath::linearHat(x) * simmath::linearHat(y);
+    }
     float linearHat(float value);
     float bilinearHat(float x, float y);
     float lerpUGrid(float i, float j, const Grid2d<float> &gridU);

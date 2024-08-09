@@ -71,9 +71,13 @@ public:
 
     bool markedForDeath(size_t index);
 
-    Vertex& particlePosition(size_t index);
+    const Vertex &particlePosition(size_t index) const { return m_particlePositions.at(index); }
 
-    Vertex& particleVelocity(size_t index);
+    Vertex &particlePosition(size_t index) { return m_particlePositions.at(index); }
+
+    const Vertex &particleVelocity(size_t index) const { return m_velocities.at(index); }
+
+    Vertex &particleVelocity(size_t index) { return m_velocities.at(index); }
 
     void pruneParticles();
 
@@ -114,6 +118,11 @@ public:
     }
 
     std::vector<Vertex>& positions()
+    {
+        return m_particlePositions;
+    }
+
+    const std::vector<Vertex>& positions() const
     {
         return m_particlePositions;
     }

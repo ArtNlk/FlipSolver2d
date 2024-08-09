@@ -314,7 +314,7 @@ protected:
 
     virtual void particleVelocityToGrid();
 
-    void particleVelocityToGridThread(Range r, Grid2d<float>& uWeights, Grid2d<float>& vWeights);
+    void particleVelocityToGridThread(Range r);
 
     virtual void centeredParamsToGrid();
 

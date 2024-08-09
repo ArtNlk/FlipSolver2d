@@ -27,7 +27,7 @@
 FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     LinearIndexable2d(p->gridSizeI, p->gridSizeJ),
     m_frameNumber(0),
-    m_markerParticles(p->gridSizeI, p->gridSizeJ,5),
+    m_markerParticles(p->gridSizeI, p->gridSizeJ,3),
     m_fluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_savedFluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_materialGrid(p->gridSizeI,p->gridSizeJ, FluidMaterial::SINK),
@@ -1331,10 +1331,6 @@ void FlipSolver::updateSdfThread(Range range)
 
 void FlipSolver::particleVelocityToGrid()
 {
-    Grid2d<float> uWeights(m_fluidVelocityGrid.velocityGridU().sizeI(),
-                           m_fluidVelocityGrid.velocityGridU().sizeJ(),1e-10f);
-    Grid2d<float> vWeights(m_fluidVelocityGrid.velocityGridV().sizeI(),
-                           m_fluidVelocityGrid.velocityGridV().sizeJ(),1e-10f);
     m_fluidVelocityGrid.velocityGridU().fill(0.f);
     m_fluidVelocityGrid.velocityGridV().fill(0.f);
     m_fluidVelocityGrid.uSampleValidityGrid().fill(false);
@@ -1344,53 +1340,58 @@ void FlipSolver::particleVelocityToGrid()
 
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&FlipSolver::particleVelocityToGridThread,this,range,
-                                                                    std::ref(uWeights), std::ref(vWeights));
+        ThreadPool::i()->enqueue(&FlipSolver::particleVelocityToGridThread,this,range);
     }
     ThreadPool::i()->wait();
 }
 
-void FlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights, Grid2d<float> &vWeights)
+void FlipSolver::particleVelocityToGridThread(Range r)
 {
+    const float threshold = 1e-9f;
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
         std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+        float uWeightTotal = 0.0;
+        float vWeightTotal = 0.0;
+        float uVel = 0.0;
+        float vVel = 0.0;
+        bool uValid = false;
+        bool vValid = false;
+
         for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {
-                ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
+                const ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
                 for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
                 {
-                    Vertex position = currentBin.particlePosition(particleIdx);
+                    const Vertex& position = currentBin.particlePosition(particleIdx);
                     float weightU = simmath::quadraticBSpline(position.x() - static_cast<float>(i2d.i),
                                                               position.y() - (static_cast<float>(i2d.j) + 0.5f));
 
                     float weightV = simmath::quadraticBSpline(position.x() - (static_cast<float>(i2d.i) + 0.5f),
                                                               position.y() - static_cast<float>(i2d.j));
-                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
-                    {
-                        Vertex velocity = currentBin.particleVelocity(particleIdx);
-                        uWeights.at(i2d.i,i2d.j) += weightU;
-                        m_fluidVelocityGrid.u(i2d.i,i2d.j) += weightU * (velocity.x());
-                        m_fluidVelocityGrid.setUValidity(i2d.i,i2d.j,true);
 
-                        vWeights.at(i2d.i,i2d.j) += weightV;
-                        m_fluidVelocityGrid.v(i2d.i,i2d.j) += weightV * (velocity.y());
-                        m_fluidVelocityGrid.setVValidity(i2d.i,i2d.j,true);
+                    bool flag = weightU > threshold && weightV > threshold;
+                    if(flag)
+                    {
+                        const Vertex velocity = currentBin.particleVelocity(particleIdx);
+                        uWeightTotal += weightU;
+                        uVel += weightU * (velocity.x());
+                        uValid |= true;
+
+                        vWeightTotal += weightV;
+                        vVel += weightV * (velocity.y());
+                        vValid |= true;
                     }
                 }
             }
         }
-        if(m_fluidVelocityGrid.velocityGridU().inBounds(i2d))
-        {
-            m_fluidVelocityGrid.u(i2d) /= uWeights.at(i2d);
-        }
-        if(m_fluidVelocityGrid.velocityGridV().inBounds(i2d))
-        {
-            m_fluidVelocityGrid.v(i2d) /= vWeights.at(i2d);
-        }
+        m_fluidVelocityGrid.u(i2d) = uVel / uWeightTotal;
+        m_fluidVelocityGrid.setUValidity(i2d,uValid);
+        m_fluidVelocityGrid.v(i2d) = vVel / vWeightTotal;
+        m_fluidVelocityGrid.setVValidity(i2d,vValid);
     }
 }
 

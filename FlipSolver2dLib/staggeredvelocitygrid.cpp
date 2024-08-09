@@ -93,6 +93,16 @@ void StaggeredVelocityGrid::setVValidity(ssize_t i, ssize_t j, bool vValidity)
     m_vSampleValidity.setAt(i,j, vValidity);
 }
 
+void StaggeredVelocityGrid::updateUValidity(ssize_t i, ssize_t j, bool uValidity)
+{
+    m_uSampleValidity.at(i,j) = m_uSampleValidity.at(i,j) || uValidity;
+}
+
+void StaggeredVelocityGrid::updateVValidity(ssize_t i, ssize_t j, bool vValidity)
+{
+    m_vSampleValidity.at(i,j) = m_vSampleValidity.at(i,j) || vValidity;
+}
+
 float &StaggeredVelocityGrid::u(Index2d idx)
 {
     return u(idx.i, idx.j);

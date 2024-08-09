@@ -225,15 +225,13 @@ bool ParticleBin::markedForDeath(size_t index)
     return m_markedForDeath.at(index);
 }
 
-Vertex &ParticleBin::particlePosition(size_t index)
-{
-    return m_particlePositions.at(index);
-}
 
-Vertex &ParticleBin::particleVelocity(size_t index)
-{
-    return m_velocities.at(index);
-}
+
+
+
+
+
+
 
 void ParticleBin::pruneParticles()
 {
