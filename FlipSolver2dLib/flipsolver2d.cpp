@@ -27,14 +27,14 @@
 FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     LinearIndexable2d(p->gridSizeI, p->gridSizeJ),
     m_frameNumber(0),
-    m_markerParticles(p->gridSizeI, p->gridSizeJ,5),
+    m_markerParticles(p->gridSizeI, p->gridSizeJ,3),
     m_fluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_savedFluidVelocityGrid(p->gridSizeI, p->gridSizeJ),
     m_materialGrid(p->gridSizeI,p->gridSizeJ, FluidMaterial::SINK),
     m_solidSdf(p->gridSizeI,p->gridSizeJ),
     m_fluidSdf(p->gridSizeI, p->gridSizeJ),
     m_knownCenteredParams(p->gridSizeI,p->gridSizeJ, false, OOBStrategy::OOB_CONST, true),
-    m_viscosityGrid(p->gridSizeI,p->gridSizeJ,0.f,OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.5f,0.5f)),
+    m_viscosityGrid(p->gridSizeI,p->gridSizeJ,0.f,OOBStrategy::OOB_EXTEND, 0.f, Vec3(0.5f,0.5f)),
     m_emitterId(p->gridSizeI, p->gridSizeJ, -1),
     m_solidId(p->gridSizeI, p->gridSizeJ,-1),
     m_fluidParticleCounts(p->gridSizeI, p->gridSizeJ),
@@ -216,7 +216,7 @@ void FlipSolver::updateDensityGridThread(Range r, Grid2d<float> &centeredWeights
                     continue;
                 }
 
-                Vertex p = currentBin.particlePosition(particleIdx);
+                Vec3 p = currentBin.particlePosition(particleIdx);
                 float weightCentered = simmath::bilinearHat(p.x() - static_cast<float>(cellIdx.i) - 0.5f,
                                                             p.y() - static_cast<float>(cellIdx.j) - 0.5f);
                 if(std::abs(weightCentered) > 1e-6f)
@@ -265,7 +265,7 @@ void FlipSolver::adjustParticlesByDensityThread(Range r)
                 continue;
             }
 
-            Vertex& position = currentBin.particlePosition(particleIdx);
+            Vec3& position = currentBin.particlePosition(particleIdx);
             ssize_t iCorr = std::clamp<ssize_t>(static_cast<int>(position.x() - 0.5f),0,m_sizeI);
             ssize_t jCorr = std::clamp<ssize_t>(static_cast<int>(position.y() - 0.5f),0,m_sizeJ);
             ssize_t i = std::clamp<ssize_t>(static_cast<int>(position.x()),0,m_sizeI);
@@ -302,11 +302,11 @@ void FlipSolver::advectThread(Range range, std::vector<std::vector<RebinRecord>>
     for(ssize_t binIdx = range.start; binIdx < range.end; binIdx++)
     {
         std::vector<RebinRecord>& rebinningSet = rebinningSets.at(binIdx);
-        std::vector<Vertex>& positions = m_markerParticles.binForBinIdx(binIdx).positions();
+        std::vector<Vec3>& positions = m_markerParticles.binForBinIdx(binIdx).positions();
 
         for(ssize_t particleIdx = 0; particleIdx < positions.size(); particleIdx++)
         {
-            Vertex& position = positions[particleIdx];
+            Vec3& position = positions[particleIdx];
             const ssize_t oldBinIdx = m_markerParticles.gridToBinIdx(position);
             position = rk4Integrate(position, m_fluidVelocityGrid, m_stepDt);
             if(m_solidSdf.interpolateAt(position.x(),position.y()) < 0.f)
@@ -337,8 +337,8 @@ void FlipSolver::eulerAdvectionThread(Range range, const Grid2d<float> &inputGri
     for(ssize_t idx = range.start; idx < range.end; idx++)
     {
         Index2d i2d = outputGrid.index2d(idx);
-        Vertex currentPos = Vertex(i2d.i, i2d.j);
-        Vertex prevPos = rk4Integrate(currentPos,m_fluidVelocityGrid, -m_stepDt);
+        Vec3 currentPos = Vec3(i2d.i, i2d.j);
+        Vec3 prevPos = rk4Integrate(currentPos,m_fluidVelocityGrid, -m_stepDt);
         dataOut[idx] = inputGrid.interpolateAt(prevPos);
     }
 }
@@ -361,12 +361,12 @@ void FlipSolver::particleUpdate()
 
         for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
         {
-            Vertex &position = currentBin.particlePosition(particleIdx);
-            Vertex &velocity = currentBin.particleVelocity(particleIdx);
+            Vec3 &position = currentBin.particlePosition(particleIdx);
+            Vec3 &velocity = currentBin.particleVelocity(particleIdx);
 
-            Vertex oldVelocity(prevU.interpolateAt(position.x(),position.y()),
+            Vec3 oldVelocity(prevU.interpolateAt(position.x(),position.y()),
                                prevV.interpolateAt(position.x(),position.y()));
-            Vertex newVelocity = m_fluidVelocityGrid.velocityAt(position) ;
+            Vec3 newVelocity = m_fluidVelocityGrid.velocityAt(position) ;
     //        if(oldVelocity.distFromZero() > (SimSettings::cflNumber() / m_stepDt))
     //        {
     //            velocity = newVelocity;
@@ -646,8 +646,8 @@ void FlipSolver::reseedParticles()
                 int emitterId = m_emitterId.at(i,j);
                 for(int p = 0; p < additionalParticles; p++)
                 {
-                    Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = Vertex();
+                    Vec3 pos = jitteredPosInCell(i,j);
+                    Vec3 velocity = Vec3();
                     if(m_sources[emitterId].velocityTransfer())
                     {
                         velocity = m_fluidVelocityGrid.velocityAt(pos);
@@ -687,8 +687,8 @@ void FlipSolver::seedInitialFluid()
 
                 for(int p = 0; p < m_particlesPerCell; p++)
                 {
-                    Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    Vec3 pos = jitteredPosInCell(i,j);
+                    Vec3 velocity = m_fluidVelocityGrid.velocityAt(pos);
                     float viscosity = m_viscosityGrid.interpolateAt(pos);
 
                     size_t pIdx = m_markerParticles.binForGridPosition(pos).addMarkerParticle(pos,velocity);
@@ -1029,12 +1029,12 @@ void FlipSolver::calcDensityCorrectionRhs(std::vector<double> &rhs)
     }
 }
 
-Vertex FlipSolver::jitteredPosInCell(size_t i, size_t j)
+Vec3 FlipSolver::jitteredPosInCell(size_t i, size_t j)
 {
     static std::uniform_real_distribution<float> dist(0.f,1.f);
     float x = (static_cast<float>(i) + dist(m_randEngine));
     float y = (static_cast<float>(j) + dist(m_randEngine));
-    return Vertex(x,y);
+    return Vec3(x,y);
 }
 
 void FlipSolver::countParticles()
@@ -1046,7 +1046,7 @@ void FlipSolver::countParticles()
         m_fluidParticleCounts.at(i2d) = 0;
         for(size_t particleIdx = 0; particleIdx < bin.size(); particleIdx++)
         {
-            Vertex& position = bin.particlePosition(particleIdx);
+            Vec3& position = bin.particlePosition(particleIdx);
             ssize_t i = std::floor(position.x());
             ssize_t j = std::floor(position.y());
             if(i2d.i == i && i2d.j == j)
@@ -1211,12 +1211,12 @@ void FlipSolver::applyPressureThreadV(Range range, const std::vector<double> &pr
     }
 }
 
-Vertex FlipSolver::rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid, float dt)
+Vec3 FlipSolver::rk4Integrate(Vec3 currentPosition, StaggeredVelocityGrid &grid, float dt)
 {
-    Vertex k1 = dt*grid.velocityAt(currentPosition);
-    Vertex k2 = dt*grid.velocityAt(currentPosition + 0.5f*k1);
-    Vertex k3 = dt*grid.velocityAt(currentPosition + 0.5f*k2);
-    Vertex k4 = dt*grid.velocityAt(currentPosition + k3);
+    Vec3 k1 = dt*grid.velocityAt(currentPosition);
+    Vec3 k2 = dt*grid.velocityAt(currentPosition + 0.5f*k1);
+    Vec3 k3 = dt*grid.velocityAt(currentPosition + 0.5f*k2);
+    Vec3 k4 = dt*grid.velocityAt(currentPosition + k3);
 
     return currentPosition + (1.0f/6.0f)*(k1 + 2.f*k2 + 2.f*k3 + k4);
 }
@@ -1303,7 +1303,7 @@ void FlipSolver::updateSdfThread(Range range)
         Index2d i2d = m_fluidSdf.index2d(idx);
         std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
         float distSqrd = std::numeric_limits<float>::max();
-        Vertex centerPoint = Vertex(static_cast<float>(i2d.i) + 0.5f,
+        Vec3 centerPoint = Vec3(static_cast<float>(i2d.i) + 0.5f,
                                     static_cast<float>(i2d.j) + 0.5f);
         for(ssize_t binIdx : affectingBins)
         {
@@ -1313,7 +1313,7 @@ void FlipSolver::updateSdfThread(Range range)
                 for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
                 {
                     //testValues[particleIdx] = binIdx >= 0;
-                    Vertex position = currentBin.particlePosition(particleIdx);
+                    Vec3 position = currentBin.particlePosition(particleIdx);
                     //m_testGrid.at(position.x(), position.y()) = 1;
                     float diffX = position.x() - centerPoint.x();
                     float diffY = position.y() - centerPoint.y();
@@ -1331,124 +1331,121 @@ void FlipSolver::updateSdfThread(Range range)
 
 void FlipSolver::particleVelocityToGrid()
 {
-    Grid2d<float> uWeights(m_fluidVelocityGrid.velocityGridU().sizeI(),
-                           m_fluidVelocityGrid.velocityGridU().sizeJ(),1e-10f);
-    Grid2d<float> vWeights(m_fluidVelocityGrid.velocityGridV().sizeI(),
-                           m_fluidVelocityGrid.velocityGridV().sizeJ(),1e-10f);
     m_fluidVelocityGrid.velocityGridU().fill(0.f);
     m_fluidVelocityGrid.velocityGridV().fill(0.f);
     m_fluidVelocityGrid.uSampleValidityGrid().fill(false);
     m_fluidVelocityGrid.vSampleValidityGrid().fill(false);
 
-    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_fluidVelocityGrid.linearSize(),1,8);
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_fluidVelocityGrid.linearSize(),1,16);
 
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&FlipSolver::particleVelocityToGridThread,this,range,
-                                                                    std::ref(uWeights), std::ref(vWeights));
+        ThreadPool::i()->enqueue(&FlipSolver::particleVelocityToGridThread,this,range);
     }
     ThreadPool::i()->wait();
 }
 
-void FlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights, Grid2d<float> &vWeights)
+void FlipSolver::particleVelocityToGridThread(Range r)
 {
+    const float threshold = 1e-9f;
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
         std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+
+        float uWeightTotal = 0.0;
+        float vWeightTotal = 0.0;
+        float uVel = 0.0;
+        float vVel = 0.0;
+        bool uValid = false;
+        bool vValid = false;
+
         for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {
-                ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
+                const ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
                 for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
                 {
-                    Vertex position = currentBin.particlePosition(particleIdx);
+                    const Vec3 position = currentBin.particlePosition(particleIdx);
                     float weightU = simmath::quadraticBSpline(position.x() - static_cast<float>(i2d.i),
                                                               position.y() - (static_cast<float>(i2d.j) + 0.5f));
 
                     float weightV = simmath::quadraticBSpline(position.x() - (static_cast<float>(i2d.i) + 0.5f),
                                                               position.y() - static_cast<float>(i2d.j));
-                    if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
+                    bool flag = weightU > threshold && weightV > threshold;
+                    if(flag)
                     {
-                        Vertex velocity = currentBin.particleVelocity(particleIdx);
-                        uWeights.at(i2d.i,i2d.j) += weightU;
-                        m_fluidVelocityGrid.u(i2d.i,i2d.j) += weightU * (velocity.x());
-                        m_fluidVelocityGrid.setUValidity(i2d.i,i2d.j,true);
+                        const Vec3 velocity = currentBin.particleVelocity(particleIdx);
+                        uWeightTotal += weightU;
+                        uVel += weightU * (velocity.x());
+                        uValid |= true;
 
-                        vWeights.at(i2d.i,i2d.j) += weightV;
-                        m_fluidVelocityGrid.v(i2d.i,i2d.j) += weightV * (velocity.y());
-                        m_fluidVelocityGrid.setVValidity(i2d.i,i2d.j,true);
+                        vWeightTotal += weightV;
+                        vVel += weightV * (velocity.y());
+                        vValid |= true;
                     }
                 }
             }
         }
-        if(m_fluidVelocityGrid.velocityGridU().inBounds(i2d))
-        {
-            m_fluidVelocityGrid.u(i2d) /= uWeights.at(i2d);
-        }
-        if(m_fluidVelocityGrid.velocityGridV().inBounds(i2d))
-        {
-            m_fluidVelocityGrid.v(i2d) /= vWeights.at(i2d);
-        }
+        m_fluidVelocityGrid.u(i2d) = uVel / uWeightTotal;
+        m_fluidVelocityGrid.setUValidity(i2d,uValid);
+        m_fluidVelocityGrid.v(i2d) = vVel / vWeightTotal;
+        m_fluidVelocityGrid.setVValidity(i2d,vValid);
     }
 }
 
 void FlipSolver::centeredParamsToGrid()
 {
-    Grid2d<float> centeredWeights(m_sizeI,m_sizeJ,1e-10f);
-
     m_viscosityGrid.fill(0.f);
     m_divergenceControl.fill(0.f);
     m_knownCenteredParams.fill(false);
 
-    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_viscosityGrid.linearSize(),1,8);
+    std::vector<Range> ranges = ThreadPool::i()->splitRange(m_viscosityGrid.linearSize(),1,16);
 
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&FlipSolver::centeredParamsToGridThread,this,range,
-                                 std::ref(centeredWeights));
+        ThreadPool::i()->enqueue(&FlipSolver::centeredParamsToGridThread,this,range);
     }
     ThreadPool::i()->wait();
 }
 
-void FlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
+void FlipSolver::centeredParamsToGridThread(Range r)
 {
+    const float threshold = 1e-9f;
     for(size_t idx = r.start; idx < r.end; idx++)
     {
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
         std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
+
+        float weightTotal = 0.0;
+        float viscVal = 0.0;
+        bool viscValid = false;
+
         for(ssize_t binIdx : affectingBins)
         {
             if(binIdx >= 0)
             {
-                ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
+                const ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
                 auto& viscVec = currentBin.particleProperties<float>(m_viscosityPropertyIndex);
 
                 for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
                 {
-                    Vertex position = currentBin.particlePosition(particleIdx);
+                    const Vec3 position = currentBin.particlePosition(particleIdx);
                     float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
                                                                      position.y() - (i2d.j));
-                    if(std::abs(weightCentered) > 1e-6f)
+                    if(weightCentered > threshold)
                     {
-                        cWeights.at(i2d.i,i2d.j) += weightCentered;
-                        m_viscosityGrid.at(i2d.i,i2d.j) += weightCentered * viscVec.at(particleIdx);
-                        m_knownCenteredParams.at(i2d.i,i2d.j) = true;
+                        weightTotal += weightCentered;
+                        viscVal += weightCentered * viscVec.at(particleIdx);
+                        viscValid = true;
                     }
                 }
             }
         }
 
-        if(m_knownCenteredParams.inBounds(i2d))
-        {
-            if(m_knownCenteredParams.at(i2d))
-            {
-                m_viscosityGrid.at(i2d) /= cWeights.at(i2d);
-                //m_testGrid.at(i2d) = m_viscosityGrid.at(i2d);
-            }
-            //m_testGrid.at(i2d) = m_viscosityGrid.at(i2d);
-        }
+        m_viscosityGrid.at(i2d) = viscVal/weightTotal;
+        m_knownCenteredParams.at(i2d) = viscValid;
     }
 }
 
@@ -1586,7 +1583,7 @@ float FlipSolver::maxParticleVelocity()
     {
         for(size_t particleIdx = 0; particleIdx < bin.size(); particleIdx++)
         {
-            const Vertex velocity = bin.particleVelocity(particleIdx);
+            const Vec3 velocity = bin.particleVelocity(particleIdx);
             float velocitySqr = velocity.x()*velocity.x() + velocity.y()*velocity.y();
             if(velocitySqr > maxVelocitySqr) maxVelocitySqr = velocitySqr;
         }
@@ -1637,7 +1634,7 @@ void FlipSolver::initAdditionalParameters()
     m_viscosityPropertyIndex = m_markerParticles.addParticleProperty<float>();
 }
 
-Vertex FlipSolver::globalAcceleration() const
+Vec3 FlipSolver::globalAcceleration() const
 {
     return m_globalAcceleration;
 }

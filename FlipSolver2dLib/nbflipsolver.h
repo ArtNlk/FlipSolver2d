@@ -48,7 +48,7 @@ protected:
 
     void combineCenteredGrids();
     
-    Vertex inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid& grid);
+    Vec3 inverseRk4Integrate(Vec3 newPosition, StaggeredVelocityGrid& grid);
 
     const StaggeredVelocityGrid &advectedVelocityGrid() const;
 

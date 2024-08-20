@@ -34,7 +34,7 @@ ParticleBin &MarkerParticleSystem::binForGridIdx(size_t i, size_t j)
     return m_particleBins.data()[gridToBinIdx(i,j)];
 }
 
-ParticleBin &MarkerParticleSystem::binForGridPosition(Vertex pos)
+ParticleBin &MarkerParticleSystem::binForGridPosition(Vec3 pos)
 {
     return binForGridIdx(pos.x(), pos.y());
 }
@@ -67,7 +67,7 @@ Grid2d<ParticleBin>& MarkerParticleSystem::bins()
     return m_particleBins;
 }
 
-void MarkerParticleSystem::addMarkerParticle(size_t binIdx, Vertex position, Vertex velocity)
+void MarkerParticleSystem::addMarkerParticle(size_t binIdx, Vec3 position, Vec3 velocity)
 {
     ASSERT(binIdx < m_particleBins.linearSize());
 
@@ -79,12 +79,12 @@ void MarkerParticleSystem::markForDeath(size_t binIdx, size_t particleIdx)
     m_particleBins.data().at(binIdx).markForDeath(particleIdx);
 }
 
-std::vector<Vertex> &MarkerParticleSystem::positions(size_t binIdx)
+std::vector<Vec3> &MarkerParticleSystem::positions(size_t binIdx)
 {
     return m_particleBins.data().at(binIdx).positions();
 }
 
-std::vector<Vertex> &MarkerParticleSystem::velocities(size_t binIdx)
+std::vector<Vec3> &MarkerParticleSystem::velocities(size_t binIdx)
 {
     return m_particleBins.data().at(binIdx).velocities();
 }
@@ -143,7 +143,7 @@ ssize_t MarkerParticleSystem::gridToBinIdx(Index2d idx)
     return gridToBinIdx(idx.i,idx.j);
 }
 
-ssize_t MarkerParticleSystem::gridToBinIdx(Vertex pos)
+ssize_t MarkerParticleSystem::gridToBinIdx(Vec3 pos)
 {
     return gridToBinIdx(pos.x(), pos.y());
 }
@@ -172,7 +172,7 @@ ParticleBin::ParticleBin(size_t binIdx) :
 
 }
 
-size_t ParticleBin::addMarkerParticle(Vertex position, Vertex velocity)
+size_t ParticleBin::addMarkerParticle(Vec3 position, Vec3 velocity)
 {
     m_particlePositions.push_back(position);
     m_velocities.push_back(velocity);
@@ -225,12 +225,22 @@ bool ParticleBin::markedForDeath(size_t index)
     return m_markedForDeath.at(index);
 }
 
-Vertex &ParticleBin::particlePosition(size_t index)
+const Vec3 &ParticleBin::particlePosition(size_t index) const
 {
     return m_particlePositions.at(index);
 }
 
-Vertex &ParticleBin::particleVelocity(size_t index)
+Vec3 &ParticleBin::particlePosition(size_t index)
+{
+    return m_particlePositions.at(index);
+}
+
+const Vec3 &ParticleBin::particleVelocity(size_t index) const
+{
+    return m_velocities.at(index);
+}
+
+Vec3 &ParticleBin::particleVelocity(size_t index)
 {
     return m_velocities.at(index);
 }

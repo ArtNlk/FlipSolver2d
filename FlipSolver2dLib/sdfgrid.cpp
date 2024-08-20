@@ -7,17 +7,17 @@ SdfGrid::SdfGrid(size_t sizeI, size_t sizeJ) :
 
 }
 
-Vertex SdfGrid::closestSurfacePoint(float i, float j)
+Vec3 SdfGrid::closestSurfacePoint(float i, float j)
 {
-    return closestSurfacePoint(Vertex(i,j));
+    return closestSurfacePoint(Vec3(i,j));
 }
 
-Vertex SdfGrid::closestSurfacePoint(Vertex pos)
+Vec3 SdfGrid::closestSurfacePoint(Vec3 pos)
 {
-    Vertex closestPoint = pos;
+    Vec3 closestPoint = pos;
     auto* grid = dynamic_cast<Grid2d<float>*>(this);
     float value = simmath::lerpCenteredGrid(pos.x(),pos.y(),*grid);
-    Vertex grad = simmath::gradCenteredGrid(pos.x(),pos.y(),*grid);
+    Vec3 grad = simmath::gradCenteredGrid(pos.x(),pos.y(),*grid);
     static const int iterationLimit = 100;
     static const int internalIterationLimit = 10;
     for(int i = 0; i < iterationLimit; i++)
@@ -25,7 +25,7 @@ Vertex SdfGrid::closestSurfacePoint(Vertex pos)
         float alpha = 1;
         for(int j = 0; j < internalIterationLimit; j++)
         {
-            Vertex q = closestPoint - alpha*value*grad;
+            Vec3 q = closestPoint - alpha*value*grad;
             if(std::abs(simmath::lerpCenteredGrid(q.x(),q.y(),*grid)) < std::abs(value))
             {
                 closestPoint = q;

@@ -13,8 +13,8 @@
 
 struct MarkerParticle
 {
-    Vertex position;
-    Vertex velocity;
+    Vec3 position;
+    Vec3 velocity;
     float viscosity;
     float temperature;
     float smokeConcentrartion;
@@ -63,7 +63,7 @@ public:
 
     using VariantVector = std::variant<std::vector<float>>;
 
-    size_t addMarkerParticle(Vertex position, Vertex velocity = Vertex());
+    size_t addMarkerParticle(Vec3 position, Vec3 velocity = Vec3());
 
     void eraseMarkerParticle(size_t index);
 
@@ -71,9 +71,13 @@ public:
 
     bool markedForDeath(size_t index);
 
-    Vertex& particlePosition(size_t index);
+    const Vec3& particlePosition(size_t index) const;
 
-    Vertex& particleVelocity(size_t index);
+    Vec3& particlePosition(size_t index);
+
+    const Vec3& particleVelocity(size_t index) const;
+
+    Vec3& particleVelocity(size_t index);
 
     void pruneParticles();
 
@@ -96,6 +100,12 @@ public:
     }
 
     template<class T>
+    const std::vector<T>& particleProperties(size_t propertyIndex) const
+    {
+        return std::get<std::vector<T>>(m_properties.at(propertyIndex));
+    }
+
+    template<class T>
     size_t addParticleProperty()
     {
         VariantVector v = std::vector<T>(m_particlePositions.size());
@@ -113,12 +123,12 @@ public:
         return m_binIdx;
     }
 
-    std::vector<Vertex>& positions()
+    std::vector<Vec3>& positions()
     {
         return m_particlePositions;
     }
 
-    std::vector<Vertex>& velocities()
+    std::vector<Vec3>& velocities()
     {
         return m_velocities;
     }
@@ -130,8 +140,8 @@ public:
 
 protected:
 
-    std::vector<Vertex> m_particlePositions;
-    std::vector<Vertex> m_velocities;
+    std::vector<Vec3> m_particlePositions;
+    std::vector<Vec3> m_velocities;
     std::vector<bool> m_markedForDeath;
     std::vector<bool> m_markedForRebin;
     std::vector<VariantVector> m_properties;
@@ -182,12 +192,12 @@ public:
     ParticleBin& binForGridIdx(size_t linIdx);
     ParticleBin& binForGridIdx(Index2d idx);
     ParticleBin& binForGridIdx(size_t i, size_t j);
-    ParticleBin& binForGridPosition(Vertex pos);
+    ParticleBin& binForGridPosition(Vec3 pos);
 
     ParticleBin& binForBinIdx(size_t linIdx);
 
     ssize_t gridToBinIdx(Index2d idx);
-    ssize_t gridToBinIdx(Vertex pos);
+    ssize_t gridToBinIdx(Vec3 pos);
     ssize_t gridToBinIdx(ssize_t linIdx);
     ssize_t gridToBinIdx(ssize_t i, ssize_t j);
 
@@ -205,7 +215,7 @@ public:
         return m_rebinningSet.properties().size() - 1;
     }
 
-    void addMarkerParticle(size_t binIdx, Vertex position, Vertex velocity);
+    void addMarkerParticle(size_t binIdx, Vec3 position, Vec3 velocity);
 
     void markForDeath(size_t binIdx, size_t particleIdx);
 
@@ -213,9 +223,9 @@ public:
 
     void scheduleRebin(size_t binIdx, RebinRecord r);
 
-    std::vector<Vertex>& positions(size_t binIdx);
+    std::vector<Vec3>& positions(size_t binIdx);
 
-    std::vector<Vertex>& velocities(size_t binIdx);
+    std::vector<Vec3>& velocities(size_t binIdx);
 
     Index2d binIdxForIdx(Index2d idx);
 

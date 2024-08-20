@@ -84,7 +84,7 @@ float simmath::lerpVGrid(float i, float j, const Grid2d<float> &gridV)
     return simmath::lerp(v1,v2,iLerpFactor);
 }
 
-Vertex simmath::gradCenteredGrid(ssize_t i, ssize_t j, const Grid2d<float> &grid)
+Vec3 simmath::gradCenteredGrid(ssize_t i, ssize_t j, const Grid2d<float> &grid)
 {
     float neighborIp1 = grid.getAt(i+1,j);
     float neighborIm1 = grid.getAt(i-1,j);
@@ -94,7 +94,7 @@ Vertex simmath::gradCenteredGrid(ssize_t i, ssize_t j, const Grid2d<float> &grid
     float gradI = neighborIp1 - neighborIm1;
     float gradJ = neighborJp1 - neighborJm1;
 
-    return Vertex(gradI/2.f, gradJ/2.f);
+    return Vec3(gradI/2.f, gradJ/2.f);
 }
 
 float simmath::linearHat(float value)
@@ -120,12 +120,12 @@ float simmath::avg(float a, float b)
     return (a+b)/2.f;
 }
 
-float simmath::lerpCenteredGrid(Vertex &position, const Grid2d<float> &grid, Vertex gridOffset)
+float simmath::lerpCenteredGrid(Vec3 &position, const Grid2d<float> &grid, Vec3 gridOffset)
 {
     return lerpCenteredGrid(position.x(), position.y(), grid, gridOffset);
 }
 
-float simmath::lerpCenteredGrid(float i, float j, const Grid2d<float> &grid, Vertex gridOffset)
+float simmath::lerpCenteredGrid(float i, float j, const Grid2d<float> &grid, Vec3 gridOffset)
 {
     i+= gridOffset.x();
     j+= gridOffset.y();

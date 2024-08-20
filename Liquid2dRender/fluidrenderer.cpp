@@ -85,9 +85,9 @@ void FluidRenderer::init(std::shared_ptr<FlipSolver> solver)
         {
             float it = i * dx;
             float jt = j * dx;
-            addGridQuad(Vertex(jt,it),Vertex(jt+dx,it+dx),Color(255,0,0));
-            Vertex vStart = Vertex(jt + 0.5*dx,it + 0.5*dx);
-            Vertex vEnd = Vertex(vStart.x() + 0.5*dx, vStart.y());
+            addGridQuad(Vec3(jt,it),Vec3(jt+dx,it+dx),Color(255,0,0));
+            Vec3 vStart = Vec3(jt + 0.5*dx,it + 0.5*dx);
+            Vec3 vEnd = Vec3(vStart.x() + 0.5*dx, vStart.y());
             addVector(vStart,vEnd,m_velocityVectorColor);
             setVectorColor(i,j,Color(255,0,0));
         }
@@ -142,7 +142,7 @@ void FluidRenderer::update()
     updateParticles();
 }
 
-void FluidRenderer::addGridVertex(Vertex v, Color c)
+void FluidRenderer::addGridVertex(Vec3 v, Color c)
 {
     m_gridVerts.push_back(v.x());
     m_gridVerts.push_back(v.y());
@@ -153,13 +153,13 @@ void FluidRenderer::addGridVertex(Vertex v, Color c)
     m_gridVertexCount++;
 }
 
-void FluidRenderer::addGridQuad(Vertex topLeft, Vertex bottomRight, Color c)
+void FluidRenderer::addGridQuad(Vec3 topLeft, Vec3 bottomRight, Color c)
 {
     int prevVertexTopIndex = m_gridVertexCount - 1;
     addGridVertex(topLeft,c);
-    addGridVertex(Vertex(bottomRight.x(),topLeft.y()),c);
+    addGridVertex(Vec3(bottomRight.x(),topLeft.y()),c);
     addGridVertex(bottomRight,c);
-    addGridVertex(Vertex(topLeft.x(),bottomRight.y()),c);
+    addGridVertex(Vec3(topLeft.x(),bottomRight.y()),c);
     m_gridIndices.push_back(prevVertexTopIndex+1);
     m_gridIndices.push_back(prevVertexTopIndex+3);
     m_gridIndices.push_back(prevVertexTopIndex+2);
@@ -168,7 +168,7 @@ void FluidRenderer::addGridQuad(Vertex topLeft, Vertex bottomRight, Color c)
     m_gridIndices.push_back(prevVertexTopIndex+3);
 }
 
-void FluidRenderer::addVectorVertex(Vertex v, Color c)
+void FluidRenderer::addVectorVertex(Vec3 v, Color c)
 {
     m_vectorVerts.push_back(v.x());
     m_vectorVerts.push_back(v.y());
@@ -178,13 +178,13 @@ void FluidRenderer::addVectorVertex(Vertex v, Color c)
     m_vectorVerts.push_back(c.bf());
 }
 
-void FluidRenderer::addVector(Vertex start, Vertex end, Color c)
+void FluidRenderer::addVector(Vec3 start, Vec3 end, Color c)
 {
     addVectorVertex(start,c);
     addVectorVertex(end,c);
 }
 
-void FluidRenderer::addParticle(Vertex particle, Color c)
+void FluidRenderer::addParticle(Vec3 particle, Color c)
 {
     m_particleVerts.push_back(particle.y()*m_solver->dx());
     m_particleVerts.push_back(particle.x()*m_solver->dx());
@@ -368,7 +368,7 @@ void FluidRenderer::addGeometry(Geometry2d &geometry)
 
     int startVertexIndex = m_geometryVerts.size() / m_vertexSize;
     int endVertexIndex = startVertexIndex;
-    for(Vertex& v : geometry.verts())
+    for(Vec3& v : geometry.verts())
     {
         //X and Y are swapped, because i is x and vertical, and j is y and horizontal, but in opengl x is horizontal and y is vertical
         m_geometryVerts.push_back(v.y());
@@ -561,7 +561,7 @@ void FluidRenderer::updateGridFromVelocity()
             //float g = (m_solver->fluidVelocityGrid().getV(i,j) - min) / diff;
             //float r = (std::abs(m_solver->fluidVelocityGrid().getU(i,j))) / m_velocityComponentRangeMax;
             //float g = (std::abs(m_solver->fluidVelocityGrid().getV(i,j))) / m_velocityComponentRangeMax;
-            Vertex velocity = m_solver->fluidVelocityGrid().velocityAt(static_cast<float>(i)+0.5f,
+            Vec3 velocity = m_solver->fluidVelocityGrid().velocityAt(static_cast<float>(i)+0.5f,
                                                                        static_cast<float>(j)+0.5f);
             Color c = hueColorRamp(velocity.distFromZero() / m_velocityRangeMax * m_solver->dx());
             setCellColor(i,j,c);
@@ -843,16 +843,16 @@ void FluidRenderer::updateVectorsStaggered()
 
     int gridHeight = m_solver->sizeI();
     int gridWidth = m_solver->sizeJ();
-    Vertex vEnd;
+    Vec3 vEnd;
     for (int i = 0; i < gridHeight; i++)
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceVelocity(m_solver->fluidVelocityGrid().getU(i,j),m_solver->fluidVelocityGrid().getV(i,j));
+            Vec3 gridspaceVelocity(m_solver->fluidVelocityGrid().getU(i,j),m_solver->fluidVelocityGrid().getV(i,j));
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceVelocity.distFromZero() / m_solver->dx();
             //float scaleFactor = 1;
-            Vertex newVector = Vertex(gridspaceVelocity.y() / scaleFactor,
+            Vec3 newVector = Vec3(gridspaceVelocity.y() / scaleFactor,
                                        gridspaceVelocity.x() / scaleFactor);
             updateVector(i,j,newVector);
             setVectorColor(i,j,hueColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
@@ -866,18 +866,18 @@ void FluidRenderer::updateVectorsCentered()
 
     int gridHeight = m_solver->sizeI();
     int gridWidth = m_solver->sizeJ();
-    Vertex vEnd;
+    Vec3 vEnd;
     for (int i = 0; i < gridHeight; i++)
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceVelocity = m_solver->fluidVelocityGrid().velocityAt(static_cast<float>(i) + 0.5,
+            Vec3 gridspaceVelocity = m_solver->fluidVelocityGrid().velocityAt(static_cast<float>(i) + 0.5,
                                                         static_cast<float>(j) + 0.5);
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceVelocity.distFromZero() / m_solver->dx();
             scaleFactor += 0.00001f;
             //float scaleFactor = 1;
-            Vertex newVector = Vertex((gridspaceVelocity.y() / scaleFactor),
+            Vec3 newVector = Vec3((gridspaceVelocity.y() / scaleFactor),
                                        (gridspaceVelocity.x() / scaleFactor));
             updateVector(i,j,newVector);
             setVectorColor(i,j,hueColorRamp(gridspaceVelocity.distFromZero() / m_velocityRangeMax));
@@ -889,16 +889,16 @@ void FluidRenderer::updateVectorsSolidSdfGrad()
 {
     int gridHeight = m_solver->sizeI();
     int gridWidth = m_solver->sizeJ();
-    Vertex vEnd;
+    Vec3 vEnd;
     for (int i = 0; i < gridHeight; i++)
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceSdf = simmath::gradCenteredGrid(i,j, m_solver->solidSdf());
+            Vec3 gridspaceSdf = simmath::gradCenteredGrid(i,j, m_solver->solidSdf());
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceSdf.distFromZero() / m_solver->dx();
             //float scaleFactor = 1;
-            Vertex newVector = Vertex((gridspaceSdf.y() / scaleFactor),
+            Vec3 newVector = Vec3((gridspaceSdf.y() / scaleFactor),
                                        (gridspaceSdf.x() / scaleFactor));
             updateVector(i,j,newVector);
         }
@@ -909,16 +909,16 @@ void FluidRenderer::updateVectorsFluidSdfGrad()
 {
     int gridHeight = m_solver->sizeI();
     int gridWidth = m_solver->sizeJ();
-    Vertex vEnd;
+    Vec3 vEnd;
     for (int i = 0; i < gridHeight; i++)
     {
         for (int j = 0; j < gridWidth; j++)
         {
-            Vertex gridspaceSdfGrad = simmath::gradCenteredGrid(i,j, m_solver->solidSdf());
+            Vec3 gridspaceSdfGrad = simmath::gradCenteredGrid(i,j, m_solver->solidSdf());
             //Vertex gridspaceVelocity(1,0);
             float scaleFactor = gridspaceSdfGrad.distFromZero() / m_solver->dx();
             //float scaleFactor = 1;
-            Vertex newVector = Vertex((gridspaceSdfGrad.y() / scaleFactor),
+            Vec3 newVector = Vec3((gridspaceSdfGrad.y() / scaleFactor),
                                        (gridspaceSdfGrad.x() / scaleFactor));
             updateVector(i,j,newVector);
             setVectorColor(i,j,hueColorRamp(gridspaceSdfGrad.distFromZero() / 1.f));
@@ -933,7 +933,7 @@ void FluidRenderer::reloadParticlesSolid()
     int binIdx = 0;
     for(ParticleBin& bin : m_solver->markerParticles().bins().data())
     {
-        for(Vertex &pos : bin.positions())
+        for(Vec3 &pos : bin.positions())
         {
     //        Color particleColor = particle.material == FluidMaterial::FLUID? m_markerParticleFluidColor :
     //                                                                         m_markerParticleAirColor;
@@ -960,8 +960,8 @@ void FluidRenderer::reloadParticlesVelocity()
     {
         for(size_t idx = 0; idx < bin.size(); idx++)
         {
-            Vertex position = bin.positions()[idx];
-            Vertex velocity = bin.velocities()[idx];
+            Vec3 position = bin.positions()[idx];
+            Vec3 velocity = bin.velocities()[idx];
             addParticle(position,hueColorRamp(velocity.distFromZero() / m_velocityRangeMax * m_solver->dx()));
         }
     }
@@ -987,7 +987,7 @@ void FluidRenderer::reloadParticlesFromTestValue()
 
         for(size_t idx = 0; idx < bin.size(); idx++)
         {
-            Vertex position = bin.positions()[idx];
+            Vec3 position = bin.positions()[idx];
             Color pColor = Color(testValues[idx],testValues[idx],testValues[idx]);
             addParticle(position,pColor);
         }
@@ -1003,7 +1003,7 @@ void FluidRenderer::reloadParticlesFromTestValue()
     }
 }
 
-void FluidRenderer::updateVector(int x, int y, Vertex newVector)
+void FluidRenderer::updateVector(int x, int y, Vec3 newVector)
 {
     int linearVectorStartVertexIndex = m_solver->linearIndex(x,y) * m_vectorVertsPerCell;
     int linearVectorEndVertexIndex = linearVectorStartVertexIndex + 1;

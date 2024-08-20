@@ -66,12 +66,12 @@ void Emitter::setFuel(float newFuel)
     m_fuel = newFuel;
 }
 
-Vertex Emitter::velocity() const
+Vec3 Emitter::velocity() const
 {
     return m_velocity;
 }
 
-void Emitter::setVelocity(Vertex newVelocity)
+void Emitter::setVelocity(Vec3 newVelocity)
 {
     m_velocity = newVelocity;
 }

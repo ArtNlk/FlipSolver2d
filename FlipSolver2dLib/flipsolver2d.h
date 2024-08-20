@@ -36,7 +36,7 @@ struct FlipSolverParameters
     unsigned int seed;
     double dx;
     int particlesPerCell;
-    Vertex globalAcceleration;
+    Vec3 globalAcceleration;
     float resolution;
     int fps;
     int maxSubsteps;
@@ -223,7 +223,7 @@ public:
 
     float frameDt() const;
 
-    Vertex globalAcceleration() const;
+    Vec3 globalAcceleration() const;
 
     float sceneScale() const;
 
@@ -282,7 +282,7 @@ protected:
 
     virtual IndexedIPPCoefficients getIPPCoefficients(const IndexedPressureParameters& mat);
 
-    Vertex jitteredPosInCell(size_t i, size_t j);
+    Vec3 jitteredPosInCell(size_t i, size_t j);
 
     virtual void reseedParticles();
 
@@ -300,7 +300,7 @@ protected:
 
     void applyPressureThreadV(Range range,const std::vector<double> &pressures);
     
-    Vertex rk4Integrate(Vertex currentPosition, StaggeredVelocityGrid &grid, float dt);
+    Vec3 rk4Integrate(Vec3 currentPosition, StaggeredVelocityGrid &grid, float dt);
 
     virtual void gridUpdate();
 
@@ -314,11 +314,11 @@ protected:
 
     virtual void particleVelocityToGrid();
 
-    void particleVelocityToGridThread(Range r, Grid2d<float>& uWeights, Grid2d<float>& vWeights);
+    void particleVelocityToGridThread(Range r);
 
     virtual void centeredParamsToGrid();
 
-    void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
+    void centeredParamsToGridThread(Range r);
 
     void extrapolateLevelsetInside(SdfGrid& grid);
 
@@ -362,7 +362,7 @@ protected:
     double m_fluidDensity;
     unsigned int m_seed;
     int m_particlesPerCell;
-    Vertex m_globalAcceleration;
+    Vec3 m_globalAcceleration;
     float m_resolution;
     int m_fps;
     int m_maxSubsteps;

@@ -327,7 +327,7 @@ Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(m_solver->sceneScale() * Vertex(v.first,v.second));
+        geo.addVertex(m_solver->sceneScale() * Vec3(v.first,v.second));
     }
 
     Emitter output(geo);
@@ -351,7 +351,7 @@ Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(m_solver->sceneScale() * Vertex(v.first,v.second));
+        geo.addVertex(m_solver->sceneScale() * Vec3(v.first,v.second));
     }
 
     return Obstacle(friction,geo);
@@ -365,7 +365,7 @@ Sink LiquidRenderApp::sinkFromJson(json sinkJson)
     Geometry2d geo;
     for(auto v : verts)
     {
-        geo.addVertex(m_solver->sceneScale() * Vertex(v.first,v.second));
+        geo.addVertex(m_solver->sceneScale() * Vec3(v.first,v.second));
     }
 
     return Sink(div,geo);
@@ -522,6 +522,7 @@ bool LiquidRenderApp::renderControlsPanel()
     {
         m_solver->stepFrame();
         m_lastFrameStats = m_solver->timeStats();
+        std::cout << "Stat: " << m_lastFrameStats.timings().at(SolverStage::PARTICLE_TO_GRID) / m_lastFrameStats.substepCount() << std::endl;
         update = true;
         m_simStepsLeft--;
         if(m_recording)

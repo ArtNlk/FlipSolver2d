@@ -5,8 +5,8 @@
 
 StaggeredVelocityGrid::StaggeredVelocityGrid(size_t sizeI, size_t sizeJ) :
     LinearIndexable2d(sizeI, sizeJ),
-    m_velocityGridU(sizeI + 1, sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.5f,0.f)),
-    m_velocityGridV(sizeI, sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vertex(0.f, 0.5f)),
+    m_velocityGridU(sizeI + 1, sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vec3(0.5f,0.f)),
+    m_velocityGridV(sizeI, sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, Vec3(0.f, 0.5f)),
     m_uSampleValidity(sizeI + 1, sizeJ, false, OOBStrategy::OOB_CONST, true),
     m_vSampleValidity(sizeI, sizeJ + 1, false, OOBStrategy::OOB_CONST, true)
 {
@@ -155,13 +155,13 @@ void StaggeredVelocityGrid::extrapolate(int extrapolationRadius)
                                      false);
 }
 
-Vertex StaggeredVelocityGrid::velocityAt(float i, float j) const
+Vec3 StaggeredVelocityGrid::velocityAt(float i, float j) const
 {
-    return Vertex(m_velocityGridU.interpolateAt(i,j),
+    return Vec3(m_velocityGridU.interpolateAt(i,j),
                   m_velocityGridV.interpolateAt(i,j));
 }
 
-Vertex StaggeredVelocityGrid::velocityAt(Vertex position) const
+Vec3 StaggeredVelocityGrid::velocityAt(Vec3 position) const
 {
     return velocityAt(position.x(),position.y());
 }

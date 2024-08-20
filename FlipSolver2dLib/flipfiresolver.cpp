@@ -133,8 +133,8 @@ void FlipFireSolver::reseedParticles()
                 int emitterId = m_emitterId.at(i,j);
                 for(int p = 0; p < additionalParticles; p++)
                 {
-                    Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = Vertex();
+                    Vec3 pos = jitteredPosInCell(i,j);
+                    Vec3 velocity = Vec3();
                     if(m_sources[emitterId].velocityTransfer())
                     {
                         velocity = m_fluidVelocityGrid.velocityAt(pos);
@@ -163,7 +163,7 @@ void FlipFireSolver::eulerAdvectParameters()
 {
     FlipSmokeSolver::eulerAdvectParameters();
 
-    Vertex offsetCentered(0.5f,0.5f);
+    Vec3 offsetCentered(0.5f,0.5f);
     Grid2d<float> advectedFuel(m_sizeI, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetCentered);
 
     std::vector<Range> ranges = ThreadPool::i()->splitRange(advectedFuel.data().size());

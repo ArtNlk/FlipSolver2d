@@ -61,8 +61,8 @@ public:
 
     void extrapolate(int extrapolationRadius);
 
-    Vertex velocityAt(float i, float j) const;
-    Vertex velocityAt(Vertex position) const;
+    Vec3 velocityAt(float i, float j) const;
+    Vec3 velocityAt(Vec3 position) const;
 
 protected:
     Grid2d<float> m_velocityGridU;

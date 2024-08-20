@@ -179,11 +179,11 @@ public:
     std::shared_ptr<FlipSolver> solver();
 
 protected:
-    void addGridVertex(Vertex v, Color c = Color());
-    void addGridQuad(Vertex topLeft, Vertex bottomRight, Color c);
-    void addVectorVertex(Vertex v, Color c = Color());
-    void addVector(Vertex start, Vertex end, Color c);
-    void addParticle(Vertex particle, Color c);
+    void addGridVertex(Vec3 v, Color c = Color());
+    void addGridQuad(Vec3 topLeft, Vec3 bottomRight, Color c);
+    void addVectorVertex(Vec3 v, Color c = Color());
+    void addVector(Vec3 start, Vec3 end, Color c);
+    void addParticle(Vec3 particle, Color c);
     void setupGl();
     void setupOffscreenBuffer();
     void setupBuffers();
@@ -211,7 +211,7 @@ protected:
     void reloadParticlesSolid();
     void reloadParticlesVelocity();
     void reloadParticlesFromTestValue();
-    void updateVector(int x, int y, Vertex newVector);
+    void updateVector(int x, int y, Vec3 newVector);
     void setCellVertexColor(int vIndex, Color c);
     void setCellColor(int x, int y, Color c);
     void setVectorVertexColor(int vIndex, Color c);

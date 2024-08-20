@@ -178,8 +178,8 @@ void FlipSmokeSolver::reseedParticles()
                 int emitterId = m_emitterId.at(i,j);
                 for(int p = 0; p < additionalParticles; p++)
                 {
-                    Vertex pos = jitteredPosInCell(i,j);
-                    Vertex velocity = Vertex();
+                    Vec3 pos = jitteredPosInCell(i,j);
+                    Vec3 velocity = Vec3();
                     if(m_sources[emitterId].velocityTransfer())
                     {
                         velocity = m_fluidVelocityGrid.velocityAt(pos);
@@ -210,7 +210,7 @@ void FlipSmokeSolver::gridUpdate()
 
 void FlipSmokeSolver::eulerAdvectParameters()
 {
-    Vertex offsetCentered(0.5f,0.5f);
+    Vec3 offsetCentered(0.5f,0.5f);
     Grid2d<float> advectedConcentration(m_sizeI, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetCentered);
     Grid2d<float> advectedTemperature(m_sizeI, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetCentered);
 
@@ -338,8 +338,8 @@ void FlipSmokeSolver::seedInitialFluid()
 
                 for (int p = 0; p < m_particlesPerCell; p++)
                 {
-                    Vertex pos = jitteredPosInCell(i, j);
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    Vec3 pos = jitteredPosInCell(i, j);
+                    Vec3 velocity = m_fluidVelocityGrid.velocityAt(pos);
                     float conc = m_smokeConcentration.interpolateAt(pos);
                     float temp = m_temperature.interpolateAt(pos);
                     size_t pIdx = bin.addMarkerParticle(pos,velocity);
@@ -557,7 +557,7 @@ void FlipSmokeSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeight
 
                 for(size_t particleIdx = 0; particleIdx < bin.size(); particleIdx++)
                 {
-                    Vertex position = bin.particlePosition(particleIdx);
+                    Vec3 position = bin.particlePosition(particleIdx);
                     float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
                                                                      position.y() - (i2d.j));
                     if(std::abs(weightCentered) > 1e-6f)

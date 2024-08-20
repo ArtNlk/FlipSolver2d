@@ -24,14 +24,14 @@ namespace simmath
     float lerpUGrid(float i, float j, const Grid2d<float> &gridU);
     float lerpVGrid(float i, float j, const Grid2d<float> &gridV);
 
-    float lerpCenteredGrid(Vertex &position, const Grid2d<float> &grid, Vertex gridOffset = Vertex(0.f,0.f,0.f));
+    float lerpCenteredGrid(Vec3 &position, const Grid2d<float> &grid, Vec3 gridOffset = Vec3(0.f,0.f,0.f));
 
-    float lerpCenteredGrid(float i, float j, const Grid2d<float> &grid, Vertex gridOffset = Vertex(0.f,0.f,0.f));
+    float lerpCenteredGrid(float i, float j, const Grid2d<float> &grid, Vec3 gridOffset = Vec3(0.f,0.f,0.f));
 
     void breadthFirstExtrapolate(Grid2d<float> &extrapolatedGrid, Grid2d<bool> &flagGrid,
                                           int extrapRadius, int neighborRadius, bool vonNeumannNeighborMode);
 
-    Vertex gradCenteredGrid(ssize_t i, ssize_t j, const Grid2d<float> &grid);
+    Vec3 gradCenteredGrid(ssize_t i, ssize_t j, const Grid2d<float> &grid);
 }
 
 #endif // FUNCTIONS_H

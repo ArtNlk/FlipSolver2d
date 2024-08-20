@@ -9,8 +9,8 @@ class SdfGrid : public Grid2d<float>
 public:
     SdfGrid(size_t sizeI, size_t sizeJ);
 
-    Vertex closestSurfacePoint(float i, float j);
-    Vertex closestSurfacePoint(Vertex pos);
+    Vec3 closestSurfacePoint(float i, float j);
+    Vec3 closestSurfacePoint(Vec3 pos);
 };
 
 #endif // SDFGRID_H

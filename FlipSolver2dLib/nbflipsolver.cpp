@@ -68,9 +68,9 @@ void NBFlipSolver::advect()
     FlipSolver::advect();
     pruneNarrowBand();
 
-    Vertex offsetU(0.f,0.5f);
-    Vertex offsetV(0.5f,0.f);
-    Vertex offsetCentered(0.5f,0.5f);
+    Vec3 offsetU(0.f,0.5f);
+    Vec3 offsetV(0.5f,0.f);
+    Vec3 offsetCentered(0.5f,0.5f);
 
     Grid2d<float> advectedU(m_sizeI + 1, m_sizeJ, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetU);
     Grid2d<float> advectedV(m_sizeI, m_sizeJ + 1, 0.f, OOBStrategy::OOB_EXTEND, 0.f, offsetV);
@@ -149,7 +149,7 @@ void NBFlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights
                 ParticleBin& currentBin = m_markerParticles.binForBinIdx(binIdx);
                 for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
                 {
-                    Vertex position = currentBin.particlePosition(particleIdx);
+                    Vec3 position = currentBin.particlePosition(particleIdx);
                     // if(m_fluidSdf.lerpolateAt(position) < m_combinationBand)
                     // {
                     //    continue;
@@ -162,7 +162,7 @@ void NBFlipSolver::particleVelocityToGridThread(Range r, Grid2d<float> &uWeights
                                                               position.y() - static_cast<float>(i2d.j));
                     if(std::abs(weightU) > 1e-9f && std::abs(weightV) > 1e-9f)
                     {
-                        Vertex velocity = currentBin.particleVelocity(particleIdx);
+                        Vec3 velocity = currentBin.particleVelocity(particleIdx);
                         uWeights.at(i2d.i,i2d.j) += weightU;
                         m_fluidVelocityGrid.u(i2d.i,i2d.j) += weightU * (velocity.x());
                         m_fluidVelocityGrid.setUValidity(i2d.i,i2d.j,true);
@@ -237,14 +237,14 @@ void NBFlipSolver::reseedParticles()
 
                 for(int p = 0; p < additionalParticles; p++)
                 {
-                    Vertex pos = jitteredPosInCell(i,j);
+                    Vec3 pos = jitteredPosInCell(i,j);
                     float newSdf = m_fluidSdf.lerpolateAt(pos);
                     if((m_materialGrid.isSource(i,j) && m_fluidSdf.at(i,j) > m_resamplingBand)
                         || newSdf < m_narrowBand)
                     {
                         continue;
                     }
-                    Vertex velocity = Vertex();
+                    Vec3 velocity = Vec3();
                     if(emitterId != -1 && m_sources[emitterId].velocityTransfer())
                     {
                         velocity = m_fluidVelocityGrid.velocityAt(pos);
@@ -295,11 +295,11 @@ void NBFlipSolver::pruneNarrowBand()
 {
     for(ParticleBin& bin : m_markerParticles.bins().data())
     {
-        std::vector<Vertex>& positions = bin.positions();
+        std::vector<Vec3>& positions = bin.positions();
 
         for(size_t particleIdx = 0; particleIdx < positions.size(); particleIdx++)
         {
-            Vertex& position = positions[particleIdx];
+            Vec3& position = positions[particleIdx];
             ssize_t i = position.x();
             ssize_t j = position.y();
             float sdf = m_fluidSdf.lerpolateAt(position);
@@ -343,13 +343,13 @@ void NBFlipSolver::initialFluidSeed()
                 }
                 for(int p = 0; p < additionalParticles; p++)
                 {
-                    Vertex pos = jitteredPosInCell(i,j);
+                    Vec3 pos = jitteredPosInCell(i,j);
                     float newSdf = m_fluidSdf.lerpolateAt(pos);
                     if(newSdf > m_resamplingBand || newSdf < m_narrowBand)
                     {
                         continue;
                     }
-                    Vertex velocity = m_fluidVelocityGrid.velocityAt(pos);
+                    Vec3 velocity = m_fluidVelocityGrid.velocityAt(pos);
                     //Vertex velocity = Vertex();
                     float viscosity = 0.f;
                     viscosity = m_viscosityGrid.interpolateAt(pos);
@@ -456,7 +456,7 @@ void NBFlipSolver::combineVelocityGrid()
     {
         for (ssize_t j = 0; j < m_sizeJ; j++)
         {
-            Vertex samplePosition = Vertex(i, 0.5f + j);
+            Vec3 samplePosition = Vec3(i, 0.5f + j);
             float advectedVelocity = m_advectedVelocity.getU(i,j);
             float particleVelocity = m_fluidVelocityGrid.getU(i,j);
             float sdf = m_fluidSdf.lerpolateAt(samplePosition);
@@ -468,7 +468,7 @@ void NBFlipSolver::combineVelocityGrid()
     {
         for (ssize_t j = 0; j < m_sizeJ + 1; j++)
         {
-            Vertex samplePosition = Vertex(0.5f + i, j);
+            Vec3 samplePosition = Vec3(0.5f + i, j);
             float advectedVelocity = m_advectedVelocity.getV(i,j);
             float particleVelocity = m_fluidVelocityGrid.getV(i,j);
             float sdf = m_fluidSdf.lerpolateAt(samplePosition);
@@ -483,7 +483,7 @@ void NBFlipSolver::combineCenteredGrids()
     {
         for (ssize_t j = 0; j < m_sizeJ; j++)
         {
-            Vertex samplePosition = Vertex(0.5f + i, j + 0.5);
+            Vec3 samplePosition = Vec3(0.5f + i, j + 0.5);
             float advectedViscosity = m_advectedViscosity.at(i,j);
             float particleViscosity = m_viscosityGrid.at(i,j);
             float sdf = m_fluidSdf.lerpolateAt(samplePosition);
@@ -493,13 +493,13 @@ void NBFlipSolver::combineCenteredGrids()
     }
 }
 
-Vertex NBFlipSolver::inverseRk4Integrate(Vertex newPosition, StaggeredVelocityGrid &grid)
+Vec3 NBFlipSolver::inverseRk4Integrate(Vec3 newPosition, StaggeredVelocityGrid &grid)
 {
     float factor = -m_stepDt;
-    Vertex k1 = factor*grid.velocityAt(newPosition);
-    Vertex k2 = factor*grid.velocityAt(newPosition + 0.5f*k1);
-    Vertex k3 = factor*grid.velocityAt(newPosition + 0.5f*k2);
-    Vertex k4 = factor*grid.velocityAt(newPosition + k3);
+    Vec3 k1 = factor*grid.velocityAt(newPosition);
+    Vec3 k2 = factor*grid.velocityAt(newPosition + 0.5f*k1);
+    Vec3 k3 = factor*grid.velocityAt(newPosition + 0.5f*k2);
+    Vec3 k4 = factor*grid.velocityAt(newPosition + k3);
 
     return newPosition + (1.0f/6.0f)*(k1 + 2.f*k2 + 2.f*k3 + k4);
 }
@@ -545,7 +545,7 @@ void NBFlipSolver::centeredParamsToGridThread(Range r, Grid2d<float> &cWeights)
 
                 for(size_t particleIdx = 0; particleIdx < currentBin.size(); particleIdx++)
                 {
-                    Vertex position = currentBin.particlePosition(particleIdx);
+                    Vec3 position = currentBin.particlePosition(particleIdx);
                     float weightCentered = simmath::quadraticBSpline(position.x() - (i2d.i),
                                                                      position.y() - (i2d.j));
                     if(std::abs(weightCentered) > 1e-6f)

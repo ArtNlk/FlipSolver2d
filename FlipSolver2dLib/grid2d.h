@@ -19,7 +19,7 @@ class Grid2d : public LinearIndexable2d
 public:
     Grid2d(size_t sizeI, size_t sizeJ,
            T initValue = T(), OOBStrategy oobStrat = OOB_ERROR,
-           T oobVal = T(), Vertex gridOffset = Vertex(0.f,0.f)) :
+           T oobVal = T(), Vec3 gridOffset = Vec3(0.f,0.f)) :
         LinearIndexable2d(sizeI,sizeJ),
         m_cubicInterpFunc(&Grid2d::cubicInterp),
         m_oobStrat(oobStrat),
@@ -49,7 +49,7 @@ public:
     }
 
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
-    T interpolateAt(Vertex position) const
+    T interpolateAt(Vec3 position) const
     {
         return interpolateAt(position.x(), position.y());
     }
@@ -63,7 +63,7 @@ public:
     }
 
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
-    T lerpolateAt(Vertex position) const
+    T lerpolateAt(Vec3 position) const
     {
         return lerpolateAt(position.x(), position.y());
     }
@@ -294,7 +294,7 @@ protected:
 protected:
     std::vector<T> m_data;
     OOBStrategy m_oobStrat;
-    Vertex m_gridOffset;
+    Vec3 m_gridOffset;
     T m_oobConst;
 
     T(*m_cubicInterpFunc)(const Grid2d*,float,float);

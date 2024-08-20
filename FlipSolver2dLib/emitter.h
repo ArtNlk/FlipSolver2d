@@ -28,8 +28,8 @@ public:
     float fuel() const;
     void setFuel(float newFuel);
 
-    Vertex velocity() const;
-    void setVelocity(Vertex newVelocity);
+    Vec3 velocity() const;
+    void setVelocity(Vec3 newVelocity);
 
     bool velocityTransfer() const;
     void setVelocityTransfer(bool velocityTransfer);
@@ -41,7 +41,7 @@ protected:
     float m_divergence;
     float m_fuel;
     bool m_transferVelocity;
-    Vertex m_velocity;
+    Vec3 m_velocity;
     Geometry2d m_geometry;
 };
 
