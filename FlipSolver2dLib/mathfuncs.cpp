@@ -31,9 +31,9 @@ float simmath::lerp(float a, float b, float f)
 
 float simmath::bSpline(float value)
 {
-        return (0.5f*(value + 1.5f)*(value + 1.5f))* (value >= -1.5f && value < -0.5f) +
-            (0.75f - value * value)*(value >= -0.5 && value < 0.5f) + 
-            (0.5f * (1.5f - value) * (1.5f - value))*(value >= 0.5f && value < 1.5f);
+    value = std::abs(value);
+    return (0.75f - value * value)*(value < 0.5f) +
+        (0.5f * (1.5f - value) * (1.5f - value))*(value >= 0.5f && value < 1.5f);
 }
 
 float simmath::quadraticBSpline(float x, float y)
