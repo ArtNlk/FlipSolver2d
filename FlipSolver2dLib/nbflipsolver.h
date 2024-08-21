@@ -22,10 +22,6 @@ protected:
 
     void afterTransfer() override;
 
-    void particleVelocityToGrid() override;
-
-    void particleVelocityToGridThread(Range r, Grid2d<float>& uWeights, Grid2d<float>& vWeights);
-
     void reseedParticles() override;
 
     void firstFrameInit() override;

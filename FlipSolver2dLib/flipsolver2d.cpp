@@ -1353,8 +1353,8 @@ void FlipSolver::particleVelocityToGridThread(Range r)
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
         std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
 
-        float uWeightTotal = 0.0;
-        float vWeightTotal = 0.0;
+        float uWeightTotal = 1e-10f;
+        float vWeightTotal = 1e-10f;
         float uVel = 0.0;
         float vVel = 0.0;
         bool uValid = false;
