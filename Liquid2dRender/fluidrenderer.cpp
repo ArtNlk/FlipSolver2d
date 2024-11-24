@@ -98,6 +98,8 @@ void FluidRenderer::init(std::shared_ptr<FlipSolver> solver)
     updateGrid();
     updateVectors();
     setupGridVerts();
+
+    std::cout << glGetString(GL_RENDERER) << std::endl;
 }
 
 void FluidRenderer::render()
