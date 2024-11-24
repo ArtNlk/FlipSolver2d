@@ -81,6 +81,8 @@ void LiquidRenderApp::init()
         throw std::runtime_error("Failed to initialize glad");
     }
 
+    std::cout << "Render: " << glGetString(GL_RENDERER);
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     m_io = &ImGui::GetIO(); (void)m_io;

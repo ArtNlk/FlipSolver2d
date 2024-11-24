@@ -64,13 +64,14 @@ FlipSolver::FlipSolver(const FlipSolverParameters *p) :
     m_simulationMethod(p->simulationMethod),
     m_parameterHandlingMethod(p->parameterHandlingMethod),
     m_pressureMatrix(0,*this,0.0),
-    m_pressurePrecond(0,*this)
+    m_pressurePrecond(0,*this),
+    m_pressureSolver(m_materialGrid, 16)
 {
     Eigen::initParallel();
     Eigen::setNbThreads(ThreadPool::i()->threadCount());
     m_randEngine = std::mt19937(p->seed);
     m_testValuePropertyIndex = m_markerParticles.addParticleProperty<float>();
-    m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-2;
+    //m_projectTolerance = m_viscosityEnabled? 1e-6 : 1e-2;
     m_rhs.resize(linearSize());
     m_solverResult.resize(linearSize());
 
@@ -425,7 +426,7 @@ void FlipSolver::step()
     if(!m_viscosityEnabled)
     {
         //Assumption: particles are adjusted not enough to require rebinning
-        densityCorrection();
+        //densityCorrection();
         m_stats.endStage(DENSITY);
     }
 
