@@ -99,6 +99,8 @@ public:
     VelocitySampleState uVelocitySampleState(ssize_t i, ssize_t j) const;
 
     VelocitySampleState vVelocitySampleState(ssize_t i, ssize_t j) const;
+
+    std::string toString() const;
 };
 
 #endif // MATERIALGRID_H
