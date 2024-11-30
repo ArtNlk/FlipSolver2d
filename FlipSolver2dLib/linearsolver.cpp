@@ -6,6 +6,7 @@
 #include <cmath>
 #include <future>
 #include <mutex>
+#include <ostream>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -121,11 +122,26 @@ void LinearSolver::applyMGPrecond(const std::vector<double> &in, std::vector<dou
 
 void LinearSolver::updateSubgrids()
 {
+    // std::ofstream file("grids.txt", std::ios::out);
+
+    // file << m_mainMaterialGrid.toString() << '\n';
+    // for(int i = 0; i < m_materialSubgrids.size(); i++)
+    // {
+    //     file << m_materialSubgrids[i].toString() << '\n';
+    // }
+
     propagateMaterialGrid(m_mainMaterialGrid, m_materialSubgrids[0]);
     for(int i = 0; i < (m_materialSubgrids.size() - 1); i++)
     {
         propagateMaterialGrid(m_materialSubgrids[i], m_materialSubgrids[i+1]);
     }
+
+    // file << m_mainMaterialGrid.toString() << '\n';
+    // for(int i = 0; i < m_materialSubgrids.size(); i++)
+    // {
+    //     file << m_materialSubgrids[i].toString() << '\n';
+    // }
+    // file.close();
 }
 
 void LinearSolver::propagateMaterialGrid(const MaterialGrid &fineGrid, MaterialGrid &coarseGrid)
@@ -149,7 +165,7 @@ void LinearSolver::propagateMaterialGrid(const MaterialGrid &fineGrid, MaterialG
                 }
                 if(fineGridData[idx] == FluidMaterial::EMPTY)
                 {
-                    coarseGrid.at(i,j) = FluidMaterial::EMPTY;
+                    m = FluidMaterial::EMPTY;
                     break;
                 }
                 if(fineGridData[idx] == FluidMaterial::FLUID)
@@ -247,6 +263,7 @@ void LinearSolver::premaskPressuresThread(const Range range, const MaterialGrid 
     for(int i = range.start; i < range.end; i++)
     {
         pressures[i] *= !solidTest(materials.data()[i]);
+        //pressures[i] = !fluidTest(materials.data()[i]) ? 0.0 : pressures[i];
     }
 }
 void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<double> &pressures, const std::vector<double> &rhs)
@@ -271,9 +288,10 @@ void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<doubl
     //    }
     //    ThreadPool::i()->wait();
 }
+
 void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, const MaterialGrid &materials, std::vector<double> &vout, const std::vector<double> &pressures, const std::vector<double> &rhs)
 {
-    const double tune = 2.0/3.0;
+    const double tune = 0.66666;
     const size_t dataSize = materials.data().size();
     for(int i = range.start; i < range.end; i++)
     {
@@ -294,6 +312,7 @@ void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, c
 
 void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &vin)
 {
+    const int strokeSmoothIter = 1;
     vout.assign(vin.size(),0.f);
     const int subLevelCount = m_materialSubgrids.size();
     //Down stroke
@@ -303,7 +322,10 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
         {
             Grid2d<double> temp(m_materialSubgrids[level].sizeI(),m_materialSubgrids[level].sizeJ(),0.f);
             premaskPressures(m_materialSubgrids[level], m_pressureGrids[level].data());
-            dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
+            for(int i = 0; i < strokeSmoothIter; i++)
+            {
+                dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
+            }
             multigridSubMatmul(m_materialSubgrids[level],
                                m_rhsGrids[level].data(),
                                m_pressureGrids[level].data(),
@@ -315,7 +337,11 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
         {
             Grid2d<double> temp(m_mainMaterialGrid.sizeI(),m_mainMaterialGrid.sizeJ(),0.f);
             premaskPressures(m_mainMaterialGrid, vout);
-            dampedJacobi(m_mainMaterialGrid,vout,vin);
+
+            for(int i = 0; i < strokeSmoothIter; i++)
+            {
+                dampedJacobi(m_mainMaterialGrid,vout,vin);
+            }
             multigridSubMatmul(m_mainMaterialGrid,
                                vin,
                                vout,
@@ -324,8 +350,9 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
             m_pressureGrids[0].data().assign(m_pressureGrids[0].data().size(),0.f);
         }
     }
+
     //Solve coarse
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < 50; i++)
     {
         premaskPressures(m_materialSubgrids[subLevelCount-1], m_pressureGrids[subLevelCount-1].data());
         dampedJacobi(m_materialSubgrids[subLevelCount-1],
@@ -339,13 +366,20 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
         {
             prolongateGrid(m_materialSubgrids[level],m_pressureGrids[level+1],m_pressureGrids[level].data());
             premaskPressures(m_materialSubgrids[level], m_pressureGrids[level].data());
+            for(int i = 0; i < strokeSmoothIter; i++)
+            {
             dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
+            }
         }
         else
         {
             prolongateGrid(m_mainMaterialGrid,m_pressureGrids[0],vout);
             premaskPressures(m_mainMaterialGrid, vout);
-            dampedJacobi(m_mainMaterialGrid,vout,vin);
+
+            for(int i = 0; i < strokeSmoothIter; i++)
+            {
+                dampedJacobi(m_mainMaterialGrid,vout,vin);
+            }
         }
     }
 }

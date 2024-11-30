@@ -2,6 +2,8 @@
 #include "grid2d.h"
 #include "index2d.h"
 
+#include <sstream>
+
 MaterialGrid::MaterialGrid(ssize_t sizeI, ssize_t sizeJ, FluidMaterial oobMaterial) :
     Grid2d(sizeI, sizeJ, FluidMaterial::EMPTY, OOB_EXTEND, oobMaterial)
 {
@@ -193,4 +195,24 @@ VelocitySampleState MaterialGrid::vVelocitySampleState(ssize_t i, ssize_t j) con
     }
 
     return static_cast<VelocitySampleState>(result);
+}
+
+std::string MaterialGrid::toString() const
+{
+    std::stringstream output;
+
+    output << m_sizeI << 'x' << m_sizeJ << ':';
+
+    for(int i = 0; i < m_sizeI; i++)
+    {
+        for(int j = 0; j < m_sizeJ; j++)
+        {
+            output << static_cast<int>(getAt(i,j)) << ',';
+        }
+    }
+
+    output.seekp(-1,std::ios::end);
+    output << ';';
+
+    return output.str();
 }

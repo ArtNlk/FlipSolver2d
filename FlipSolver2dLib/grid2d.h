@@ -182,6 +182,8 @@ public:
         return m_data;
     }
 
+    std::string toString() const;
+
 protected:
     template<class U = T, typename std::enable_if<std::is_floating_point<U>::value>::type* = nullptr>
     T static lerp(const Grid2d<T>* grid,float i, float j)
