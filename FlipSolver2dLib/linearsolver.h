@@ -28,15 +28,15 @@ protected:
 
     void propagateMaterialGrid(const MaterialGrid& fineGrid, MaterialGrid &coarseGrid);
 
-    void restrictGrid(const MaterialGrid& coarseMaterials, const Grid2d<double> &fineGrid,
+    void restrictGrid(const MaterialGrid& fineMaterials, const MaterialGrid& coarseMaterials, const Grid2d<double> &fineGrid,
                       Grid2d<double> coarseGrid);
 
-    void restrictGridThread(const Range range, const MaterialGrid& coarseMaterials,
+    void restrictGridThread(const Range range, const MaterialGrid& fineMaterials, const MaterialGrid& coarseMaterials,
                             const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid);
-    void prolongateGrid(const MaterialGrid& fineMaterials, const Grid2d<double> &coarseGrid,
+    void prolongateGrid(const MaterialGrid &coarseMaterials, const MaterialGrid& fineMaterials, const Grid2d<double> &coarseGrid,
                         std::vector<double> &fineGridData);
 
-    void prolongateGridThread(const Range range, const MaterialGrid& fineMaterials,
+    void prolongateGridThread(const Range range, const MaterialGrid &coarseMaterials, const MaterialGrid& fineMaterials,
                               const Grid2d<double> &coarseGrid, std::vector<double> &fineGridData);
     void premaskPressures(const MaterialGrid& materials, std::vector<double>& pressures);
 
