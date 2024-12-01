@@ -67,56 +67,53 @@ bool LinearSolver::solve(const IndexedPressureParameters &matrixIn,
                          int iterLimit,
                          double tol)
 {
-   if (VOps::i().isZero(vec))
-   {
-       std::cout << "Solver skipped zeros vector" << '\n';
-       return true;
-   }
-   updateSubgrids();
-   //DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
-   //UpperTriangularMatrix matrix(matrixIn);
+    if (VOps::i().isZero(vec)) {
+        std::cout << "Solver skipped zeros vector" << '\n';
+        return true;
+    }
 
-   //debug() << "mat=" << matrix;
-   std::vector<double> residual(vec);
-   std::vector<double> aux = residual;
-   //applyICPrecond(precond,residual,aux);
-   //applyIPPrecond(&matrix,&residual,&aux);
-   //precond->apply(residual,aux,data);
-   std::vector<double> search = aux;
-   double sigma = VOps::i().dot(aux,residual);
-   double err = 0.0;
-   for (int i = 0; i < iterLimit; i++)
-   {
-       matrixIn.multiply(search, aux);
-       double alpha = sigma/(VOps::i().dot(aux,search) + 1e-8);
-       VOps::i().addMul(result,result,search,alpha);
-       VOps::i().subMul(residual,residual,aux,alpha);
-       err = VOps::i().maxAbs(residual);
-       // if(i % 5 == 0)
-       // {
-       //     std::cout << "Solver: " << i << " : " << err << "\n";
-       //     debug() << "Solver: " << i << " : " << err;
-       // }
-       if (err <= tol)
-       {
-           debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
-           std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+    updateSubgrids();
+    //DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
+    //UpperTriangularMatrix matrix(matrixIn);
 
-           return true;
-       }
-       //aux = residual;
-       //precond.multiply(residual, aux);
-       applyMGPrecond(residual, aux);
-       //applyICPrecond(precond,residual,aux);
-       //applyIPPrecond(&matrix,&residual,&aux);
-       double newSigma = VOps::i().dot(aux,residual);
-       double beta = newSigma/(sigma);
-       VOps::i().addMul(search,aux,search,beta);
-       sigma = newSigma;
-   }
+    //debug() << "mat=" << matrix;
+    std::vector<double> residual(vec);
+    std::vector<double> aux = residual;
+    //applyICPrecond(precond,residual,aux);
+    //applyIPPrecond(&matrix,&residual,&aux);
+    //precond->apply(residual,aux,data);
+    std::vector<double> search = aux;
+    double sigma = VOps::i().dot(aux, residual);
+    double err = 0.0;
+    for (int i = 0; i < iterLimit; i++) {
+        matrixIn.multiply(search, aux);
+        double alpha = sigma / (VOps::i().dot(aux, search) + 1e-8);
+        VOps::i().addMul(result, result, search, alpha);
+        VOps::i().subMul(residual, residual, aux, alpha);
+        err = VOps::i().maxAbs(residual);
+        // if(i % 5 == 0)
+        // {
+        //     std::cout << "Solver: " << i << " : " << err << "\n";
+        //     debug() << "Solver: " << i << " : " << err;
+        // }
+        if (err <= tol) {
+            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
+            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+            return true;
+        }
+        //aux = residual;
+        //precond.multiply(residual, aux);
+        applyMGPrecond(residual, aux);
+        //applyICPrecond(precond,residual,aux);
+        //applyIPPrecond(&matrix,&residual,&aux);
+        double newSigma = VOps::i().dot(aux, residual);
+        double beta = newSigma / (sigma);
+        VOps::i().addMul(search, aux, search, beta);
+        sigma = newSigma;
+    }
 
-   debug() << "Solver iter exhaustion, err = " << err;
-   std::cout << "Solver iter exhaustion, err = " << err << '\n';
+    debug() << "Solver iter exhaustion, err = " << err;
+    std::cout << "Solver iter exhaustion, err = " << err << '\n';
     return false;
 }
 
@@ -182,18 +179,18 @@ void LinearSolver::propagateMaterialGrid(const MaterialGrid &fineGrid, MaterialG
         }
     }
 }
-void LinearSolver::restrictGrid(const MaterialGrid &coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid)
+void LinearSolver::restrictGrid(const MaterialGrid& fineMaterials, const MaterialGrid &coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid)
 {
     std::vector<Range> ranges = ThreadPool::i()->splitRange(coarseMaterials.data().size(),128);
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&LinearSolver::restrictGridThread,this,range,coarseMaterials,
+        ThreadPool::i()->enqueue(&LinearSolver::restrictGridThread,this,range,fineMaterials,coarseMaterials,
                                  std::ref(fineGrid),std::ref(coarseGrid));
         //nomatVMulThread(range,elementProvider,vin,vout);
     }
     ThreadPool::i()->wait();
 }
-void LinearSolver::restrictGridThread(const Range range, const MaterialGrid &coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid)
+void LinearSolver::restrictGridThread(const Range range, const MaterialGrid& fineMaterials, const MaterialGrid &coarseMaterials, const Grid2d<double> &fineGrid, Grid2d<double> coarseGrid)
 {
     const std::vector<double> &fineGridData = fineGrid.data();
     const int gridDataSize = fineGridData.size();
@@ -209,7 +206,7 @@ void LinearSolver::restrictGridThread(const Range range, const MaterialGrid &coa
         int weightIdx = 0;
         for(int idx : stencilCellIdxs)
         {
-            if(idx < 0 || idx >= gridDataSize)
+            if(idx < 0 || idx >= gridDataSize || fineMaterials.data()[idx] != FluidMaterial::FLUID)
             {
                 weightIdx++;
                 continue;
@@ -219,17 +216,17 @@ void LinearSolver::restrictGridThread(const Range range, const MaterialGrid &coa
         }
     }
 }
-void LinearSolver::prolongateGrid(const MaterialGrid &fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double>& fineGridData)
+void LinearSolver::prolongateGrid(const MaterialGrid &coarseMaterials, const MaterialGrid &fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double>& fineGridData)
 {
     std::vector<Range> ranges = ThreadPool::i()->splitRange(fineMaterials.data().size(),128);
     for(Range& range : ranges)
     {
-        ThreadPool::i()->enqueue(&LinearSolver::prolongateGridThread,this,range,fineMaterials,
+        ThreadPool::i()->enqueue(&LinearSolver::prolongateGridThread,this,range,coarseMaterials,fineMaterials,
                                  std::ref(coarseGrid),std::ref(fineGridData));
     }
     ThreadPool::i()->wait();
 }
-void LinearSolver::prolongateGridThread(const Range range, const MaterialGrid &fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double> &fineGridData)
+void LinearSolver::prolongateGridThread(const Range range, const MaterialGrid &coarseMaterials, const MaterialGrid &fineMaterials, const Grid2d<double> &coarseGrid, std::vector<double> &fineGridData)
 {
     const std::vector<double> &coarseGridData = coarseGrid.data();
     const int gridDataSize = coarseGridData.size();
@@ -244,7 +241,7 @@ void LinearSolver::prolongateGridThread(const Range range, const MaterialGrid &f
         std::array<float,4> coarseWeights = getProlongationWeights(i2d.i,i2d.j);
         for(int idx = 0; idx < 4; idx++)
         {
-            if(idx < 0 || idx >= gridDataSize)
+            if(idx < 0 || idx >= gridDataSize || coarseMaterials.data()[idx] != FluidMaterial::FLUID)
             {
                 continue;
             }
@@ -326,7 +323,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
         if(level != -1)
         {
             Grid2d<double> temp(m_materialSubgrids[level].sizeI(),m_materialSubgrids[level].sizeJ(),0.f);
-            premaskPressures(m_materialSubgrids[level], m_pressureGrids[level].data());
+            //premaskPressures(m_materialSubgrids[level], m_pressureGrids[level].data());
             for(int i = 0; i < strokeSmoothIter; i++)
             {
                 dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
@@ -335,13 +332,13 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
                                m_rhsGrids[level].data(),
                                m_pressureGrids[level].data(),
                                temp.data());
-            restrictGrid(m_materialSubgrids[level+1],temp,m_rhsGrids[level+1]);
+            restrictGrid(m_materialSubgrids[level],m_materialSubgrids[level+1],temp,m_rhsGrids[level+1]);
             m_pressureGrids[level+1].data().assign(m_pressureGrids[level+1].data().size(),0.f);
         }
         else
         {
             Grid2d<double> temp(m_mainMaterialGrid.sizeI(),m_mainMaterialGrid.sizeJ(),0.f);
-            premaskPressures(m_mainMaterialGrid, vout);
+            //premaskPressures(m_mainMaterialGrid, vout);
 
             for(int i = 0; i < strokeSmoothIter; i++)
             {
@@ -351,7 +348,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
                                vin,
                                vout,
                                temp.data());
-            restrictGrid(m_materialSubgrids[0],temp,m_rhsGrids[0]);
+            restrictGrid(m_mainMaterialGrid,m_materialSubgrids[0],temp,m_rhsGrids[0]);
             m_pressureGrids[0].data().assign(m_pressureGrids[0].data().size(),0.f);
         }
     }
@@ -359,7 +356,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
     //Solve coarse
     for(int i = 0; i < 50; i++)
     {
-        premaskPressures(m_materialSubgrids[subLevelCount-1], m_pressureGrids[subLevelCount-1].data());
+        //premaskPressures(m_materialSubgrids[subLevelCount-1], m_pressureGrids[subLevelCount-1].data());
         dampedJacobi(m_materialSubgrids[subLevelCount-1],
                      m_pressureGrids[subLevelCount-1].data(),
                      m_rhsGrids[subLevelCount-1].data());
@@ -369,8 +366,8 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
     {
         if(level != -1)
         {
-            prolongateGrid(m_materialSubgrids[level],m_pressureGrids[level+1],m_pressureGrids[level].data());
-            premaskPressures(m_materialSubgrids[level], m_pressureGrids[level].data());
+            prolongateGrid(m_materialSubgrids[level+1],m_materialSubgrids[level],m_pressureGrids[level+1],m_pressureGrids[level].data());
+            //premaskPressures(m_materialSubgrids[level], m_pressureGrids[level].data());
             for(int i = 0; i < strokeSmoothIter; i++)
             {
             dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
@@ -378,8 +375,8 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
         }
         else
         {
-            prolongateGrid(m_mainMaterialGrid,m_pressureGrids[0],vout);
-            premaskPressures(m_mainMaterialGrid, vout);
+            prolongateGrid(m_materialSubgrids[0],m_mainMaterialGrid,m_pressureGrids[0],vout);
+            //premaskPressures(m_mainMaterialGrid, vout);
 
             for(int i = 0; i < strokeSmoothIter; i++)
             {
