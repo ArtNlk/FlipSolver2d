@@ -12,7 +12,7 @@ find_package(OpenGL REQUIRED)
 FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw
-        GIT_TAG 7482de6071d21db77a7236155da44c172a7f6c9e
+        GIT_TAG 3.4
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
 )
@@ -24,7 +24,13 @@ if(NOT glfw_POPULATED)
     set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
     set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
     set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
-
+    if(LINUX_WAYLAND)
+        set(GLFW_BUILD_WAYLAND ON)
+        set(GLFW_BUILD_X11 OFF)
+    else()
+        set(GLFW_BUILD_WAYLAND OFF)
+        set(GLFW_BUILD_X11 ON)
+    endif()
     add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
 

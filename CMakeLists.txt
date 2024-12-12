@@ -16,12 +16,17 @@ set(ALL_WARNINGS OFF)
 set(POOL_SINGLE_THREAD OFF)
 set(VECTORIZER_DEBUG OFF)
 set(FAST_MATH ON)
+set(LINUX_WAYLAND ON)
 
 if(POOL_SINGLE_THREAD)
     add_compile_definitions(ENQUEUE_IS_RUN)
 endif()
 
-set(FLUID_ACCEL "sse") #sse, avx, avx2, avx512
+set(FLUID_ACCEL "avx2") #sse, avx, avx2, avx512
+
+if(UNIX)
+    add_compile_options(-march=native)
+endif()
 
 if(FLUID_ACCEL STREQUAL "sse")
     add_compile_definitions(FLUID_SSE)

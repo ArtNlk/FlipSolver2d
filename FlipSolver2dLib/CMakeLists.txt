@@ -93,6 +93,8 @@ find_package(OpenMP REQUIRED)
 
 include(FetchContent)
 
+set(BUILD_TESTING OFF)
+
 #Eigen3
 FetchContent_Declare(
   Eigen3
