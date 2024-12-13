@@ -10,19 +10,18 @@ set(FETCHCONTENT_QUIET FALSE)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(MEMORY_SANITIZE OFF)
-set(THREAD_SANITIZE OFF)
-set(ALL_WARNINGS OFF)
-set(POOL_SINGLE_THREAD OFF)
-set(VECTORIZER_DEBUG OFF)
-set(FAST_MATH ON)
-set(LINUX_WAYLAND ON)
+set(MEMORY_SANITIZE OFF CACHE BOOL "Enable memory sanitizer")
+set(THREAD_SANITIZE OFF CACHE BOOL "Enable thread sanitizer")
+set(ALL_WARNINGS OFF CACHE BOOL "Enable all warnings")
+set(POOL_SINGLE_THREAD OFF CACHE BOOL "Force thread pool to single threaded mode")
+set(VECTORIZER_DEBUG OFF CACHE BOOL "Enable vectorizer debug")
+set(FAST_MATH ON CACHE BOOL "Build with fast math enabled")
+set(LINUX_WAYLAND OFF CACHE BOOL "For linux, build for wayland instead of X11")
+set(FLUID_ACCEL "avx2" CACHE STRING "SIMD instructions to use. Should only be sse or avx or avx2") #sse, avx, avx2
 
 if(POOL_SINGLE_THREAD)
     add_compile_definitions(ENQUEUE_IS_RUN)
 endif()
-
-set(FLUID_ACCEL "avx2") #sse, avx, avx2, avx512
 
 if(UNIX)
     add_compile_options(-march=native)
