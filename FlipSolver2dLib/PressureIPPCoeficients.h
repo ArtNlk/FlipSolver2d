@@ -67,6 +67,11 @@ public:
         m_data.push_back(unit);
     }
 
+    void setDefaultDiagScale(double newScale)
+    {
+        m_defaultDiagScale = newScale;
+    }
+
     void endThreadDataRange()
     {
         if(m_threadDataRanges.empty())
@@ -133,13 +138,14 @@ protected:
             }
             else
             {
-                out[idx] = in[idx];
+                out[idx] = m_defaultDiagScale*in[idx];
             }
         }
     }
 
     std::vector<IndexedIPPCoefficientUnit> m_data;
     std::vector<Range> m_threadDataRanges;
+    double m_defaultDiagScale;
     LinearIndexable2d m_indexer;
 };
 

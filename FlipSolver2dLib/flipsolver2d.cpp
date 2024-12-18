@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <iomanip>
 #include <limits>
 #include <memory>
 #include <ostream>
@@ -789,6 +790,8 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
+    std::cout << std::setprecision(15) << scale << std::endl;
+
     IndexedPressureParameters output(linearSize()*0.33, *this, scale);
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
@@ -882,6 +885,8 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
     IndexedIPPCoefficients output(linearSize()*0.33, *this);
+
+    output.setDefaultDiagScale(2.0/(scale*scale) + 1.0);
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 
