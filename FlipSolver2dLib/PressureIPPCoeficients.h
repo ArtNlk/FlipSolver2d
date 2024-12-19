@@ -31,11 +31,11 @@ struct IndexedIPPCoefficientUnit
 
         const double diag = 1.0 + iNeg*iNeg + jNeg*jNeg;
 
-        return  diag   *(centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
-                jNeg   *(jNegLinIdx >= 0 && jNegLinIdx < vec.size() ? vec.at(jNegLinIdx) : 0.0) +
-                jPos   *(jPosLinIdx >= 0 && jPosLinIdx < vec.size() ? vec.at(jPosLinIdx) : 0.0) +
-                iNeg   *(iNegLinIdx >= 0 && iNegLinIdx < vec.size() ? vec.at(iNegLinIdx) : 0.0) +
-                iPos   *(iPosLinIdx >= 0 && iPosLinIdx < vec.size() ? vec.at(iPosLinIdx) : 0.0);
+        return  diag * (centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
+                jNeg * (jNegLinIdx >= 0 && jNegLinIdx < vec.size() ? vec.at(jNegLinIdx) : 0.0) +
+                jPos * (jPosLinIdx >= 0 && jPosLinIdx < vec.size() ? vec.at(jPosLinIdx) : 0.0) +
+                iNeg * (iNegLinIdx >= 0 && iNegLinIdx < vec.size() ? vec.at(iNegLinIdx) : 0.0) +
+                iPos * (iPosLinIdx >= 0 && iPosLinIdx < vec.size() ? vec.at(iPosLinIdx) : 0.0);
 
     }
 

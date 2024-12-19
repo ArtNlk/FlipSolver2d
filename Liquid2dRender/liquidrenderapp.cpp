@@ -522,7 +522,7 @@ bool LiquidRenderApp::renderControlsPanel()
     {
         m_solver->stepFrame();
         m_lastFrameStats = m_solver->timeStats();
-        std::cout << "Stat: " << m_lastFrameStats.timings().at(SolverStage::PARTICLE_TO_GRID) / m_lastFrameStats.substepCount() << std::endl;
+        std::cout << "Stat: " << m_lastFrameStats.timings().at(SolverStage::PRESSURE) / m_lastFrameStats.substepCount() << std::endl;
         update = true;
         m_simStepsLeft--;
         if(m_recording)

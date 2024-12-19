@@ -887,8 +887,6 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
     std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
     size_t currRangeIdx = 0;
 
-    size_t matEntryIdx = 0;
-
     for(size_t i = 0; i < m_sizeI; i++)
     {
         for(size_t j = 0; j < m_sizeJ; j++)
@@ -908,17 +906,15 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
             IndexedIPPCoefficientUnit unit;
             unit.unitIndex = linIdx;
 
-            const double invscale = scale/(mat.data().at(matEntryIdx).nonsolidNeighborCount*scale);
-
             const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
             const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(linIdx,1,0);
             const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
             const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
 
-            unit.iNeg = 1.0/m_materialGrid.nonsolidNeighborCount(iNegLinIdx);
-            unit.iPos = 1.0/m_materialGrid.nonsolidNeighborCount(iPosLinIdx);
-            unit.jNeg = 1.0/m_materialGrid.nonsolidNeighborCount(jNegLinIdx);
-            unit.jPos = 1.0/m_materialGrid.nonsolidNeighborCount(jPosLinIdx);
+            unit.iNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(iNegLinIdx)*scale);
+            unit.iPos = 1.0/(m_materialGrid.nonsolidNeighborCount(iPosLinIdx)*scale);
+            unit.jNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(jNegLinIdx)*scale);
+            unit.jPos = 1.0/(m_materialGrid.nonsolidNeighborCount(jPosLinIdx)*scale);
 
             if(linIdx >= threadRanges.at(currRangeIdx).end)
             {
@@ -927,7 +923,6 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
             }
 
             output.add(unit);
-            matEntryIdx++;
         }
     }
 
