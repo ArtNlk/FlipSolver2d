@@ -1,5 +1,6 @@
 #include "materialgrid.h"
 #include "grid2d.h"
+#include "index2d.h"
 
 MaterialGrid::MaterialGrid(ssize_t sizeI, ssize_t sizeJ, FluidMaterial oobMaterial) :
     Grid2d(sizeI, sizeJ, FluidMaterial::EMPTY, OOB_EXTEND, oobMaterial)
@@ -124,6 +125,18 @@ bool MaterialGrid::isSource(size_t i) const
 bool MaterialGrid::isSink(size_t i) const
 {
     return sinkTest(m_data.at(i));
+}
+
+int MaterialGrid::nonsolidNeighborCount(ssize_t linIdx)
+{
+    const Index2d i2d = index2d(linIdx);
+
+    return nonsolidNeighborCount(i2d.i, i2d.j);
+}
+
+int MaterialGrid::nonsolidNeighborCount(ssize_t i, ssize_t j)
+{
+    return !isSolid(i-1,j) + !isSolid(i+1,j) + !isSolid(i,j-1) + !isSolid(i,j+1);
 }
 
 bool MaterialGrid::uVelocitySampleInside(ssize_t i, ssize_t j) const

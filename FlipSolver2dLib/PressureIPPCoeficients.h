@@ -12,11 +12,9 @@ struct IndexedIPPCoefficientUnit
 {
     IndexedIPPCoefficientUnit() :
         unitIndex(std::numeric_limits<size_t>::max()),
-        jNeg(0.0),
-        jNegP1(0.0),
         iNeg(0.0),
         iPos(0.0),
-        jPosM1(0.0),
+        jNeg(0.0),
         jPos(0.0)
     {
 
@@ -26,30 +24,25 @@ struct IndexedIPPCoefficientUnit
                            const LinearIndexable2d& indexer) const
     {
         const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(unitIndex,0,-1);
-        const ssize_t jNegP1LinIdx = indexer.linearIdxOfOffset(unitIndex,0,-1)+1;
+        const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(unitIndex,0,1);
         const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(unitIndex,-1,0);
         const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(unitIndex,1,0);
-        const ssize_t jPosM1LinIdx = indexer.linearIdxOfOffset(unitIndex,0,1)-1;
-        const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(unitIndex,0,1);
         const ssize_t centerIdx = unitIndex;
+
+        const double diag = 1.0 + iNeg*iNeg + jNeg*jNeg;
 
         return  diag   *(centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
                 jNeg   *(jNegLinIdx >= 0 && jNegLinIdx < vec.size() ? vec.at(jNegLinIdx) : 0.0) +
-                jNegP1 *(jNegP1LinIdx >= 0 && jNegP1LinIdx < vec.size() ? vec.at(jNegP1LinIdx) : 0.0) +
+                jPos   *(jPosLinIdx >= 0 && jPosLinIdx < vec.size() ? vec.at(jPosLinIdx) : 0.0) +
                 iNeg   *(iNegLinIdx >= 0 && iNegLinIdx < vec.size() ? vec.at(iNegLinIdx) : 0.0) +
-                iPos   *(iPosLinIdx >= 0 && iPosLinIdx < vec.size() ? vec.at(iPosLinIdx) : 0.0) +
-                jPosM1 *(jPosM1LinIdx >= 0 && jPosM1LinIdx < vec.size() ? vec.at(jPosM1LinIdx) : 0.0) +
-                jPos   *(jPosLinIdx >= 0 && jPosLinIdx < vec.size() ? vec.at(jPosLinIdx) : 0.0);
+                iPos   *(iPosLinIdx >= 0 && iPosLinIdx < vec.size() ? vec.at(iPosLinIdx) : 0.0);
 
     }
 
     size_t unitIndex;
-    double jNeg;
-    double jNegP1;
     double iNeg;
-    double diag;
     double iPos;
-    double jPosM1;
+    double jNeg;
     double jPos;
 };
 

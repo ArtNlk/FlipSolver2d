@@ -910,44 +910,15 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
 
             const double invscale = scale/(mat.data().at(matEntryIdx).nonsolidNeighborCount*scale);
 
-            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
-            const ssize_t jNegP1LinIdx = indexer.linearIdxOfOffset(linIdx,0,-1)+1;
             const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
             const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(linIdx,1,0);
-            const ssize_t jPosM1LinIdx = indexer.linearIdxOfOffset(linIdx,0,1)-1;
+            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
             const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
 
-            if(jNegLinIdx >= 0 && m_materialGrid.isFluid(jNegLinIdx))
-            {
-                unit.jNeg = invscale;
-            }
-
-            if(jNegP1LinIdx >= 0 && m_materialGrid.isFluid(jNegP1LinIdx))
-            {
-                unit.jNegP1 = invscale*invscale;
-            }
-
-            if(iNegLinIdx >= 0 && m_materialGrid.isFluid(iNegLinIdx))
-            {
-                unit.iNeg = invscale;
-            }
-
-            unit.diag = (invscale*invscale)*2.0 + 1.0;
-
-            if(iPosLinIdx >= 0 && m_materialGrid.isFluid(iPosLinIdx))
-            {
-                unit.iPos = invscale;
-            }
-
-            if(jPosM1LinIdx >= 0 && m_materialGrid.isFluid(jPosM1LinIdx))
-            {
-                unit.jPosM1 = invscale*invscale;
-            }
-
-            if(jPosLinIdx >= 0 && m_materialGrid.isFluid(jPosLinIdx))
-            {
-                unit.jPos = invscale;
-            }
+            unit.iNeg = 1.0/m_materialGrid.nonsolidNeighborCount(iNegLinIdx);
+            unit.iPos = 1.0/m_materialGrid.nonsolidNeighborCount(iPosLinIdx);
+            unit.jNeg = 1.0/m_materialGrid.nonsolidNeighborCount(jNegLinIdx);
+            unit.jPos = 1.0/m_materialGrid.nonsolidNeighborCount(jPosLinIdx);
 
             if(linIdx >= threadRanges.at(currRangeIdx).end)
             {

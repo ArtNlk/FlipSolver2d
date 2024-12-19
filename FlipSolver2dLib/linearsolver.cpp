@@ -18,6 +18,8 @@
 #include "vmath.h"
 #include "linearsolver_sse42.h"
 
+#include <fstream>
+
 #include "logger.h"
 
 LinearSolver::LinearSolver()
@@ -66,6 +68,7 @@ bool LinearSolver::solve(const IndexedPressureParameters &matrixIn,
        {
            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+
            return true;
        }
        //aux = residual;
