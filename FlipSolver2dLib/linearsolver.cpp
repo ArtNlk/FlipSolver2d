@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <future>
+#include <ios>
 #include <mutex>
 #include <sstream>
 #include <utility>
@@ -68,6 +69,12 @@ bool LinearSolver::solve(const IndexedPressureParameters &matrixIn,
        {
            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
+
+           std::fstream file("iters.txt", std::ios_base::app);
+
+           file << i << '\n';
+
+           file.close();
 
            return true;
        }

@@ -160,6 +160,7 @@ void FlipSolver::advect()
 
 void FlipSolver::densityCorrection()
 {
+    return;
     updateDensityGrid();
 
     m_pressureRhs.resize(cellCount());
@@ -881,11 +882,15 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
     IndexedIPPCoefficients output(linearSize()*0.33, *this);
+    output.mat().resize(m_materialGrid.linearSize(),m_materialGrid.linearSize());
+    output.mat().setIdentity();
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 
     std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
     size_t currRangeIdx = 0;
+
+    const double omega = 0.6;
 
     for(size_t i = 0; i < m_sizeI; i++)
     {
@@ -903,12 +908,44 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
                 continue;
             }
 
+            const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
+            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
+            const double aDiag = m_materialGrid.nonsolidNeighborCount(linIdx) * scale;
+
+            if(m_materialGrid.inBounds(iNegLinIdx))
+            {
+                if(m_materialGrid.isFluid(iNegLinIdx))
+                {
+                    const double iNegDiag = m_materialGrid.nonsolidNeighborCount(iNegLinIdx) * scale;
+                    const double iWeight = m_materialGrid.isFluid(iNegLinIdx) * -scale;
+                    output.mat().insert(linIdx, iNegLinIdx) = std::sqrt(2.0-omega)*
+                                                                std::sqrt(omega/aDiag)*
+                                                                (-omega*(iWeight / iNegDiag));
+                }
+            }
+
+            if(m_materialGrid.inBounds(jNegLinIdx))
+            {
+                if(m_materialGrid.isFluid(jNegLinIdx))
+                {
+                    const double jNegDiag = m_materialGrid.nonsolidNeighborCount(jNegLinIdx) * scale;
+                    const double jWeight = m_materialGrid.isFluid(jNegLinIdx) * -scale;
+                    output.mat().insert(linIdx, jNegLinIdx) = std::sqrt(2.0-omega)*
+                                                                std::sqrt(omega/aDiag)*
+                                                                (-omega*(jWeight / jNegDiag));
+                }
+            }
+
+            output.mat().coeffRef(linIdx, jNegLinIdx) = std::sqrt(2.0-omega)*
+                                                        std::sqrt(omega/aDiag)*
+                                                        (1.0-omega);
+
             IndexedIPPCoefficientUnit unit;
             unit.unitIndex = linIdx;
 
-            const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
+            //const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
             const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(linIdx,1,0);
-            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
+            //const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
             const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
 
             unit.iNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(iNegLinIdx)*scale);
@@ -930,6 +967,8 @@ IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParam
     {
         output.endThreadDataRange();
     }
+
+    output.mat().finalize();
 
     return output;
 }

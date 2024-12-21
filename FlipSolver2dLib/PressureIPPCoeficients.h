@@ -1,6 +1,7 @@
 #ifndef PRESSUREIPPCOEFICIENTS_H
 #define PRESSUREIPPCOEFICIENTS_H
 
+#include "Eigen/Sparse"
 #include "linearindexable2d.h"
 #include "threadpool.h"
 
@@ -76,10 +77,29 @@ public:
         return m_data;
     }
 
+    auto& mat()
+    {
+        return m_mat;
+    }
+
     void multiply(const std::vector<double>& in, std::vector<double>& out) const
     {
         ASSERT(in.size() == out.size());
 
+#if 1
+        // Convert std::vector to Eigen vector
+        Eigen::VectorXd eigenVin = Eigen::Map<const Eigen::VectorXd>(in.data(), in.size());
+
+        // Compute M * vin
+        Eigen::VectorXd temp = m_mat * eigenVin;
+
+        // Compute M^T * (M * vin)
+        Eigen::VectorXd eigenVout = m_mat.transpose() * temp;
+
+        // Convert Eigen vector back to std::vector
+        out.resize(eigenVout.size());
+        Eigen::VectorXd::Map(&out[0], eigenVout.size()) = eigenVout;
+#else
         if(m_data.empty())
         {
             out = in;
@@ -103,6 +123,7 @@ public:
                                      ranges.at(i),m_threadDataRanges.at(i),std::cref(in),std::ref(out));
         }
         ThreadPool::i()->wait();
+#endif
     }
 
 protected:
@@ -134,6 +155,8 @@ protected:
     std::vector<IndexedIPPCoefficientUnit> m_data;
     std::vector<Range> m_threadDataRanges;
     LinearIndexable2d m_indexer;
+
+    Eigen::SparseMatrix<double> m_mat;
 };
 
 #endif // PRESSUREIPPCOEFICIENTS_H
