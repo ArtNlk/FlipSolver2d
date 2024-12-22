@@ -232,7 +232,7 @@ protected:
             }
             else
             {
-                out[idx] = in[idx];
+                out[idx] = m_scale*in[idx];
             }
         }
     }
