@@ -5,6 +5,7 @@
 
 #include "pressuredata.h"
 #include "PressureIPPCoeficients.h"
+#include "materialgrid.h"
 
 class LinearSolver
 {
@@ -53,12 +54,28 @@ protected:
     void multigridSubMatmulThread(const Range range, const MaterialGrid& materials, const std::vector<double>& vsub,
                                   const std::vector<double>& vmul, std::vector<double>& vout);
 
+    void borderSmooth(const MaterialGrid &currentMaterialGrid,
+                      const LinearIndexable2d &coarserIndexer,
+                      const std::vector<double> &rhsData,
+                      std::vector<double> &smoothedPressureData,
+                      int iterCount);
+
+    void borderSmoothReverse(const MaterialGrid &currentMaterialGrid,
+                      const LinearIndexable2d &coarserIndexer,
+                      const std::vector<double> &rhsData,
+                      std::vector<double> &smoothedPressureData,
+                      int iterCount);
+
+    Grid2d<bool> generateBorderMask(const MaterialGrid& currentMaterialGrid, const LinearIndexable2d& coarserIndexer);
+
     std::pair<std::array<int,4>,std::array<double,4>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j);
     std::pair<std::array<int,4>,std::array<double,4>> getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx);
     std::array<int,16> getFineGridStencilIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
     std::array<int,4> getFineGridChildIdxs(const LinearIndexable2d &fineGridIndexer,int iCoarse, int jCoarse);
     std::array<float,4> getProlongationWeights(int finei, int finej);
     std::array<int,4> getCoarseProlongIdxs(const LinearIndexable2d &coarseGridIndexer, int finei, int finej);
+    std::array<int,16> getBorderCheckIndexes(const LinearIndexable2d &coarseGridIndexer, const LinearIndexable2d &fineGridIndexer, int i, int j);
+
     std::array<float,16> m_restrictionWeights;
     std::array<float,16> m_prolongationWeights;
 

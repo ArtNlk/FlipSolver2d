@@ -10,6 +10,7 @@
 #include <sstream>
 #include <utility>
 #include <vector>
+#include <format>
 
 #include "PressureIPPCoeficients.h"
 #include "dynamicmatrix.h"
@@ -262,13 +263,13 @@ void LinearSolver::premaskPressuresThread(const Range range, const MaterialGrid 
 {
     for(int i = range.start; i < range.end; i++)
     {
-        pressures[i] *= !solidTest(materials.data()[i]);
-        //pressures[i] = !fluidTest(materials.data()[i]) ? 0.0 : pressures[i];
+        //pressures[i] *= !solidTest(materials.data()[i]);
+        pressures[i] = !fluidTest(materials.data()[i]) ? 0.0 : pressures[i];
     }
 }
 void LinearSolver::dampedJacobi(const MaterialGrid &materials, std::vector<double> &pressures, const std::vector<double> &rhs)
 {
-    std::vector<double> temp(pressures.size(), 0.);
+    std::vector<double> temp = pressures;
     std::vector<Range> ranges = ThreadPool::i()->splitRange(pressures.size(),128);
     for(Range& range : ranges)
     {
@@ -295,18 +296,26 @@ void LinearSolver::dampedJacobiThread(LinearSolver* solver, const Range range, c
     const size_t dataSize = materials.data().size();
     for(int i = range.start; i < range.end; i++)
     {
+        if(!materials.isFluid(static_cast<ssize_t>(i)))
+        {
+            vout[i] += (rhs[i]) * tune;
+            continue;
+        }
         //const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
         const auto neighbors = materials.immidiateNeighbors(i);
         double result = 0.0;
+        double diag = 0.0;
         for(int idx : neighbors)
         {
             if(idx < 0 || idx >= dataSize)
             {
                 continue;
             }
-            result += pressures[idx];
+            result -= pressures[idx]*materials.isFluid(static_cast<ssize_t>(idx));
+            diag += !materials.isSolid(static_cast<ssize_t>(idx));
         }
-        vout[i] = ((rhs[i]-result)/-4.0) * tune;
+
+        vout[i] += ((rhs[i]-result)/diag) * tune;
     }
 }
 
@@ -326,6 +335,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
             {
                 dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
             }
+            borderSmooth(m_materialSubgrids[level],m_materialSubgrids[level+1],m_rhsGrids[level].data(),m_pressureGrids[level].data(), 2<<level);
             multigridSubMatmul(m_materialSubgrids[level],
                                m_rhsGrids[level].data(),
                                m_pressureGrids[level].data(),
@@ -342,6 +352,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
             {
                 dampedJacobi(m_mainMaterialGrid,vout,vin);
             }
+            borderSmooth(m_mainMaterialGrid,m_materialSubgrids[0],vin,vout,2);
             multigridSubMatmul(m_mainMaterialGrid,
                                vin,
                                vout,
@@ -366,6 +377,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
         {
             prolongateGrid(m_materialSubgrids[level+1],m_materialSubgrids[level],m_pressureGrids[level+1],m_pressureGrids[level].data());
             //premaskPressures(m_materialSubgrids[level], m_pressureGrids[level].data());
+            borderSmoothReverse(m_materialSubgrids[level],m_materialSubgrids[level+1],m_rhsGrids[level].data(),m_pressureGrids[level].data(), 2<<level);
             for(int i = 0; i < strokeSmoothIter; i++)
             {
             dampedJacobi(m_materialSubgrids[level],m_pressureGrids[level].data(),m_rhsGrids[level].data());
@@ -375,7 +387,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
         {
             prolongateGrid(m_materialSubgrids[0],m_mainMaterialGrid,m_pressureGrids[0],vout);
             //premaskPressures(m_mainMaterialGrid, vout);
-
+            borderSmoothReverse(m_mainMaterialGrid,m_materialSubgrids[0],vin,vout,2);
             for(int i = 0; i < strokeSmoothIter; i++)
             {
                 dampedJacobi(m_mainMaterialGrid,vout,vin);
@@ -383,6 +395,7 @@ void LinearSolver::vCycle(std::vector<double> &vout, const std::vector<double> &
         }
     }
 }
+
 void LinearSolver::multigridSubMatmul(const MaterialGrid &materials, const std::vector<double> &vsub, const std::vector<double> &vmul, std::vector<double> &vout)
 {
     std::vector<Range> ranges = ThreadPool::i()->splitRange(vout.size(),8*8);
@@ -393,6 +406,7 @@ void LinearSolver::multigridSubMatmul(const MaterialGrid &materials, const std::
     }
     ThreadPool::i()->wait();
 }
+
 void LinearSolver::multigridSubMatmulThread(const Range range, const MaterialGrid &materials, const std::vector<double> &vsub, const std::vector<double> &vmul, std::vector<double> &vout)
 {
     const size_t dataSize = materials.data().size();
@@ -401,22 +415,184 @@ void LinearSolver::multigridSubMatmulThread(const Range range, const MaterialGri
         //const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
         const auto neighbors = materials.immidiateNeighbors(idx);
         double result = 0.0;
-        for(int neighborIdx : neighbors)
+        if(materials.isFluid(static_cast<ssize_t>(idx)))
         {
-            if(neighborIdx < 0 || neighborIdx >= dataSize)
+            double diag = 0.0;
+            for(int neighborIdx : neighbors)
             {
-                continue;
+                if(neighborIdx < 0 || neighborIdx >= dataSize)
+                {
+                    continue;
+                }
+                result -= vmul[neighborIdx]*materials.isFluid(static_cast<ssize_t>(neighborIdx));
+                diag += !materials.isSolid(static_cast<ssize_t>(neighborIdx));
             }
-            result += vmul[neighborIdx];
+            result += diag * vmul[idx];
         }
-        result += -4.0 * vmul[idx];
+
         vout[idx] = vsub[idx] - result;
     }
 }
+
+void LinearSolver::borderSmooth(const MaterialGrid &currentMaterialGrid,
+                                const LinearIndexable2d &coarserIndexer,
+                                const std::vector<double> &rhsData,
+                                std::vector<double> &smoothedPressureData, int iterCount)
+{
+    return;
+    Grid2d<bool> maskGrid = generateBorderMask(currentMaterialGrid, coarserIndexer);
+
+    std::ofstream file(std::format("maskGrid_{}x{}.txt",maskGrid.sizeI(), maskGrid.sizeJ()), std::ios::out);
+
+    file << maskGrid.toString() << '\n';
+
+    file.close();
+
+    for(int smoothIter = 0; smoothIter < iterCount; smoothIter++)
+    {
+        for(ssize_t idx = 0; idx < maskGrid.linearSize(); idx++)
+        {
+            if(!maskGrid.data().at(idx) || !currentMaterialGrid.isFluid(static_cast<ssize_t>(idx)))
+            {
+                smoothedPressureData[idx] += (rhsData[idx]);
+                continue;
+            }
+            //const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
+            const auto neighbors = currentMaterialGrid.immidiateNeighbors(idx);
+            double result = 0.0;
+            double diag = 0.0;
+            for(int neighborIdx : neighbors)
+            {
+                if(neighborIdx < 0 || neighborIdx >= maskGrid.data().size())
+                {
+                    continue;
+                }
+                result -= smoothedPressureData[neighborIdx]*currentMaterialGrid.isFluid(static_cast<ssize_t>(neighborIdx));
+                diag += !currentMaterialGrid.isSolid(static_cast<ssize_t>(neighborIdx));
+            }
+
+            smoothedPressureData[idx] += ((rhsData[idx]-result)/diag);
+        }
+    }
+}
+
+void LinearSolver::borderSmoothReverse(const MaterialGrid &currentMaterialGrid,
+                                       const LinearIndexable2d &coarserIndexer,
+                                       const std::vector<double> &rhsData,
+                                       std::vector<double> &smoothedPressureData,
+                                       int iterCount)
+{
+    return;
+    Grid2d<bool> maskGrid = generateBorderMask(currentMaterialGrid, coarserIndexer);
+
+    std::ofstream file(std::format("upstr_maskGrid_{}x{}.txt",maskGrid.sizeI(), maskGrid.sizeJ()), std::ios::out);
+
+    file << maskGrid.toString() << '\n';
+
+    file.close();
+
+    for(int smoothIter = 0; smoothIter < iterCount; smoothIter++)
+    {
+        for(ssize_t idx = maskGrid.linearSize()-1; idx >= 0; idx--)
+        {
+            if(!maskGrid.data().at(idx) || !currentMaterialGrid.isFluid(static_cast<ssize_t>(idx)))
+            {
+                smoothedPressureData[idx] += (rhsData[idx]);
+                continue;
+            }
+            //const auto weights = solver->getMultigridMatrixEntriesForCell(materials,i);
+            const auto neighbors = currentMaterialGrid.immidiateNeighbors(idx);
+            double result = 0.0;
+            double diag = 0.0;
+            for(int neighborIdx : neighbors)
+            {
+                if(neighborIdx < 0 || neighborIdx >= maskGrid.data().size())
+                {
+                    continue;
+                }
+                result -= smoothedPressureData[neighborIdx]*currentMaterialGrid.isFluid(static_cast<ssize_t>(neighborIdx));
+                diag += !currentMaterialGrid.isSolid(static_cast<ssize_t>(neighborIdx));
+            }
+
+            smoothedPressureData[idx] += ((rhsData[idx]-result)/diag);
+        }
+    }
+}
+
+Grid2d<bool> LinearSolver::generateBorderMask(const MaterialGrid &currentMaterialGrid,
+                                              const LinearIndexable2d &coarserIndexer)
+{
+    Grid2d<bool> output(currentMaterialGrid.sizeI(), currentMaterialGrid.sizeJ(), false);
+
+    for(size_t maskIdx = 0; maskIdx < currentMaterialGrid.linearSize(); maskIdx++)
+    {
+        if(!currentMaterialGrid.isFluid(static_cast<ssize_t>(maskIdx)))
+        {
+            continue;
+        }
+
+        Index2d i2d = output.index2d(maskIdx);
+        std::array<int, 16> checkedIdxs = getBorderCheckIndexes(coarserIndexer, currentMaterialGrid, i2d.i, i2d.j);
+
+        for(int checkIdx : checkedIdxs)
+        {
+            if(checkIdx == -1)
+            {
+                break;
+            }
+
+            if(!currentMaterialGrid.isFluid(static_cast<ssize_t>(checkIdx)))
+            {
+                output.data()[maskIdx] = true;
+                break;
+            }
+        }
+    }
+
+    return output;
+}
+
+std::array<int, 16> LinearSolver::getBorderCheckIndexes(const LinearIndexable2d &coarserGridIndexer,
+                                                        const LinearIndexable2d &currentGridIndexer,
+                                                        int i,
+                                                        int j)
+{
+    std::array<int, 16> output{-1};
+
+    std::array<int,4> coarseStencilIndexes = getCoarseProlongIdxs(coarserGridIndexer, i, j);
+
+    size_t outputIndex = 0;
+
+    for(int idx : coarseStencilIndexes)
+    {
+        if(idx < 0 || idx >= coarserGridIndexer.linearSize())
+        {
+            continue;
+        }
+
+        Index2d i2d = coarserGridIndexer.index2d(idx);
+        std::array<int, 4> fineChildren = getFineGridChildIdxs(currentGridIndexer, i2d.i, i2d.j);
+
+        for(int fineIdx : fineChildren)
+        {
+            if(fineIdx < 0 || fineIdx >= currentGridIndexer.linearSize())
+            {
+                continue;
+            }
+
+            output[outputIndex] = fineIdx;
+            outputIndex++;
+        }
+    }
+
+    return output;
+}
+
 std::pair<std::array<int,4>,std::array<double,4>> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int i, int j)
 {
     return getMultigridMatrixEntriesForCell(materials, materials.linearIndex(i,j));
 }
+
 std::pair<std::array<int,4>,std::array<double,4>> LinearSolver::getMultigridMatrixEntriesForCell(const MaterialGrid &materials, int linearIdx)
 {
     std::pair<std::array<int,4>,std::array<double,4>> output;
@@ -466,6 +642,7 @@ std::array<int, 4> LinearSolver::getFineGridChildIdxs(const LinearIndexable2d &f
     output[3] = fineGridIndexer.linearIdxOfOffset(output[0],1, 1);
     return output;
 }
+
 std::array<float, 4> LinearSolver::getProlongationWeights(int finei, int finej)
 {
     int coarsePos = finei % 2;
