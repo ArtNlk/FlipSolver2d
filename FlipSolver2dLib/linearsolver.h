@@ -1,14 +1,7 @@
 #ifndef PCGSOLVER_H
 #define PCGSOLVER_H
 
-#include <functional>
-#include <unordered_map>
 #include <vector>
-
-#include "linearindexable2d.h"
-#include "materialgrid.h"
-#include "threadpool.h"
-#include "staticmatrix.h"
 
 #include "pressuredata.h"
 #include "PressureIPPCoeficients.h"
@@ -19,7 +12,7 @@ public:
     LinearSolver();
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
 
-    bool solve(const IndexedPressureParameters &matrixIn,
+    int solve(const IndexedPressureParameters &matrixIn,
                const IndexedIPPCoefficients &precond,
                std::vector<double> &result,
                const std::vector<double> &vec,

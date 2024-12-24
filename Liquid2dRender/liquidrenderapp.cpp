@@ -569,6 +569,12 @@ void LiquidRenderApp::renderStatsPanel()
         ImGui::Text(stepStageToString(stage).c_str(), m_lastFrameStats.timings().at(stage),
                     (m_lastFrameStats.timings().at(stage)/m_lastFrameStats.frameTime()) * 100.f);
     }while(nextEnum<SolverStage,SOLVER_STAGE_COUNT>(stage));
+
+    ImGui::SeparatorText("Max PCG iterations over substeps:");
+    ImGui::Text("Pressure: %d/%d", m_lastFrameStats.pressureIterations(), m_solver->pcgIterationLimit());
+    ImGui::Text("Density: %d/%d", m_lastFrameStats.densityIterations(), m_solver->pcgIterationLimit());
+    ImGui::Text("Viscosity: %d/%d", m_lastFrameStats.viscosityIterations(), m_solver->pcgIterationLimit());
+
     ImGui::End();
 }
 

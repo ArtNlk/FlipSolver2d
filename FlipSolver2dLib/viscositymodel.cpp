@@ -1,7 +1,7 @@
 #include "viscositymodel.h"
 #include "Eigen/src/Core/Matrix.h"
 
-void LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
+int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                               const Grid2d<float>& viscosityGrid,
                               const MaterialGrid& materialGrid,
                               float dt,
@@ -26,14 +26,14 @@ void LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
     m_viscositySolver.compute(viscosityMatrix);
     if(m_viscositySolver.info()!=Eigen::Success) {
         std::cout << "Viscosity solver decomposition failed!\n";
-        return;
+        return -1;
     }
 
     fillRhs(rhs,velocityGrid.velocityGridU(),viscosityGrid,density);
     result = m_viscositySolver.solve(rhs);
     if(m_viscositySolver.info()!=Eigen::Success) {
         std::cout << "Viscosity solver U solving failed!\n";
-        return;
+        return -1;
     }
     std::cout << "Viscosity U done with " << m_viscositySolver.iterations() << " iterations\n" << std::endl;
 
@@ -43,11 +43,13 @@ void LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
     result = m_viscositySolver.solve(rhs);
     if(m_viscositySolver.info()!=Eigen::Success) {
         std::cout << "Viscosity solver V solving failed!\n";
-        return;
+        return -1;
     }
     std::cout << "Viscosity V done with " << m_viscositySolver.iterations() << " iterations\n";
 
     applyResult(velocityGrid.velocityGridV(), viscosityGrid, result, density);
+
+    return m_viscositySolver.iterations();
 
     // if(anyNanInf(velocityGrid.velocityGridU().data()))
     // {
@@ -159,7 +161,7 @@ void LightViscosityModel::applyResult(Grid2d<float> &velocityGrid, const LinearI
     }
 }
 
-void HeavyViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
+int HeavyViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                               const Grid2d<float>& viscosityGrid,
                               const MaterialGrid& materialGrid,
                               float dt,
@@ -182,17 +184,19 @@ void HeavyViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
     m_viscositySolver.compute(viscosityMatrix);
     if(m_viscositySolver.info()!=Eigen::Success) {
         std::cout << "Viscosity solver decomposition failed!\n";
-        return;
+        return -1;
     }
 
     result = m_viscositySolver.solve(rhs);
     if(m_viscositySolver.info()!=Eigen::Success) {
         std::cout << "Viscosity solver U solving failed!\n";
-        return;
+        return -1;
     }
     std::cout << "Viscosity done with " << m_viscositySolver.iterations() << " iterations\n" << std::endl;
 
     applyResult(velocityGrid, result);
+
+    return m_viscositySolver.iterations();
 }
 
 ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid &velocityGrid,

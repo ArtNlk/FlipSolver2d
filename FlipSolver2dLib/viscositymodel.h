@@ -15,7 +15,7 @@ public:
 
     virtual ~ViscosityModel() = default;
 
-    virtual void apply(StaggeredVelocityGrid& velocityGrid,
+    virtual int apply(StaggeredVelocityGrid& velocityGrid,
                      const Grid2d<float>& viscosityGrid,
                      const MaterialGrid& materialGrid,
                      float dt,
@@ -27,12 +27,12 @@ protected:
 
 class LightViscosityModel : public ViscosityModel
 {
-    void apply(StaggeredVelocityGrid& velocityGrid,
-               const Grid2d<float>& viscosityGrid,
-               const MaterialGrid& materialGrid,
-               float dt,
-               float dx,
-               float density) override;
+    int apply(StaggeredVelocityGrid &velocityGrid,
+              const Grid2d<float> &viscosityGrid,
+              const MaterialGrid &materialGrid,
+              float dt,
+              float dx,
+              float density) override;
 
     MatrixType getMatrix(StaggeredVelocityGrid& velocityGrid,
                          const Grid2d<float>& viscosityGrid,
@@ -51,7 +51,7 @@ class LightViscosityModel : public ViscosityModel
 
 class HeavyViscosityModel : public ViscosityModel
 {
-    void apply(StaggeredVelocityGrid& velocityGrid,
+    int apply(StaggeredVelocityGrid& velocityGrid,
                const Grid2d<float>& viscosityGrid,
                const MaterialGrid& materialGrid,
                float dt,

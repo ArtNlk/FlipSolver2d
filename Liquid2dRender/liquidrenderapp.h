@@ -85,7 +85,7 @@ protected:
     int m_simStepsLeft;
     bool m_recording;
 
-    SolverTimeStats m_lastFrameStats;
+    SolverStats m_lastFrameStats;
 
     static const int m_startWindowWidth = 900;
     static const int m_startWindowHeight = 900;

@@ -85,16 +85,46 @@ inline bool nextEnum(IterableEnum& state) {
     return !isLast;
 }
 
-class SolverTimeStats {
+class SolverStats {
 public:
     using Clock = std::chrono::high_resolution_clock;
     using TimePoint = std::chrono::time_point<Clock,Clock::duration>;
     using MsDuration = std::chrono::duration<float, std::milli>;
     using StageTimings = std::array<float, SOLVER_STAGE_COUNT>;
 
-    SolverTimeStats()
+    SolverStats()
     {
         reset();
+    }
+
+    int pressureIterations()
+    {
+        return m_pressureIters;
+    }
+
+    int densityIterations()
+    {
+        return m_densityIters;
+    }
+
+    int viscosityIterations()
+    {
+        return m_viscosityIters;
+    }
+
+    void setPressureIterations(int newValue)
+    {
+        m_pressureIters = std::max(newValue,m_pressureIters);
+    }
+
+    void setDensityIters(int newValue)
+    {
+        m_densityIters = std::max(newValue,m_densityIters);
+    }
+
+    void setViscosityIterations(int newValue)
+    {
+        m_viscosityIters = std::max(newValue,m_viscosityIters);
     }
 
     void reset(){
@@ -102,6 +132,9 @@ public:
         m_lastTimePoint = Clock::now();
         m_frameStartTimePoint = Clock::now();
         m_substepsTaken = 0;
+        m_pressureIters = 0;
+        m_densityIters = 0;
+        m_viscosityIters = 0;
     }
 
     void endStage(SolverStage s){
@@ -141,6 +174,9 @@ protected:
     TimePoint m_lastTimePoint;
     TimePoint m_frameStartTimePoint;
     int m_substepsTaken;
+    int m_pressureIters;
+    int m_densityIters;
+    int m_viscosityIters;
     float m_totalFrameTime;
 };
 
@@ -154,6 +190,8 @@ public:
     size_t particleCount();
 
     size_t cellCount();
+
+    int pcgIterationLimit();
 
     void stepFrame();
 
@@ -197,7 +235,7 @@ public:
 
     const Grid2d<float> &testGrid() const;
 
-    const SolverTimeStats &timeStats() const;
+    const SolverStats &timeStats() const;
 
     float stepDt() const;
 
@@ -377,7 +415,7 @@ protected:
     bool m_viscosityEnabled;
     SimulationMethod m_simulationMethod;
     ParameterHandlingMethod m_parameterHandlingMethod;
-    SolverTimeStats m_stats;
+    SolverStats m_stats;
 
     //using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
     using precond = InversePoissonPreconditioner<double, Eigen::Upper>;

@@ -100,11 +100,14 @@ void FlipSolver::project()
 //    //debug() << "Calculated rhs: " << rhs;
     //Eigen::BiCGSTAB<Eigen::SparseMatrix<double>,precond> solver;
 
-    if(!m_pressureSolver.solve(m_pressureMatrix,m_pressurePrecond,
-                                solverResult,rhs,
-                                m_pcgIterLimit, m_projectTolerance)) {
-        std::cout << "Pressure solver solving failed! Expect bogus pressures\n";
+    int iters = m_pressureSolver.solve(m_pressureMatrix,m_pressurePrecond,
+                                       solverResult,rhs,
+                                       m_pcgIterLimit, m_projectTolerance);
 
+    m_stats.setPressureIterations(iters);
+
+    if(iters < m_pcgIterLimit) {
+        std::cout << "Pressure solver solving failed! Expect bogus pressures\n";
     }
 
 //    if(!m_pcgSolver.mfcgSolve(provider,m_pressures.data(),m_rhs,m_pcgIterLimit,1e-2))
@@ -167,9 +170,13 @@ void FlipSolver::densityCorrection()
 
     calcDensityCorrectionRhs(m_pressureRhs);
 
-    if(!m_pressureSolver.solve(m_pressureMatrix, m_pressurePrecond,
-                               m_pressureSolverResult, m_pressureRhs, m_pcgIterLimit,1e-4))
-    {
+    int iters = m_pressureSolver.solve(m_pressureMatrix,m_pressurePrecond,
+                                       m_pressureSolverResult, m_pressureRhs,
+                                       m_pcgIterLimit, m_projectTolerance);
+
+    m_stats.setDensityIters(iters);
+
+    if(iters < m_pcgIterLimit) {
         std::cout << "Density solver solving failed!\n";
         return;
     }
@@ -744,7 +751,7 @@ const Grid2d<float> &FlipSolver::testGrid() const
     return m_testGrid;
 }
 
-const SolverTimeStats &FlipSolver::timeStats() const
+const SolverStats &FlipSolver::timeStats() const
 {
     return m_stats;
 }
@@ -942,6 +949,11 @@ size_t FlipSolver::particleCount()
 size_t FlipSolver::cellCount()
 {
     return m_sizeI * m_sizeJ;
+}
+
+int FlipSolver::pcgIterationLimit()
+{
+    return m_pcgIterLimit;
 }
 
 void FlipSolver::calcPressureRhs(std::vector<double> &rhs)
