@@ -93,5 +93,5 @@ void BenchmarkRunnerApplication::runScene(std::filesystem::path scenePath)
 
     std::cout << "Finished scene: " << pathString << '\n';
 
-    m_timingTable.finishScene(scenePath.stem());
+    m_timingTable.finishScene(scenePath.stem().string());
 }
