@@ -73,20 +73,6 @@ if(NOT glm_POPULATED)
     add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
 endif()
 
-#NLOHMANN_JSON
-FetchContent_Declare(
-        nlohmann_json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG bc889afb4c5bf1c0d8ee29ef35eaaf4c8bef8a5d
-        GIT_SHALLOW TRUE
-        GIT_PROGRESS TRUE
-)
-FetchContent_GetProperties(nlohmann_json)
-if(NOT nlohmann_json_POPULATED)
-    FetchContent_Populate(nlohmann_json)
-    add_subdirectory(${nlohmann_json_SOURCE_DIR} ${nlohmann_json_BINARY_DIR})
-endif()
-
 set(HEADERS
     include/glad/glad.h
     liquidrenderapp.h
@@ -108,8 +94,7 @@ file(GLOB SCENES
 
 set(CONFIG_FILE "./config.json")
 
-add_executable(LiquidRenderApp ${HEADERS} ${SOURCES} ${SCENES} ${CONFIG_FILE}
-    scenes/level_eq.json)
+add_executable(LiquidRenderApp ${HEADERS} ${SOURCES} ${SCENES} ${CONFIG_FILE})
 
 get_filename_component(filename ${CONFIG_FILE} NAME)
 file(READ "${CONFIG_FILE}" ignored)
@@ -127,7 +112,7 @@ target_link_libraries(LiquidRenderApp FlipSolver2d)
 target_link_libraries(LiquidRenderApp ${OPENGL_LIBRARIES} -static-libgcc -static-libstdc++)
 target_link_libraries(LiquidRenderApp glfw)
 target_link_libraries(LiquidRenderApp glm)
-target_link_libraries(LiquidRenderApp nlohmann_json::nlohmann_json)
+target_link_libraries(LiquidRenderApp Utils)
 target_link_libraries(LiquidRenderApp imgui_glfw)
 
 if(UNIX)

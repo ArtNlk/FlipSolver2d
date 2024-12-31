@@ -99,5 +99,8 @@ endif()
 
 add_subdirectory(FlipSolver2dLib)
 include_directories(FlipSolver2dLib)
+include_directories(Utils)
 add_subdirectory(Liquid2dRender)
 add_subdirectory(bench)
+add_subdirectory(AutoBench)
+add_subdirectory(Utils)

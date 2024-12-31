@@ -202,6 +202,9 @@ void NBFlipSolver::reseedParticles()
 
 void NBFlipSolver::firstFrameInit()
 {
+    updateSinks();
+    updateSources();
+    updateSolids();
     fluidSdfFromInitialFluid();
     m_fluidParticleCounts.fill(0);
     initialFluidSeed();

@@ -97,17 +97,17 @@ public:
         reset();
     }
 
-    int pressureIterations()
+    int pressureIterations() const
     {
         return m_pressureIters;
     }
 
-    int densityIterations()
+    int densityIterations() const
     {
         return m_densityIters;
     }
 
-    int viscosityIterations()
+    int viscosityIterations() const
     {
         return m_viscosityIters;
     }

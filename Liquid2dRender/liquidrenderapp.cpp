@@ -15,7 +15,9 @@
 #include "flipsolver2d.h"
 #include "nbflipsolver.h"
 #include "logger.h"
+#include "jsonscenereader.h"
 
+#include "nlohmann/json.hpp"
 
 LiquidRenderApp* LiquidRenderApp::GLFWCallbackWrapper::s_application = nullptr;
 const char* LiquidRenderApp::m_configFilePath = "./config.json";
@@ -56,9 +58,9 @@ void LiquidRenderApp::init()
         {
             std::cout << "error opening config file " << m_configFilePath;
         }
-        json configJson;
+        nlohmann::json configJson;
         configFile >> configJson;
-        loadJson(configJson["scene"]);
+        m_solver = JsonSceneReader::loadJson(configJson["scene"]);
     }
 
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -128,279 +130,6 @@ void LiquidRenderApp::resizeCallback(GLFWwindow *window, int width, int height)
     //resizeFluidrenderQuad();
     //m_textMenuRenderer.resize(width,height);
     m_renderRequested = true;
-}
-
-void LiquidRenderApp::loadJson(std::string fileName)
-{
-    try
-    {
-        std::ifstream sceneFile(fileName);
-        if(!sceneFile.is_open())
-        {
-            std::cout << "errorOpening scene file " << fileName;
-        }
-        json sceneJson;
-        sceneFile >> sceneJson;
-        json settingsJson = sceneJson["settings"];
-
-        std::string simTypeName = settingsJson["simType"].get<std::string>();
-        SimulationMethod simMethod = simMethodFromName(simTypeName);
-
-
-        switch(simMethod)
-        {
-            case SIMULATION_LIQUID:
-            {
-                FlipSolverParameters p;
-                populateFlipSolverParamsFromJson(&p, settingsJson);
-                m_solver.reset(new FlipSolver(&p));
-            }
-            break;
-
-            case SIMULATION_SMOKE:
-            {
-                SmokeSolverParameters p;
-                populateFlipSolverParamsFromJson(&p, settingsJson);
-                populateSmokeSolverParamsFromJson(&p, settingsJson);
-                m_solver.reset(new FlipSmokeSolver(&p));
-            }
-            break;
-
-            case SIMULATION_FIRE:
-            {
-                FireSolverParameters p;
-                populateFlipSolverParamsFromJson(&p, settingsJson);
-                populateFireSolverParamsFromJson(&p, settingsJson);
-                m_solver.reset(new FlipFireSolver(&p));
-            }
-            break;
-
-            case SIMULATION_NBFLIP:
-            {
-                NBFlipParameters p;
-                populateFlipSolverParamsFromJson(&p, settingsJson);
-                populateNBFlipSolverParamsFromJson(&p, settingsJson);
-                m_solver.reset(new NBFlipSolver(&p));
-            }
-            break;
-        }
-
-        m_solver->initAdditionalParameters();
-        objectsFromJson(sceneJson["solver"]);
-    }
-    catch (std::exception &e)
-    {
-        debug() << e.what();
-        std::cout << e.what();
-    }
-}
-
-void LiquidRenderApp::populateFlipSolverParamsFromJson(FlipSolverParameters *p, json settingsJson)
-{
-    float s = tryGetValue(settingsJson,"scale",1.f);
-    p->fluidDensity = tryGetValue(settingsJson,"density",1.f);
-    p->seed = tryGetValue(settingsJson,"seed",0);
-    p->dx =
-    p->particlesPerCell = settingsJson["particlesPerCell"].get<int>();
-    std::pair<float,float> v = tryGetValue(settingsJson,"globalAcceleration",std::pair(9.8,0.f));
-    // v.first *= s;
-    // v.second *= s;
-    p->globalAcceleration = v;
-    p->resolution = settingsJson["resolution"].get<int>();
-    p->fps = settingsJson["fps"].get<int>();
-    p->maxSubsteps = tryGetValue(settingsJson,"maxSubsteps",30);
-    p->picRatio = tryGetValue(settingsJson,"picRatio",0.03);
-    p->cflNumber = tryGetValue(settingsJson,"cflNumber",10.f);
-    p->particleScale = tryGetValue(settingsJson,"particleScale",0.8);
-    p->pcgIterLimit = tryGetValue(settingsJson,"pcgIterLimit",200);
-    p->viscosityEnabled = tryGetValue(settingsJson,"viscosityEnabled",false);
-    p->domainSizeI = settingsJson["domainSizeI"].get<float>() * s;
-    p->domainSizeJ = settingsJson["domainSizeJ"].get<float>() * s;
-    p->useHeavyViscosity = tryGetValue(settingsJson, "heavyViscosity", false);
-    p->sceneScale = s;
-
-    if(p->domainSizeI > p->domainSizeJ)
-    {
-        p->dx = static_cast<float>(p->domainSizeI) /
-                                                p->resolution;
-        p->gridSizeI = p->resolution;
-        p->gridSizeJ = (static_cast<float>(p->domainSizeJ) /
-                    static_cast<float>(p->domainSizeI)) * p->resolution;
-    }
-    else
-    {
-        p->dx = static_cast<float>(p->domainSizeJ) /
-                                                p->resolution;
-        p->gridSizeJ = p->resolution;
-        p->gridSizeI = (static_cast<float>(p->domainSizeI) /
-                    static_cast<float>(p->domainSizeJ)) * p->resolution;
-    }
-
-    std::string parameterHandling = tryGetValue(settingsJson,"parameterHandlingMethod",std::string("particle"));
-    if(parameterHandling == "particle")
-    {
-        p->parameterHandlingMethod = ParameterHandlingMethod::PARTICLE;
-    }
-    if(parameterHandling == "hybrid")
-    {
-        p->parameterHandlingMethod = ParameterHandlingMethod::HYBRID;
-    }
-    if(parameterHandling == "grid")
-    {
-        p->parameterHandlingMethod = ParameterHandlingMethod::GRID;
-    }
-
-    std::string simTypeName = settingsJson["simType"].get<std::string>();
-    p->simulationMethod = simMethodFromName(simTypeName);
-}
-
-void LiquidRenderApp::populateNBFlipSolverParamsFromJson(NBFlipParameters *p, json settingsJson)
-{
-    return;
-}
-
-void LiquidRenderApp::populateSmokeSolverParamsFromJson(SmokeSolverParameters *p, json settingsJson)
-{
-    p->ambientTemperature = tryGetValue(settingsJson,"ambientTemperature",273.0f);
-    p->temperatureDecayRate = tryGetValue(settingsJson,"temperatureDecayRate",0.0);
-    p->concentrationDecayRate = tryGetValue(settingsJson,"concentrationDecayRate",0.0);
-    p->buoyancyFactor = tryGetValue(settingsJson,"buoyancyFactor",1.0);
-    p->sootFactor = tryGetValue(settingsJson,"sootFactor",1.0);
-}
-
-void LiquidRenderApp::populateFireSolverParamsFromJson(FireSolverParameters *p, json settingsJson)
-{
-    populateSmokeSolverParamsFromJson(p,settingsJson);
-    p->ignitionTemperature = tryGetValue(settingsJson,"ignitionTemp",250.f);
-    p->burnRate = tryGetValue(settingsJson,"burnRate",0.05f);
-    p->smokeProportion = tryGetValue(settingsJson,"smokeEmission",1.f);
-    p->heatProportion = tryGetValue(settingsJson,"heatEmission",1.f);
-    p->divergenceProportion = tryGetValue(settingsJson,"billowing",0.1f);
-}
-
-SimulationMethod LiquidRenderApp::simMethodFromName(const std::string &name)
-{
-    if(name == "fluid" || name == "flip")
-    {
-        return SimulationMethod::SIMULATION_LIQUID;
-    }
-    if(name == "smoke")
-    {
-        return SimulationMethod::SIMULATION_SMOKE;
-    }
-    if(name == "fire")
-    {
-        return SimulationMethod::SIMULATION_FIRE;
-    }
-    if(name == "nbflip")
-    {
-        return SimulationMethod::SIMULATION_NBFLIP;
-    }
-
-    return SimulationMethod::SIMULATION_LIQUID;
-}
-
-//    SimSettings::airDensity() = tryGetValue(settingsJson,"airDensity",SimSettings::fluidDensity() * 0.001f);
-//    SimSettings::surfaceTensionFactor() = tryGetValue(settingsJson,"surfaceTensionFactor",0.0);
-
-void LiquidRenderApp::objectsFromJson(json solverJson)
-{
-    std::vector<json> objects = solverJson["objects"]
-                                        .get<std::vector<json>>();
-    for(json &geo : objects)
-    {
-        addObjectFromJson(geo);
-    }
-}
-
-Emitter LiquidRenderApp::emitterFromJson(json emitterJson)
-{
-    std::vector<std::pair<float,float>> verts = emitterJson["verts"]
-                                                .get<std::vector<std::pair<float,float>>>();
-    float temp = tryGetValue(emitterJson,"temperature",273.f);
-    float conc = tryGetValue(emitterJson,"concentration",1.f);
-    float viscosity = tryGetValue(emitterJson,"viscosity",0.f);
-    float fuel = tryGetValue(emitterJson,"fuel",1.f);
-    float div = tryGetValue(emitterJson,"divergence",0.f);
-    bool transfersVelocity = tryGetValue(emitterJson,"transferVelocity",false);
-    std::pair<float,float> velocity = tryGetValue(emitterJson,"velocity",std::pair<float,float>(0.f, 0.f));
-    Geometry2d geo;
-    for(auto v : verts)
-    {
-        geo.addVertex(m_solver->sceneScale() * Vec3(v.first,v.second));
-    }
-
-    Emitter output(geo);
-
-    output.setTemperature(temp);
-    output.setConcentrartion(conc);
-    output.setViscosity(viscosity);
-    output.setFuel(fuel);
-    output.setDivergence(div);
-    output.setVelocity(velocity);
-    output.setVelocityTransfer(transfersVelocity);
-
-    return output;
-}
-
-Obstacle LiquidRenderApp::obstacleFromJson(json obstacleJson)
-{
-    float friction = tryGetValue(obstacleJson,"friction",0);
-    std::vector<std::pair<float,float>> verts = obstacleJson["verts"]
-                                                .get<std::vector<std::pair<float,float>>>();
-    Geometry2d geo;
-    for(auto v : verts)
-    {
-        geo.addVertex(m_solver->sceneScale() * Vec3(v.first,v.second));
-    }
-
-    return Obstacle(friction,geo);
-}
-
-Sink LiquidRenderApp::sinkFromJson(json sinkJson)
-{
-    std::vector<std::pair<float,float>> verts = sinkJson["verts"]
-                                                .get<std::vector<std::pair<float,float>>>();
-    float div = tryGetValue(sinkJson,"divergence",0.f);
-    Geometry2d geo;
-    for(auto v : verts)
-    {
-        geo.addVertex(m_solver->sceneScale() * Vec3(v.first,v.second));
-    }
-
-    return Sink(div,geo);
-}
-
-void LiquidRenderApp::addObjectFromJson(json objectJson)
-{
-    std::string geoType = objectJson["type"].get<std::string>();
-
-    bool enabled = tryGetValue(objectJson,"enabled",true);
-    if(!enabled)
-    {
-        return;
-    }
-
-    if(geoType == "solid")
-    {
-        Obstacle o = obstacleFromJson(objectJson);
-        m_solver->addGeometry(o);
-    }
-    else if(geoType == "source")
-    {
-        Emitter e = emitterFromJson(objectJson);
-        m_solver->addSource(e);
-    }
-    else if(geoType == "sink")
-    {
-        Sink s = sinkFromJson(objectJson);
-        m_solver->addSink(s);
-    }
-    else if(geoType == "fluid")
-    {
-        Emitter e = emitterFromJson(objectJson);
-        m_solver->addInitialFluid(e);
-    }
 }
 
 void LiquidRenderApp::requestRender()
@@ -689,10 +418,4 @@ const std::string LiquidRenderApp::stepStageToString(SolverStage stage) const
         return "Invalid timing stage value!";
         break;
     }
-}
-
-template<class T>
-T LiquidRenderApp::tryGetValue(json input, std::string key, T defaultValue)
-{
-    return input.contains(key) ? input[key].get<T>() : defaultValue;
 }

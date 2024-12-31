@@ -106,7 +106,7 @@ void FlipSolver::project()
 
     m_stats.setPressureIterations(iters);
 
-    if(iters < m_pcgIterLimit) {
+    if(iters > m_pcgIterLimit) {
         std::cout << "Pressure solver solving failed! Expect bogus pressures\n";
     }
 
@@ -127,12 +127,12 @@ void FlipSolver::project()
 
 void FlipSolver::applyViscosity()
 {
-    m_viscosityModel->apply(m_fluidVelocityGrid,
+    m_stats.setViscosityIterations(m_viscosityModel->apply(m_fluidVelocityGrid,
                             m_viscosityGrid,
                             m_materialGrid,
                             m_stepDt,
                             m_dx,
-                            m_fluidDensity);
+                            m_fluidDensity));
 }
 
 void FlipSolver::advect()
@@ -176,7 +176,7 @@ void FlipSolver::densityCorrection()
 
     m_stats.setDensityIters(iters);
 
-    if(iters < m_pcgIterLimit) {
+    if(iters > m_pcgIterLimit) {
         std::cout << "Density solver solving failed!\n";
         return;
     }
@@ -787,6 +787,9 @@ std::vector<int> FlipSolver::validSolidNeighborIds(ssize_t i, ssize_t j)
 
 void FlipSolver::firstFrameInit()
 {
+    updateSinks();
+    updateSources();
+    updateSolids();
     updateInitialFluid();
     seedInitialFluid();
 }

@@ -6,20 +6,13 @@
 #include <memory>
 #include <chrono>
 
-#include "nlohmann/json.hpp"
-
 #include "imgui.h"
 
 #include "flipsolver2d.h"
-#include "nbflipsolver.h"
-#include "flipsmokesolver.h"
-#include "flipfiresolver.h"
 
 #include "fluidrenderer.h"
 #include "geometry2d.h"
 #include "emitter.h"
-
-using json = nlohmann::json;
 
 class LiquidRenderApp
 {
@@ -33,25 +26,6 @@ public:
 
 protected:
     void resizeCallback(GLFWwindow* window, int width, int height);
-
-    void loadJson(std::string fileName);
-
-    void populateFlipSolverParamsFromJson(FlipSolverParameters* p, json settingsJson);
-    void populateNBFlipSolverParamsFromJson(NBFlipParameters* p, json settingsJson);
-    void populateSmokeSolverParamsFromJson(SmokeSolverParameters* p, json settingsJson);
-    void populateFireSolverParamsFromJson(FireSolverParameters* p, json settingsJson);
-
-    SimulationMethod simMethodFromName(const std::string& name);
-
-
-    template<class T>
-    T tryGetValue(json input, std::string key, T defaultValue);
-
-    void objectsFromJson(json solverJson);
-    Emitter emitterFromJson(json emitterJson);
-    Obstacle obstacleFromJson(json obstacleJson);
-    Sink sinkFromJson(json sinkJson);
-    void addObjectFromJson(json objectJson);
 
     void render();
     void renderSceneViewPanel(bool update);

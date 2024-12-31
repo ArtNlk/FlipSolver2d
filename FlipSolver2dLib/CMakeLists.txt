@@ -26,7 +26,8 @@ set(HEADERS
     pressuredata.h
     PressureIPPCoeficients.h
     viscositymodel.h
-    inversepoissonpreconditioner.h)
+    inversepoissonpreconditioner.h
+    solvers.h)
 
 set(SOURCES
     linearindexable2d.cpp
