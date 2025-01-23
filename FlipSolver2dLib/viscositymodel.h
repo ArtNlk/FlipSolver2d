@@ -2,8 +2,11 @@
 #define VISCOSITYMODEL_H
 
 #include "grid2d.h"
+#include "linearsolver.h"
 #include "materialgrid.h"
 #include "staggeredvelocitygrid.h"
+#include "lightviscosityweights.h"
+
 #include <Eigen/Sparse>
 
 class ViscosityModel
@@ -34,19 +37,22 @@ class LightViscosityModel : public ViscosityModel
               float dx,
               float density) override;
 
-    MatrixType getMatrix(StaggeredVelocityGrid& velocityGrid,
+    LightViscosityWeights getMatrix(StaggeredVelocityGrid& velocityGrid,
                          const Grid2d<float>& viscosityGrid,
                          const MaterialGrid& materialGrid,
                          const float dt,
                          const float dx,
                          const float density);
 
-    void fillRhs(Eigen::VectorXd& rhs,
+    void fillRhs(std::vector<double>& rhs,
                  const Grid2d<float>& velocityGrid,
                  const LinearIndexable2d& indexer,
                  float density);
 
-    void applyResult(Grid2d<float>& velocityGrid, const LinearIndexable2d& indexer, const Eigen::VectorXd& result, float density);
+    void applyResult(Grid2d<float>& velocityGrid, const LinearIndexable2d& indexer, const std::vector<double>& result, float density);
+
+protected:
+    LinearSolver m_solver;
 };
 
 class HeavyViscosityModel : public ViscosityModel

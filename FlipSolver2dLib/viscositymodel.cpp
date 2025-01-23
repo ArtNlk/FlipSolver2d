@@ -1,5 +1,7 @@
 #include "viscositymodel.h"
 #include "Eigen/src/Core/Matrix.h"
+#include "IdentityPreconditioner.h"
+#include "lightviscosityweights.h"
 
 int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                               const Grid2d<float>& viscosityGrid,
@@ -8,8 +10,8 @@ int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                               float dx,
                               float density)
 {
-    Eigen::VectorXd rhs;
-    Eigen::VectorXd result;
+    std::vector<double> rhs;
+    std::vector<double> result;
     rhs.resize(viscosityGrid.linearSize());
 
     result.resize(viscosityGrid.linearSize());
@@ -21,35 +23,31 @@ int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                                      dx,
                                      density);
 
-    m_viscositySolver.setTolerance(1e-4);
-    //m_viscositySolver.setMaxIterations(500);
-    m_viscositySolver.compute(viscosityMatrix);
-    if(m_viscositySolver.info()!=Eigen::Success) {
-        std::cout << "Viscosity solver decomposition failed!\n";
-        return -1;
-    }
-
     fillRhs(rhs,velocityGrid.velocityGridU(),viscosityGrid,density);
-    result = m_viscositySolver.solve(rhs);
-    if(m_viscositySolver.info()!=Eigen::Success) {
+
+    IdentityPreconditioner precond;
+
+    int iters = 0;
+    iters = m_solver.solve(viscosityMatrix,precond,result,rhs,600,1e-6);
+    if(iters == 600) {
         std::cout << "Viscosity solver U solving failed!\n";
         return -1;
     }
-    std::cout << "Viscosity U done with " << m_viscositySolver.iterations() << " iterations\n" << std::endl;
+    std::cout << "Viscosity U done with " << iters << " iterations\n" << std::endl;
 
     applyResult(velocityGrid.velocityGridU(), viscosityGrid, result, density);
 
     fillRhs(rhs,velocityGrid.velocityGridV(),viscosityGrid,density);
-    result = m_viscositySolver.solve(rhs);
-    if(m_viscositySolver.info()!=Eigen::Success) {
+    iters = m_solver.solve(viscosityMatrix,precond,result,rhs,600,1e-6);
+    if(iters == 600) {
         std::cout << "Viscosity solver V solving failed!\n";
         return -1;
     }
-    std::cout << "Viscosity V done with " << m_viscositySolver.iterations() << " iterations\n";
+    std::cout << "Viscosity V done with " << iters << " iterations\n";
 
     applyResult(velocityGrid.velocityGridV(), viscosityGrid, result, density);
 
-    return m_viscositySolver.iterations();
+    return iters;
 
     // if(anyNanInf(velocityGrid.velocityGridU().data()))
     // {
@@ -62,7 +60,7 @@ int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
     // }
 }
 
-ViscosityModel::MatrixType LightViscosityModel::getMatrix(StaggeredVelocityGrid &velocityGrid,
+LightViscosityWeights LightViscosityModel::getMatrix(StaggeredVelocityGrid &velocityGrid,
                                                           const Grid2d<float> &viscosityGrid,
                                                           const MaterialGrid &materialGrid,
                                                           float dt,
@@ -73,18 +71,21 @@ ViscosityModel::MatrixType LightViscosityModel::getMatrix(StaggeredVelocityGrid 
 
     const size_t size = indexer.linearSize();
 
-    Eigen::SparseMatrix<double,Eigen::RowMajor> output = Eigen::SparseMatrix<double>();
-    output.resize(size,size);
-    output.reserve(Eigen::VectorXi::Constant(size,10));
+    LightViscosityWeights output(materialGrid);
 
     const double scale = dt;
     //const double scale = 1.0;
+
+    std::vector<Range> threadRanges = ThreadPool::i()->splitRange(size);
+    size_t currRangeIdx = 0;
 
     for(ssize_t i = 0; i < indexer.sizeI(); i++)
     {
         for(ssize_t j = 0; j < indexer.sizeJ(); j++)
         {
             ssize_t idx = indexer.linearIndex(i,j);
+
+            LightViscosityWeightsUnit unit;
 
             double diag = 4.0;
             double ip1Neighbor = 1.0;
@@ -94,50 +95,60 @@ ViscosityModel::MatrixType LightViscosityModel::getMatrix(StaggeredVelocityGrid 
 
             if(materialGrid.isSolid(i,j))
             {
-                output.coeffRef(idx,idx) = 1.0;
+                unit.diag = 1.0;
+                output.add(unit);
                 continue;
             }
 
-            ip1Neighbor *= (materialGrid.isSolid(i+1,j) ? viscosityGrid.at(i,j) : viscosityGrid.at(i+1,j)) * scale;
-            jp1Neighbor *= (materialGrid.isSolid(i, j+1) ? viscosityGrid.at(i,j) : viscosityGrid.at(i,j+1)) * scale;
             im1Neighbor *= (materialGrid.isSolid(i-1, j) ? viscosityGrid.at(i,j) : viscosityGrid.at(i-1,j)) * scale;
             jm1Neighbor *= (materialGrid.isSolid(i, j-1) ? viscosityGrid.at(i,j) : viscosityGrid.at(i,j-1)) * scale;
+            ip1Neighbor *= (materialGrid.isSolid(i+1,j) ? viscosityGrid.at(i,j) : viscosityGrid.at(i+1,j)) * scale;
+            jp1Neighbor *= (materialGrid.isSolid(i, j+1) ? viscosityGrid.at(i,j) : viscosityGrid.at(i,j+1)) * scale;
+
             diag *= viscosityGrid.at(i,j) * scale;
             diag += 1.;
 
-            output.coeffRef(idx,idx) = diag;
-            if(indexer.inBounds(i+1,j))
+            unit.diag = diag;
+
+            if(materialGrid.inBounds(i-1,j))
             {
-                output.coeffRef(idx,indexer.linearIndex(i+1,j)) = ip1Neighbor;
-                output.coeffRef(indexer.linearIndex(i+1,j),idx) = ip1Neighbor;
+                unit.im1 = im1Neighbor;
             }
 
-            if(indexer.inBounds(i,j+1))
+            if(materialGrid.inBounds(i,j-1))
             {
-                output.coeffRef(idx,indexer.linearIndex(i,j+1)) = jp1Neighbor;
-                output.coeffRef(indexer.linearIndex(i,j+1),idx) = jp1Neighbor;
+                unit.jm1 = jm1Neighbor;
             }
 
-            if(indexer.inBounds(i-1,j))
+            if(materialGrid.inBounds(i+1,j))
             {
-                output.coeffRef(idx,indexer.linearIndex(i-1,j)) = im1Neighbor;
-                output.coeffRef(indexer.linearIndex(i-1,j),idx) = im1Neighbor;
+                unit.im1 = ip1Neighbor;
             }
 
-            if(indexer.inBounds(i,j-1))
+            if(materialGrid.inBounds(i,j+1))
             {
-                output.coeffRef(idx,indexer.linearIndex(i,j-1)) = jm1Neighbor;
-                output.coeffRef(indexer.linearIndex(i,j-1),idx) = jm1Neighbor;
+                unit.im1 = jp1Neighbor;
             }
+
+            if(idx >= threadRanges.at(currRangeIdx).end)
+            {
+                output.endThreadDataRange();
+                currRangeIdx++;
+            }
+
+            output.add(unit);
         }
     }
 
-    output.makeCompressed();
+    if(currRangeIdx < threadRanges.size())
+    {
+        output.endThreadDataRange();
+    }
 
     return output;
 }
 
-void LightViscosityModel::fillRhs(Eigen::VectorXd& rhs, const Grid2d<float> &velocityGrid, const LinearIndexable2d &indexer, float density)
+void LightViscosityModel::fillRhs(std::vector<double>& rhs, const Grid2d<float> &velocityGrid, const LinearIndexable2d &indexer, float density)
 {
     for (ssize_t i = 0; i < indexer.sizeI(); i++)
     {
@@ -149,7 +160,7 @@ void LightViscosityModel::fillRhs(Eigen::VectorXd& rhs, const Grid2d<float> &vel
     }
 }
 
-void LightViscosityModel::applyResult(Grid2d<float> &velocityGrid, const LinearIndexable2d &indexer, const Eigen::VectorXd &result, float density)
+void LightViscosityModel::applyResult(Grid2d<float> &velocityGrid, const LinearIndexable2d &indexer, const std::vector<double> &result, float density)
 {
     for (ssize_t i = 0; i < indexer.sizeI(); i++)
     {

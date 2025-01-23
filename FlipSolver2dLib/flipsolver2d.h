@@ -7,16 +7,15 @@
 #include <random>
 #include <memory>
 
-#include "PressureIPPCoeficients.h"
+#include "InversePoissonPreconditioner.h"
 #include "emitter.h"
 #include "geometry2d.h"
-#include "inversepoissonpreconditioner.h"
 #include "linearindexable2d.h"
 #include "linearsolver.h"
 #include "markerparticlesystem.h"
 #include "materialgrid.h"
 #include "obstacle.h"
-#include "pressuredata.h"
+#include "PressureWeights.h"
 #include "sdfgrid.h"
 #include "sink.h"
 #include "staggeredvelocitygrid.h"
@@ -316,9 +315,9 @@ protected:
 
     void calcDensityCorrectionRhs(std::vector<double> &rhs);
     
-    virtual IndexedPressureParameters getPressureProjectionMatrix();
+    virtual PressureWeights getPressureProjectionMatrix();
 
-    virtual IndexedIPPCoefficients getIPPCoefficients(const IndexedPressureParameters& mat);
+    virtual InversePoissonPreconditioner getIPPCoefficients(const PressureWeights& mat);
 
     Vec3 jitteredPosInCell(size_t i, size_t j);
 
@@ -418,9 +417,8 @@ protected:
     SolverStats m_stats;
 
     //using precond = Eigen::IncompleteCholesky<double,Eigen::Upper>;
-    using precond = InversePoissonPreconditioner<double, Eigen::Upper>;
-    IndexedPressureParameters m_pressureMatrix;
-    IndexedIPPCoefficients m_pressurePrecond;
+    PressureWeights m_pressureMatrix;
+    InversePoissonPreconditioner m_pressurePrecond;
     // Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,Eigen::Upper,precond> m_pressureSolver;
     LinearSolver m_pressureSolver;
 

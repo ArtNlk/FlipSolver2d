@@ -23,11 +23,13 @@ set(HEADERS
     flipfiresolver.h
     nbflipsolver.h
     markerparticlesystem.h
-    pressuredata.h
-    PressureIPPCoeficients.h
+    PressureWeights.h
+    InversePoissonPreconditioner.h
     viscositymodel.h
-    inversepoissonpreconditioner.h
-    solvers.h)
+    solvers.h
+    matrixweights.h
+    lightviscosityweights.h
+    IdentityPreconditioner.h)
 
 set(SOURCES
     linearindexable2d.cpp
@@ -52,7 +54,8 @@ set(SOURCES
     nbflipsolver.cpp
     markerparticlesystem.cpp
     viscositymodel.cpp
-)
+    matrixweights.cpp
+    lightviscosityweights.cpp)
 
 set(SSE42_HEADERS
     vops_sse42.h
@@ -101,7 +104,6 @@ FetchContent_Declare(
   Eigen3
   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
   GIT_TAG 3.4.0
-  GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE
   CMAKE_CACHE_ARGS 
     -DBUILD_TESTING:BOOL=OFF

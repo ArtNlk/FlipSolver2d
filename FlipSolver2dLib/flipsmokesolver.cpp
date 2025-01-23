@@ -351,11 +351,11 @@ void FlipSmokeSolver::seedInitialFluid()
     }
 }
 
-IndexedPressureParameters FlipSmokeSolver::getPressureProjectionMatrix()
+PressureWeights FlipSmokeSolver::getPressureProjectionMatrix()
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
-    IndexedPressureParameters output(linearSize()*0.33, *this, scale);
+    PressureWeights output(linearSize()*0.33, *this, scale);
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 
@@ -378,7 +378,7 @@ IndexedPressureParameters FlipSmokeSolver::getPressureProjectionMatrix()
                 continue;
             }
 
-            IndexedPressureParameterUnit unit;
+            PressureWeightsUnit unit;
             unit.unitIndex = linIdx;
 
             const ssize_t linIdxPosAx = indexer.linearIdxOfOffset(linIdx,1,0);
@@ -443,11 +443,11 @@ IndexedPressureParameters FlipSmokeSolver::getPressureProjectionMatrix()
     return output;
 }
 
-IndexedIPPCoefficients FlipSmokeSolver::getIPPCoefficients(const IndexedPressureParameters &mat)
+InversePoissonPreconditioner FlipSmokeSolver::getIPPCoefficients(const PressureWeights &mat)
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
-    IndexedIPPCoefficients output(linearSize()*0.33, *this);
+    InversePoissonPreconditioner output(linearSize()*0.33, *this);
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 

@@ -9,7 +9,7 @@
 #include <ostream>
 #include <queue>
 
-#include "PressureIPPCoeficients.h"
+#include "InversePoissonPreconditioner.h"
 #include "grid2d.h"
 #include "index2d.h"
 #include "linearindexable2d.h"
@@ -18,7 +18,7 @@
 #include "materialgrid.h"
 
 #include "mathfuncs.h"
-#include "pressuredata.h"
+#include "PressureWeights.h"
 #include "threadpool.h"
 #include "viscositymodel.h"
 
@@ -794,11 +794,11 @@ void FlipSolver::firstFrameInit()
     seedInitialFluid();
 }
 
-IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
+PressureWeights FlipSolver::getPressureProjectionMatrix()
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
-    IndexedPressureParameters output(linearSize()*0.33, *this, scale);
+    PressureWeights output(linearSize()*0.33, *this, scale);
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 
@@ -821,7 +821,7 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
                 continue;
             }
 
-            IndexedPressureParameterUnit unit;
+            PressureWeightsUnit unit;
             unit.unitIndex = linIdx;
 
             const ssize_t linIdxPosAx = indexer.linearIdxOfOffset(linIdx,1,0);
@@ -886,11 +886,11 @@ IndexedPressureParameters FlipSolver::getPressureProjectionMatrix()
     return output;
 }
 
-IndexedIPPCoefficients FlipSolver::getIPPCoefficients(const IndexedPressureParameters& mat)
+InversePoissonPreconditioner FlipSolver::getIPPCoefficients(const PressureWeights& mat)
 {
     const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
 
-    IndexedIPPCoefficients output(linearSize()*0.33, *this);
+    InversePoissonPreconditioner output(linearSize()*0.33, *this);
 
     LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
 

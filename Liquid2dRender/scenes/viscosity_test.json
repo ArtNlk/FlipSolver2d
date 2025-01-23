@@ -11,7 +11,7 @@
     "particlesPerCell": 4,
     "picRatio": 0.03,
     "cflNumber": 5,
-    "viscosityEnabled": true,
+    "viscosityEnabled": false,
     "heavyViscosity": false,
     "globalAcceleration": [9.8,0]
   },

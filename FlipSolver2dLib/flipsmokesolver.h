@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include "dynamicmatrix.h"
 #include "flipsolver2d.h"
-#include "pressuredata.h"
+#include "PressureWeights.h"
 
 struct SmokeSolverParameters : FlipSolverParameters
 {
@@ -52,8 +52,8 @@ protected:
 
     void seedInitialFluid() override;
     
-    IndexedPressureParameters getPressureProjectionMatrix() override;
-    IndexedIPPCoefficients getIPPCoefficients(const IndexedPressureParameters& mat) override;
+    PressureWeights getPressureProjectionMatrix() override;
+    InversePoissonPreconditioner getIPPCoefficients(const PressureWeights& mat) override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
 
