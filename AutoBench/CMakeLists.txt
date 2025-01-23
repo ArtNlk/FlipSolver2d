@@ -5,7 +5,6 @@ FetchContent_Declare(
         openxlsx
         GIT_REPOSITORY https://github.com/troldal/OpenXLSX.git
         GIT_TAG 8df551c1c62d77f6cd7f26cd67b725eec0e303ed
-        GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
         CMAKE_ARGS
           -DOPENXLSX_CREATE_DOCS=OFF

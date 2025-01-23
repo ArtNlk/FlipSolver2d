@@ -3,7 +3,6 @@ FetchContent_Declare(
         nlohmann_json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
         GIT_TAG bc889afb4c5bf1c0d8ee29ef35eaaf4c8bef8a5d
-        GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
 )
 FetchContent_GetProperties(nlohmann_json)
