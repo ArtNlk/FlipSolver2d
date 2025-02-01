@@ -9,10 +9,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 set(SOURCES
-    AlwaysPass.cpp)
+    AlwaysPass.cpp
+    LightViscosityMatrixTest.cpp)
 
 set(HEADERS)
 
 add_executable(UnitTests ${SOURCES} ${HEADERS})
 
-target_link_libraries(UnitTests PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(UnitTests Catch2::Catch2WithMain)
+target_link_libraries(UnitTests FlipSolver2d)
+target_link_libraries(UnitTests Eigen3::Eigen)
+target_include_directories(UnitTests PUBLIC ${Eigen3_SOURCE_DIR})

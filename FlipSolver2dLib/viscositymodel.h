@@ -30,6 +30,7 @@ protected:
 
 class LightViscosityModel : public ViscosityModel
 {
+public:
     int apply(StaggeredVelocityGrid &velocityGrid,
               const Grid2d<float> &viscosityGrid,
               const MaterialGrid &materialGrid,
@@ -37,13 +38,14 @@ class LightViscosityModel : public ViscosityModel
               float dx,
               float density) override;
 
-    LightViscosityWeights getMatrix(StaggeredVelocityGrid& velocityGrid,
+    static LightViscosityWeights getMatrix(StaggeredVelocityGrid& velocityGrid,
                          const Grid2d<float>& viscosityGrid,
                          const MaterialGrid& materialGrid,
                          const float dt,
                          const float dx,
                          const float density);
 
+protected:
     void fillRhs(std::vector<double>& rhs,
                  const Grid2d<float>& velocityGrid,
                  const LinearIndexable2d& indexer,
@@ -51,7 +53,6 @@ class LightViscosityModel : public ViscosityModel
 
     void applyResult(Grid2d<float>& velocityGrid, const LinearIndexable2d& indexer, const std::vector<double>& result, float density);
 
-protected:
     LinearSolver m_solver;
 };
 

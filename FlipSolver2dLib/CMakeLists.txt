@@ -93,31 +93,12 @@ endif()
 
 add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 
-find_package(OpenMP REQUIRED)
-
-include(FetchContent)
-
-set(BUILD_TESTING OFF)
-
-#Eigen3
-FetchContent_Declare(
-  Eigen3
-  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-  GIT_TAG 3.4.0
-  GIT_PROGRESS TRUE
-  CMAKE_CACHE_ARGS 
-    -DBUILD_TESTING:BOOL=OFF
-    -DEIGEN_BUILD_PKGCONFIG:BOOL=OFF
-    -DEIGEN_BUILD_DOC:BOOL=OFF)
-
-FetchContent_MakeAvailable(Eigen3)
-
 add_library(FlipSolver2d STATIC
   ${HEADERS}
   ${SOURCES}
 )
 target_include_directories(FlipSolver2d PUBLIC "./threading/")
 target_include_directories(FlipSolver2d PUBLIC ${Eigen3_SOURCE_DIR})
-target_link_libraries(FlipSolver2d PRIVATE SimThreadTools)
-target_link_libraries(FlipSolver2d PRIVATE Eigen3::Eigen)
-target_link_libraries(FlipSolver2d PRIVATE OpenMP::OpenMP_CXX)
+target_link_libraries(FlipSolver2d PUBLIC SimThreadTools)
+target_link_libraries(FlipSolver2d PUBLIC Eigen3::Eigen)
+target_link_libraries(FlipSolver2d PUBLIC OpenMP::OpenMP_CXX)
