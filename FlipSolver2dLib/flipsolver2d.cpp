@@ -1399,7 +1399,8 @@ void FlipSolver::centeredParamsToGridThread(Range r)
         Index2d i2d = m_fluidVelocityGrid.index2d(idx);
         std::array<ssize_t,9> affectingBins = m_markerParticles.binsForGridCell(i2d);
 
-        float weightTotal = 1e-10;
+        float weightTotal = 1e-10f;
+
         float viscVal = 0.0;
         bool viscValid = false;
 
