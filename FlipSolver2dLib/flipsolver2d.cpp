@@ -106,7 +106,7 @@ void FlipSolver::project()
 
     m_stats.setPressureIterations(iters);
 
-    if(iters > m_pcgIterLimit) {
+    if(iters >= m_pcgIterLimit) {
         std::cout << "Pressure solver solving failed! Expect bogus pressures\n";
     }
 
@@ -176,7 +176,7 @@ void FlipSolver::densityCorrection()
 
     m_stats.setDensityIters(iters);
 
-    if(iters > m_pcgIterLimit) {
+    if(iters >= m_pcgIterLimit) {
         std::cout << "Density solver solving failed!\n";
         return;
     }

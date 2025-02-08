@@ -22,11 +22,6 @@
 
 #include "logger.h"
 
-LinearSolver::LinearSolver()
-{
-
-}
-
 int LinearSolver::solve(const IndexedPressureParameters &matrixIn,
                         const IndexedIPPCoefficients &precond,
                         std::vector<double> &result,
@@ -36,8 +31,7 @@ int LinearSolver::solve(const IndexedPressureParameters &matrixIn,
 {
     result.assign(result.size(), 0);
     if (VOps::i().isZero(vec)) {
-        std::cout << "Solver skipped zeros vector" << '\n';
-        return true;
+        return 0;
     }
     //DynamicUpperTriangularSparseMatrix precond = calcPrecond(matrixIn);
     //UpperTriangularMatrix matrix(matrixIn);
@@ -63,9 +57,6 @@ int LinearSolver::solve(const IndexedPressureParameters &matrixIn,
         //     debug() << "Solver: " << i << " : " << err;
         // }
         if (err <= tol) {
-            debug() << "[SOLVER] Solver done, iter = " << i << " err = " << err;
-            std::cout << "Solver done, iter = " << i << " err = " << err << '\n';
-
             return i;
         }
         //aux = residual;
@@ -78,7 +69,5 @@ int LinearSolver::solve(const IndexedPressureParameters &matrixIn,
         sigma = newSigma;
     }
 
-    debug() << "Solver iter exhaustion, err = " << err;
-    std::cout << "Solver iter exhaustion, err = " << err << '\n';
     return iterLimit;
 }

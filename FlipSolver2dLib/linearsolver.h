@@ -9,7 +9,7 @@
 class LinearSolver
 {
 public:
-    LinearSolver();
+    LinearSolver() = default;
     using SparseMatRowElements = std::array<std::pair<int,double>,5>;
 
     int solve(const IndexedPressureParameters &matrixIn,
