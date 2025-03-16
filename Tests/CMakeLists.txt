@@ -10,7 +10,8 @@ FetchContent_MakeAvailable(Catch2)
 
 set(SOURCES
     AlwaysPass.cpp
-    LightViscosityMatrixTest.cpp)
+    LightViscosityMatrixTest.cpp
+    IncompletePoissonTest.cpp)
 
 set(HEADERS)
 

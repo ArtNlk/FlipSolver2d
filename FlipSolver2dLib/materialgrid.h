@@ -84,9 +84,9 @@ public:
 
     bool isSink(size_t i) const;
 
-    int nonsolidNeighborCount(ssize_t linIdx);
+    int nonsolidNeighborCount(ssize_t linIdx) const;
 
-    int nonsolidNeighborCount(ssize_t i, ssize_t j);
+    int nonsolidNeighborCount(ssize_t i, ssize_t j) const;
 
     bool uVelocitySampleInside(ssize_t i, ssize_t j) const;
 

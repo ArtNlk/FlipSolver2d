@@ -127,14 +127,14 @@ bool MaterialGrid::isSink(size_t i) const
     return sinkTest(m_data.at(i));
 }
 
-int MaterialGrid::nonsolidNeighborCount(ssize_t linIdx)
+int MaterialGrid::nonsolidNeighborCount(ssize_t linIdx) const
 {
     const Index2d i2d = index2d(linIdx);
 
     return nonsolidNeighborCount(i2d.i, i2d.j);
 }
 
-int MaterialGrid::nonsolidNeighborCount(ssize_t i, ssize_t j)
+int MaterialGrid::nonsolidNeighborCount(ssize_t i, ssize_t j) const
 {
     return !isSolid(i-1,j) + !isSolid(i+1,j) + !isSolid(i,j-1) + !isSolid(i,j+1);
 }

@@ -50,7 +50,7 @@ struct IndexedIPPCoefficientUnit
 class InversePoissonPreconditioner : public MatrixWeights<IndexedIPPCoefficientUnit>
 {
 public:
-    InversePoissonPreconditioner(size_t size, LinearIndexable2d& indexer) :
+    InversePoissonPreconditioner(size_t size, const LinearIndexable2d& indexer) :
     MatrixWeights(indexer)
     {
         m_data.reserve(size);
