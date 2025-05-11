@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 import sys
 
-parseRegex = re.compile("(\d+):(-?\d+\.*\d*) (-?\d+\.*\d*) (-?\d+\.*\d*) (-?\d+\.*\d*) (-?\d+\.*\d*)")
+parseRegex = re.compile(R"(\d+):(-?\d+\.*\d*) (-?\d+\.*\d*) (-?\d+\.*\d*) (-?\d+\.*\d*) (-?\d+\.*\d*)")
     
 def defaultValue():
     return None

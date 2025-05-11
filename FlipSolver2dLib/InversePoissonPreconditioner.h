@@ -13,10 +13,8 @@ struct IndexedIPPCoefficientUnit
 {
     IndexedIPPCoefficientUnit() :
         unitIndex(std::numeric_limits<size_t>::max()),
-        iNeg(0.0),
-        iPos(0.0),
-        jNeg(0.0),
-        jPos(0.0)
+        data({0.0}),
+        idx({-1})
     {
 
     }
@@ -24,27 +22,18 @@ struct IndexedIPPCoefficientUnit
     inline double multiply(const std::vector<double>& vec,
                            const LinearIndexable2d& indexer) const
     {
-        const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(unitIndex,0,-1);
-        const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(unitIndex,0,1);
-        const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(unitIndex,-1,0);
-        const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(unitIndex,1,0);
-        const ssize_t centerIdx = unitIndex;
+        double output = 0.0;
+        for(int i = 0; i < data.size(); i++)
+        {
+            output += indexer.inBounds(idx[i]) ? data[i] * vec[idx[i]] : 1.0;
+        }
 
-        const double diag = 1.0 + iNeg*iNeg + jNeg*jNeg;
-
-        return  diag * (centerIdx >= 0 && centerIdx < vec.size() ? vec.at(centerIdx) : 0.0) +
-                jNeg * (jNegLinIdx >= 0 && jNegLinIdx < vec.size() ? vec.at(jNegLinIdx) : 0.0) +
-                jPos * (jPosLinIdx >= 0 && jPosLinIdx < vec.size() ? vec.at(jPosLinIdx) : 0.0) +
-                iNeg * (iNegLinIdx >= 0 && iNegLinIdx < vec.size() ? vec.at(iNegLinIdx) : 0.0) +
-                iPos * (iPosLinIdx >= 0 && iPosLinIdx < vec.size() ? vec.at(iPosLinIdx) : 0.0);
-
+        return output;
     }
 
     size_t unitIndex;
-    double iNeg;
-    double iPos;
-    double jNeg;
-    double jPos;
+    std::array<double,7> data;
+    std::array<ssize_t,7> idx;
 };
 
 class InversePoissonPreconditioner : public MatrixWeights<IndexedIPPCoefficientUnit>

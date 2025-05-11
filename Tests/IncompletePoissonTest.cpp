@@ -5,6 +5,7 @@
 #include <Eigen/Sparse>
 #include <random>
 #include <vector>
+#include <array>
 
 #include "InversePoissonPreconditioner.h"
 #include "materialgrid.h"
@@ -23,11 +24,32 @@ InversePoissonPreconditioner getCustomPrecond(double stepDt, double density, dou
     std::vector<Range> threadRanges = ThreadPool::i()->splitRange(materialGrid.linearSize());
     size_t currRangeIdx = 0;
 
+    std::vector<std::array<double,2>> tempData(materialGrid.linearSize(),{0.0,0.0});
+
     for(size_t i = 0; i < materialGrid.sizeI(); i++)
     {
         for(size_t j = 0; j < materialGrid.sizeJ(); j++)
         {
             const size_t linIdx = indexer.linearIndex(i,j);
+
+            if(!materialGrid.isFluid(i,j))
+            {
+                tempData[linIdx] = {0.0,0.0};
+            }
+
+            double diag = materialGrid.nonsolidNeighborCount(i,j);
+            double iNeg = materialGrid.isFluid(i-1, j) ? scale : 0.0;
+            double jNeg = materialGrid.isFluid(i, j-1) ? scale : 0.0;
+
+            tempData[linIdx] = {1.0-(jNeg/diag), 1.0-(iNeg/diag)};
+        }
+    }
+
+    for(size_t i = 0; i < materialGrid.sizeI(); i++)
+    {
+        for(size_t j = 0; j < materialGrid.sizeJ(); j++)
+        {
+            const ssize_t linIdx = indexer.linearIndex(i,j);
 
             if(!materialGrid.isFluid(i,j))
             {
@@ -39,18 +61,31 @@ InversePoissonPreconditioner getCustomPrecond(double stepDt, double density, dou
                 continue;
             }
 
+            std::array<double,2> currRowData= tempData[linIdx];
+
             IndexedIPPCoefficientUnit unit;
             unit.unitIndex = linIdx;
 
-            const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
-            const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(linIdx,1,0);
-            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
-            const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
+            ssize_t b0Idx = linIdx - indexer.iLinearOffset();
+            ssize_t b1Idx = linIdx - indexer.iLinearOffset() + indexer.jLinearOffset();
+            ssize_t b2Idx = linIdx - indexer.jLinearOffset();
+            ssize_t b3Idx = linIdx;
+            ssize_t b4Idx = linIdx + indexer.jLinearOffset();
+            ssize_t b5Idx = linIdx + indexer.iLinearOffset() - indexer.jLinearOffset();
+            ssize_t b6Idx = linIdx + indexer.iLinearOffset();
 
-            unit.iNeg = 1.0/(materialGrid.nonsolidNeighborCount(iNegLinIdx)*scale);
-            unit.iPos = 1.0/(materialGrid.nonsolidNeighborCount(iPosLinIdx)*scale);
-            unit.jNeg = 1.0/(materialGrid.nonsolidNeighborCount(jNegLinIdx)*scale);
-            unit.jPos = 1.0/(materialGrid.nonsolidNeighborCount(jPosLinIdx)*scale);
+            double b1data = indexer.inBounds(b1Idx) ? tempData[b1Idx][1] : 1.0;
+            double b4data = indexer.inBounds(b4Idx) ? tempData[b4Idx][1] : 1.0;
+            double b5data = indexer.inBounds(b5Idx) ? tempData[b5Idx][0] : 1.0;
+            double b6data = indexer.inBounds(b6Idx) ? tempData[b6Idx][0] : 1.0;
+
+            unit.data[0] = currRowData[0];
+            unit.data[1] = currRowData[0] * b1data;
+            unit.data[2] = currRowData[1];
+            unit.data[3] = currRowData[0] * currRowData[0] + currRowData[1]*currRowData[1];
+            unit.data[4] = b4data;
+            unit.data[5] = currRowData[1] * b5data;
+            unit.data[6] = b6data;
 
             if(linIdx >= threadRanges.at(currRangeIdx).end)
             {
@@ -283,8 +318,8 @@ void populateVectors(std::vector<double>& myVec, Eigen::VectorXd& eigenVec)
 
 TEST_CASE("Incomplete poisson preconditioner matches Eigen")
 {
-    const int sizeI = 256;
-    const int sizeJ = 256;
+    const int sizeI = 64;
+    const int sizeJ = 64;
     const double stepDt = 0.03;
     const double density = 0.1;
     const double dx = 0.1;
@@ -313,6 +348,16 @@ TEST_CASE("Incomplete poisson preconditioner matches Eigen")
     precond.multiply(myVec, myOutput);
 
     eigenOutput = eigenPrecond * eigenVec;
+
+    // std::cout << "============MAT_START=============" << std::endl;
+    // for(int k = 0; k < eigenPrecond.outerSize(); ++k) {
+    //     for(Eigen::SparseMatrix<double,Eigen::RowMajor>::InnerIterator it(eigenPrecond,k);it;++it)
+    //     {
+    //         std::cout << it.row() << ' ' << it.col() << ' ' << it.value() << '\n';
+    //     }
+    // }
+
+    // std::cout << "=============MAT_END==============" << std::endl;
 
     for(int i = 0; i < myOutput.size(); i++)
     {

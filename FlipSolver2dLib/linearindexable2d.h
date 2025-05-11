@@ -105,12 +105,12 @@ public:
         return linearIdx + iOffset * m_sizeJ + jOffset;
     }
 
-    size_t iLinearOffset()
+    size_t iLinearOffset() const
     {
         return m_sizeJ;
     }
 
-    size_t jLinearOffset()
+    size_t jLinearOffset() const
     {
         return 1;
     }

@@ -829,7 +829,6 @@ PressureWeights FlipSolver::getPressureProjectionMatrix()
             const ssize_t linIdxNegAx = indexer.linearIdxOfOffset(linIdx,-1,0);
             const ssize_t linIdxNegAy = indexer.linearIdxOfOffset(linIdx,0,-1);
 
-            double diag = 0.0;
             //X Neighbors
             if(m_materialGrid.isFluid(i-1,j))
             {
@@ -897,34 +896,37 @@ InversePoissonPreconditioner FlipSolver::getIPPCoefficients(const PressureWeight
     std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
     size_t currRangeIdx = 0;
 
+    std::vector<double> invdiag(indexer.linearSize(),1.0);
+
+    for(size_t i = 0; i < m_sizeI; i++)
+    {
+        for(size_t j = 0; j < m_sizeJ; j++)
+        {
+            if(m_materialGrid.isFluid(i,j) && m_materialGrid.nonsolidNeighborCount(i,j) != 0)
+            {
+                invdiag.at(indexer.linearIndex(i,j)) = 1.0/static_cast<double>(m_materialGrid.nonsolidNeighborCount(i,j));
+            }
+        }
+    }
+
     for(size_t i = 0; i < m_sizeI; i++)
     {
         for(size_t j = 0; j < m_sizeJ; j++)
         {
             const size_t linIdx = indexer.linearIndex(i,j);
 
-            if(!m_materialGrid.isFluid(i,j))
-            {
-                if(linIdx >= threadRanges.at(currRangeIdx).end)
-                {
-                    output.endThreadDataRange();
-                    currRangeIdx++;
-                }
-                continue;
-            }
+            // if(!m_materialGrid.isFluid(i,j))
+            // {
+            //     if(linIdx >= threadRanges.at(currRangeIdx).end)
+            //     {
+            //         output.endThreadDataRange();
+            //         currRangeIdx++;
+            //     }
+            //     continue;
+            // }
 
             IndexedIPPCoefficientUnit unit;
             unit.unitIndex = linIdx;
-
-            const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
-            const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(linIdx,1,0);
-            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
-            const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
-
-            unit.iNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(iNegLinIdx)*scale);
-            unit.iPos = 1.0/(m_materialGrid.nonsolidNeighborCount(iPosLinIdx)*scale);
-            unit.jNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(jNegLinIdx)*scale);
-            unit.jPos = 1.0/(m_materialGrid.nonsolidNeighborCount(jPosLinIdx)*scale);
 
             if(linIdx >= threadRanges.at(currRangeIdx).end)
             {

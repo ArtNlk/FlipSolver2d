@@ -482,10 +482,10 @@ InversePoissonPreconditioner FlipSmokeSolver::getIPPCoefficients(const PressureW
             const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
             const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
 
-            unit.iNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(iNegLinIdx)*scale);
-            unit.iPos = 1.0/(m_materialGrid.nonsolidNeighborCount(iPosLinIdx)*scale);
-            unit.jNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(jNegLinIdx)*scale);
-            unit.jPos = 1.0/(m_materialGrid.nonsolidNeighborCount(jPosLinIdx)*scale);
+            // unit.iNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(iNegLinIdx)*scale);
+            // unit.iPos = 1.0/(m_materialGrid.nonsolidNeighborCount(iPosLinIdx)*scale);
+            // unit.jNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(jNegLinIdx)*scale);
+            // unit.jPos = 1.0/(m_materialGrid.nonsolidNeighborCount(jPosLinIdx)*scale);
 
             if(linIdx >= threadRanges.at(currRangeIdx).end)
             {
