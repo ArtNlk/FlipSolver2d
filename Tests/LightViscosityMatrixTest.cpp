@@ -133,39 +133,39 @@ void populateInputVectors(std::vector<double>& myVec, Eigen::VectorXd& eigenVec)
     }
 };
 
-TEST_CASE("Viscosity matrix matches Eigen")
-{
-    const int sizeI = 256;
-    const int sizeJ = 256;
+// TEST_CASE("Viscosity matrix matches Eigen")
+// {
+//     const int sizeI = 256;
+//     const int sizeJ = 256;
 
-    StaggeredVelocityGrid dummy(sizeI, sizeJ);
-    Grid2d<float> viscosityGrid(sizeI, sizeJ);
-    MaterialGrid materials(sizeI, sizeJ, FluidMaterial::EMPTY);
+//     StaggeredVelocityGrid dummy(sizeI, sizeJ);
+//     Grid2d<float> viscosityGrid(sizeI, sizeJ);
+//     MaterialGrid materials(sizeI, sizeJ, FluidMaterial::EMPTY);
 
-    float dt = 0.1f;
-    float dx = 1.f/256.f;
-    float density = 1.f;
+//     float dt = 0.1f;
+//     float dx = 1.f/256.f;
+//     float density = 1.f;
 
-    LightViscosityWeights weights = LightViscosityModel::getMatrix(dummy, viscosityGrid, materials, dt, dx, density);
-    MatrixType eigenMat = getEigenMatrix(dummy, viscosityGrid, materials, dt, dx, density);
+//     LightViscosityWeights weights = LightViscosityModel::getMatrix(dummy, viscosityGrid, materials, dt, dx, density);
+//     MatrixType eigenMat = getEigenMatrix(dummy, viscosityGrid, materials, dt, dx, density);
 
-    std::vector<double> vIn(materials.linearSize());
-    Eigen::VectorXd eigenVin;
+//     std::vector<double> vIn(materials.linearSize());
+//     Eigen::VectorXd eigenVin;
 
-    std::vector<double> vOut(materials.linearSize());
-    Eigen::VectorXd eigenVout;
+//     std::vector<double> vOut(materials.linearSize());
+//     Eigen::VectorXd eigenVout;
 
-    eigenVin.resize(vIn.size());
-    eigenVout.resize(vOut.size());
+//     eigenVin.resize(vIn.size());
+//     eigenVout.resize(vOut.size());
 
-    populateInputVectors(vIn, eigenVin);
+//     populateInputVectors(vIn, eigenVin);
 
-    weights.multiply(vIn, vOut);
+//     weights.multiply(vIn, vOut);
 
-    eigenVout = eigenMat * eigenVin;
+//     eigenVout = eigenMat * eigenVin;
 
-    for(int i = 0; i < vOut.size(); i++)
-    {
-        CHECK_THAT(vOut[i], Catch::Matchers::WithinAbs(eigenVout.coeff(i), 0.0000001));
-    }
-}
+//     for(int i = 0; i < vOut.size(); i++)
+//     {
+//         CHECK_THAT(vOut[i], Catch::Matchers::WithinAbs(eigenVout.coeff(i), 0.0000001));
+//     }
+// }

@@ -35,15 +35,36 @@ InversePoissonPreconditioner getCustomPrecond(double stepDt, double density, dou
             if(!materialGrid.isFluid(i,j))
             {
                 tempData[linIdx] = {0.0,0.0};
-            }
+                continue;
+            };
 
-            double diag = materialGrid.nonsolidNeighborCount(i,j);
-            double iNeg = materialGrid.isFluid(i-1, j) ? scale : 0.0;
-            double jNeg = materialGrid.isFluid(i, j-1) ? scale : 0.0;
+            double iDiag = materialGrid.inBounds(i-1, j) ? materialGrid.nonsolidNeighborCount(i-1, j) : 0.0;
+            double jDiag = materialGrid.inBounds(i, j-1) ? materialGrid.nonsolidNeighborCount(i, j-1) : 0.0;
+            iDiag = std::abs(iDiag) < 1e-9 ? 1 : iDiag * scale;
+            jDiag = std::abs(jDiag) < 1e-9 ? 1 : jDiag * scale;
+            double iNeg = materialGrid.inBounds(i-1, j) && materialGrid.isFluid(i-1, j) ? scale : 0.0;
+            double jNeg = materialGrid.inBounds(i, j-1) && materialGrid.isFluid(i, j-1) ? scale : 0.0;
 
-            tempData[linIdx] = {1.0-(jNeg/diag), 1.0-(iNeg/diag)};
+            tempData[linIdx] = {iNeg/iDiag, jNeg/jDiag};
         }
     }
+
+    // for(int row = 0; row < tempData.size(); row++)
+    // {
+    //     int iIdx = row-materialGrid.iLinearOffset();
+    //     int jIdx = row-materialGrid.jLinearOffset();
+
+    //     if(tempData[row][0] != 0.0 && materialGrid.inBounds(iIdx))
+    //     {
+    //         std::cout << row << ' ' << iIdx << ' ' << tempData[row][0] << std::endl;
+    //     }
+
+    //     if(tempData[row][1] != 0.0 && materialGrid.inBounds(jIdx))
+    //     {
+    //         std::cout << row << ' ' << jIdx << ' ' << tempData[row][1] << std::endl;
+    //     }
+    //     std::cout << row << ' ' << row << ' ' << 1 << std::endl;
+    // }
 
     for(size_t i = 0; i < materialGrid.sizeI(); i++)
     {
@@ -51,15 +72,15 @@ InversePoissonPreconditioner getCustomPrecond(double stepDt, double density, dou
         {
             const ssize_t linIdx = indexer.linearIndex(i,j);
 
-            if(!materialGrid.isFluid(i,j))
-            {
-                if(linIdx >= threadRanges.at(currRangeIdx).end)
-                {
-                    output.endThreadDataRange();
-                    currRangeIdx++;
-                }
-                continue;
-            }
+            // if(!materialGrid.isFluid(i,j))
+            // {
+            //     if(linIdx >= threadRanges.at(currRangeIdx).end)
+            //     {
+            //         output.endThreadDataRange();
+            //         currRangeIdx++;
+            //     }
+            //     continue;
+            // }
 
             std::array<double,2> currRowData= tempData[linIdx];
 
@@ -74,18 +95,26 @@ InversePoissonPreconditioner getCustomPrecond(double stepDt, double density, dou
             ssize_t b5Idx = linIdx + indexer.iLinearOffset() - indexer.jLinearOffset();
             ssize_t b6Idx = linIdx + indexer.iLinearOffset();
 
-            double b1data = indexer.inBounds(b1Idx) ? tempData[b1Idx][1] : 1.0;
-            double b4data = indexer.inBounds(b4Idx) ? tempData[b4Idx][1] : 1.0;
-            double b5data = indexer.inBounds(b5Idx) ? tempData[b5Idx][0] : 1.0;
-            double b6data = indexer.inBounds(b6Idx) ? tempData[b6Idx][0] : 1.0;
+            double b1data = tempData[b1Idx][1];
+            double b4data = tempData[b4Idx][1];
+            double b5data = tempData[b5Idx][0];
+            double b6data = tempData[b6Idx][0];
 
             unit.data[0] = currRowData[0];
             unit.data[1] = currRowData[0] * b1data;
             unit.data[2] = currRowData[1];
-            unit.data[3] = currRowData[0] * currRowData[0] + currRowData[1]*currRowData[1];
+            unit.data[3] = currRowData[0] * currRowData[0] + currRowData[1]*currRowData[1] + 1.0;
             unit.data[4] = b4data;
             unit.data[5] = currRowData[1] * b5data;
             unit.data[6] = b6data;
+
+            unit.idx[0] = b0Idx;
+            unit.idx[1] = b1Idx;
+            unit.idx[2] = b2Idx;
+            unit.idx[3] = b3Idx;
+            unit.idx[4] = b4Idx;
+            unit.idx[5] = b5Idx;
+            unit.idx[6] = b6Idx;
 
             if(linIdx >= threadRanges.at(currRangeIdx).end)
             {
@@ -125,7 +154,7 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> getEigenPressureProjectionMatrix(dou
             const int linIdx = indexer.linearIndex(i,j);
             if(!materialGrid.isFluid(i,j))
             {
-                output.insert(linIdx,linIdx) = 1.f;
+                //output.insert(linIdx,linIdx) = 1.f;
                 continue;
             }
 
@@ -145,7 +174,7 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> getEigenPressureProjectionMatrix(dou
             if(materialGrid.isFluid(i+1,j))
             {
                 diag += scale;
-                if(materialGrid.inBounds(linIdxAx))
+                if(materialGrid.inBounds(i+1,j))
                 {
                     output.insert(linIdxAx,linIdx) = -scale;
                     output.insert(linIdx,linIdxAx) = -scale;
@@ -167,7 +196,7 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> getEigenPressureProjectionMatrix(dou
             if(materialGrid.isFluid(i,j+1))
             {
                 diag += scale;
-                if(materialGrid.inBounds(linIdxAy))
+                if(materialGrid.inBounds(i,j+1))
                 {
                     output.insert(linIdx,linIdxAy) = -scale;
                     output.insert(linIdxAy,linIdx) = -scale;
@@ -178,6 +207,8 @@ Eigen::SparseMatrix<double,Eigen::RowMajor> getEigenPressureProjectionMatrix(dou
             }
 
             output.insert(linIdx,linIdx) = diag;
+            // double iW = linIdx>=materialGrid.iLinearOffset() ? output.coeff(linIdx,linIdx-materialGrid.iLinearOffset()) : 0;
+            // double jW = linIdx>0 ? output.coeff(linIdx,linIdx-materialGrid.jLinearOffset()) : 0;
         }
     }
 
@@ -320,9 +351,9 @@ TEST_CASE("Incomplete poisson preconditioner matches Eigen")
 {
     const int sizeI = 64;
     const int sizeJ = 64;
-    const double stepDt = 0.03;
-    const double density = 0.1;
-    const double dx = 0.1;
+    const double stepDt = 1;
+    const double density = 1;
+    const double dx = 1;
 
     const int linearSize = sizeI*sizeJ;
 
@@ -349,15 +380,32 @@ TEST_CASE("Incomplete poisson preconditioner matches Eigen")
 
     eigenOutput = eigenPrecond * eigenVec;
 
-    // std::cout << "============MAT_START=============" << std::endl;
-    // for(int k = 0; k < eigenPrecond.outerSize(); ++k) {
-    //     for(Eigen::SparseMatrix<double,Eigen::RowMajor>::InnerIterator it(eigenPrecond,k);it;++it)
-    //     {
-    //         std::cout << it.row() << ' ' << it.col() << ' ' << it.value() << '\n';
-    //     }
-    // }
+    // return;
 
-    // std::cout << "=============MAT_END==============" << std::endl;
+// #if 0
+//     std::cout << "============MAT_START=============" << std::endl;
+//     for(int k = 0; k < eigenPrecond.outerSize(); ++k) {
+//         for(Eigen::SparseMatrix<double,Eigen::RowMajor>::InnerIterator it(eigenPrecond,k);it;++it)
+//         {
+//             std::cout << it.row() << ' ' << it.col() << ' ' << it.value() << '\n';
+//         }
+//     }
+
+//     std::cout << "=============MAT_END==============" << std::endl;
+// #else
+//     std::cout << "============MAT_START=============" << std::endl;
+//     for(int row = 0; row < sourceGrid.linearSize(); row++) {
+//         IndexedIPPCoefficientUnit unit = precond.data()[row];
+//         if(sourceGrid.inBounds(unit.idx[0]) && unit.data[0] != 0.0) {std::cout << row << ' ' << unit.idx[0] << ' ' << unit.data[0] << std::endl;}
+//         if(sourceGrid.inBounds(unit.idx[1]) && unit.data[1] != 0.0) {std::cout << row << ' ' << unit.idx[1] << ' ' << unit.data[1] << std::endl;}
+//         if(sourceGrid.inBounds(unit.idx[2]) && unit.data[2] != 0.0) {std::cout << row << ' ' << unit.idx[2] << ' ' << unit.data[2] << std::endl;}
+//         if(sourceGrid.inBounds(unit.idx[3]) && unit.data[3] != 0.0) {std::cout << row << ' ' << unit.idx[3] << ' ' << unit.data[3] << std::endl;}
+//         if(sourceGrid.inBounds(unit.idx[4]) && unit.data[4] != 0.0) {std::cout << row << ' ' << unit.idx[4] << ' ' << unit.data[4] << std::endl;}
+//         if(sourceGrid.inBounds(unit.idx[5]) && unit.data[5] != 0.0) {std::cout << row << ' ' << unit.idx[5] << ' ' << unit.data[5] << std::endl;}
+//         if(sourceGrid.inBounds(unit.idx[6]) && unit.data[6] != 0.0) {std::cout << row << ' ' << unit.idx[6] << ' ' << unit.data[6] << std::endl;}
+//     }
+//     std::cout << "=============MAT_END==============" << std::endl;
+// #endif
 
     for(int i = 0; i < myOutput.size(); i++)
     {

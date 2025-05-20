@@ -3,7 +3,7 @@
 #include "index2d.h"
 
 MaterialGrid::MaterialGrid(ssize_t sizeI, ssize_t sizeJ, FluidMaterial oobMaterial) :
-    Grid2d(sizeI, sizeJ, FluidMaterial::EMPTY, OOB_EXTEND, oobMaterial)
+    Grid2d(sizeI, sizeJ, FluidMaterial::EMPTY, OOB_CONST, oobMaterial)
 {
 }
 

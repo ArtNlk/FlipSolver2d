@@ -87,28 +87,28 @@
 \begin_body
 
 \begin_layout Standard
-\begin_inset Formula $A_{temp}=\{\left[1-(A_{Idx-sizeJ}/A_{diag})\right]_{0},\left[1-(A_{Idx-1}/A_{diag})\right]_{1},\left[1\right]_{2}\}$
+\begin_inset Formula $A_{temp}=\{\left[(A_{Idx-sizeJ}/A_{diag})\right]_{0},\left[(A_{Idx-1}/A_{diag})\right]_{1},\left[1\right]_{2}\}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $A_{0}=\left[1-(A_{Idx-sizeJ}/A_{diag})\right]_{0}*1$
+\begin_inset Formula $A_{0}=\left[(A_{Idx-sizeJ}/A_{diag})\right]_{0}*1$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $A_{1}=\left[1-(A_{Idx-sizeJ}/A_{diag})\right]_{0}*\left[1-(B_{Idx-1}/B_{diag})\right]_{1}$
+\begin_inset Formula $A_{1}=\left[(A_{Idx-sizeJ}/A_{diag})\right]_{0}*\left[(B_{Idx-1}/B_{diag})\right]_{1}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $A_{2}=\left[1-(A_{Idx-1}/A_{diag})\right]_{1}*1$
+\begin_inset Formula $A_{2}=\left[(A_{Idx-1}/A_{diag})\right]_{1}*1$
 \end_inset
 
 
@@ -122,21 +122,21 @@
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $A_{4}=1*\left[1-(B_{Idx-1}/B_{diag})\right]_{1}$
+\begin_inset Formula $A_{4}=1*\left[(B_{Idx-1}/B_{diag})\right]_{1}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $A_{5}=\left[1-(A_{Idx-1}/A_{diag})\right]_{1}*\left[1-(B_{Idx-sizeJ}/B_{diag})\right]_{0}$
+\begin_inset Formula $A_{5}=\left[(A_{Idx-1}/A_{diag})\right]_{1}*\left[(B_{Idx-sizeJ}/B_{diag})\right]_{0}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $A_{6}=1*\left[1-(B_{Idx-sizeJ}/B_{diag})\right]_{0}$
+\begin_inset Formula $A_{6}=1*\left[(B_{Idx-sizeJ}/B_{diag})\right]_{0}$
 \end_inset
 
 

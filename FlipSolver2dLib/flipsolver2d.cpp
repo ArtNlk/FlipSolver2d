@@ -833,7 +833,7 @@ PressureWeights FlipSolver::getPressureProjectionMatrix()
             if(m_materialGrid.isFluid(i-1,j))
             {
                 unit.nonsolidNeighborCount++;
-                unit.setNeighbor(I_NEG_NEIGHBOR_BIT, inBounds(linIdxNegAx));
+                unit.setNeighbor(I_NEG_NEIGHBOR_BIT, inBounds(i-1,j));
             }else if(m_materialGrid.isEmpty(i-1,j))
             {
                 unit.nonsolidNeighborCount++;
@@ -842,7 +842,7 @@ PressureWeights FlipSolver::getPressureProjectionMatrix()
             if(m_materialGrid.isFluid(i+1,j))
             {
                 unit.nonsolidNeighborCount++;
-                unit.setNeighbor(I_POS_NEIGHBOR_BIT, inBounds(linIdxPosAx));
+                unit.setNeighbor(I_POS_NEIGHBOR_BIT, inBounds(i+1,j));
             } else if(m_materialGrid.isEmpty(i+1,j))
             {
                 unit.nonsolidNeighborCount++;
@@ -852,7 +852,7 @@ PressureWeights FlipSolver::getPressureProjectionMatrix()
             if(m_materialGrid.isFluid(i,j-1))
             {
                 unit.nonsolidNeighborCount++;
-                unit.setNeighbor(J_NEG_NEIGHBOR_BIT, inBounds(linIdxNegAy));
+                unit.setNeighbor(J_NEG_NEIGHBOR_BIT, inBounds(i, j-1));
             }else if(m_materialGrid.isEmpty(i,j-1))
             {
                 unit.nonsolidNeighborCount++;
@@ -861,7 +861,7 @@ PressureWeights FlipSolver::getPressureProjectionMatrix()
             if(m_materialGrid.isFluid(i,j+1))
             {
                 unit.nonsolidNeighborCount++;
-                unit.setNeighbor(J_POS_NEIGHBOR_BIT, inBounds(linIdxPosAy));
+                unit.setNeighbor(J_POS_NEIGHBOR_BIT, inBounds(i, j+1));
             } else if(m_materialGrid.isEmpty(i,j+1))
             {
                 unit.nonsolidNeighborCount++;

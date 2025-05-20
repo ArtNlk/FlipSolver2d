@@ -28,22 +28,22 @@ public:
 
         std::vector<Range> ranges = ThreadPool::i()->splitRange(in.size());
 
-        // multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
+        multiplyThread(Range(0,in.size()),Range(0,m_data.size()),in,out);
 
-        // return;
+        return;
 
-        for(size_t i = 0; i < ranges.size(); i++)
-        {
-            if(i >= m_threadDataRanges.size())
-            {
-                ThreadPool::i()->enqueue(&MatrixWeights::multiplyThread,this,
-                                         ranges.at(i),Range(0,0),std::cref(in),std::ref(out));
-                continue;
-            }
-            ThreadPool::i()->enqueue(&MatrixWeights::multiplyThread,this,
-                                     ranges.at(i),m_threadDataRanges.at(i),std::cref(in),std::ref(out));
-        }
-        ThreadPool::i()->wait();
+        // for(size_t i = 0; i < ranges.size(); i++)
+        // {
+        //     if(i >= m_threadDataRanges.size())
+        //     {
+        //         ThreadPool::i()->enqueue(&MatrixWeights::multiplyThread,this,
+        //                                  ranges.at(i),Range(0,0),std::cref(in),std::ref(out));
+        //         continue;
+        //     }
+        //     ThreadPool::i()->enqueue(&MatrixWeights::multiplyThread,this,
+        //                              ranges.at(i),m_threadDataRanges.at(i),std::cref(in),std::ref(out));
+        // }
+        // ThreadPool::i()->wait();
     }
 
     virtual void multiplyThread(Range vecRange, Range dataRange, const std::vector<double>& in, std::vector<double>& out) const = 0;

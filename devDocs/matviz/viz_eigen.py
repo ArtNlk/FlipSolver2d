@@ -9,7 +9,7 @@ parseRegex = re.compile(R"(\d+):(-?\d+\.*\d*) (-?\d+\.*\d*) (-?\d+\.*\d*) (-?\d+
 def defaultValue():
     return None
 
-inputFile = "data_eigen.txt"
+inputFile = sys.argv[1]
 width = 64
 height = 64
 

@@ -25,7 +25,7 @@ struct IndexedIPPCoefficientUnit
         double output = 0.0;
         for(int i = 0; i < data.size(); i++)
         {
-            output += indexer.inBounds(idx[i]) ? data[i] * vec[idx[i]] : 1.0;
+            output += indexer.inBounds(idx[i]) ? data[i] * vec[idx[i]] : 0.0;
         }
 
         return output;
