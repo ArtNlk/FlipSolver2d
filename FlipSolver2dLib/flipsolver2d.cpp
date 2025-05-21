@@ -415,7 +415,7 @@ void FlipSolver::step()
     m_stats.endStage(ADVECTION);
 
     m_pressureMatrix = getPressureProjectionMatrix();
-    m_pressurePrecond = getIPPCoefficients(m_pressureMatrix);
+    m_pressurePrecond = getIPPCoefficients();
     m_stats.endStage(DECOMPOSITION);
 
     pruneParticles();
@@ -885,65 +885,9 @@ PressureWeights FlipSolver::getPressureProjectionMatrix()
     return output;
 }
 
-InversePoissonPreconditioner FlipSolver::getIPPCoefficients(const PressureWeights& mat)
+InversePoissonPreconditioner FlipSolver::getIPPCoefficients()
 {
-    const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
-
-    InversePoissonPreconditioner output(linearSize()*0.33, *this);
-
-    LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
-
-    std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
-    size_t currRangeIdx = 0;
-
-    std::vector<double> invdiag(indexer.linearSize(),1.0);
-
-    for(size_t i = 0; i < m_sizeI; i++)
-    {
-        for(size_t j = 0; j < m_sizeJ; j++)
-        {
-            if(m_materialGrid.isFluid(i,j) && m_materialGrid.nonsolidNeighborCount(i,j) != 0)
-            {
-                invdiag.at(indexer.linearIndex(i,j)) = 1.0/static_cast<double>(m_materialGrid.nonsolidNeighborCount(i,j));
-            }
-        }
-    }
-
-    for(size_t i = 0; i < m_sizeI; i++)
-    {
-        for(size_t j = 0; j < m_sizeJ; j++)
-        {
-            const size_t linIdx = indexer.linearIndex(i,j);
-
-            // if(!m_materialGrid.isFluid(i,j))
-            // {
-            //     if(linIdx >= threadRanges.at(currRangeIdx).end)
-            //     {
-            //         output.endThreadDataRange();
-            //         currRangeIdx++;
-            //     }
-            //     continue;
-            // }
-
-            IndexedIPPCoefficientUnit unit;
-            unit.unitIndex = linIdx;
-
-            if(linIdx >= threadRanges.at(currRangeIdx).end)
-            {
-                output.endThreadDataRange();
-                currRangeIdx++;
-            }
-
-            output.add(unit);
-        }
-    }
-
-    if(currRangeIdx != threadRanges.size())
-    {
-        output.endThreadDataRange();
-    }
-
-    return output;
+    return InversePoissonPreconditioner::create(m_stepDt, m_fluidDensity, m_dx, m_materialGrid);
 }
 
 size_t FlipSolver::particleCount()

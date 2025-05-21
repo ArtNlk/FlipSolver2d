@@ -41,7 +41,7 @@ void NBFlipSolver::step()
     m_stats.endStage(GRID_UPDATE);
 
     m_pressureMatrix = getPressureProjectionMatrix();
-    m_pressurePrecond = getIPPCoefficients(m_pressureMatrix);
+    m_pressurePrecond = getIPPCoefficients();
     m_stats.endStage(DECOMPOSITION);
 
     project();

@@ -53,7 +53,6 @@ protected:
     void seedInitialFluid() override;
     
     PressureWeights getPressureProjectionMatrix() override;
-    InversePoissonPreconditioner getIPPCoefficients(const PressureWeights& mat) override;
 
     void centeredParamsToGridThread(Range r, Grid2d<float>& cWeights);
 

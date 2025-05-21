@@ -16,7 +16,7 @@ set(ALL_WARNINGS OFF CACHE BOOL "Enable all warnings")
 set(POOL_SINGLE_THREAD OFF CACHE BOOL "Force thread pool to single threaded mode")
 set(VECTORIZER_DEBUG OFF CACHE BOOL "Enable vectorizer debug")
 set(FAST_MATH ON CACHE BOOL "Build with fast math enabled")
-set(LINUX_WAYLAND OFF CACHE BOOL "For linux, build for wayland instead of X11")
+set(LINUX_WAYLAND ON CACHE BOOL "For linux, build for wayland instead of X11")
 set(FLUID_ACCEL "avx2" CACHE STRING "SIMD instructions to use. Should only be sse or avx or avx2") #sse, avx, avx2
 
 if(POOL_SINGLE_THREAD)

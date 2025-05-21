@@ -317,7 +317,7 @@ protected:
     
     virtual PressureWeights getPressureProjectionMatrix();
 
-    virtual InversePoissonPreconditioner getIPPCoefficients(const PressureWeights& mat);
+    virtual InversePoissonPreconditioner getIPPCoefficients();
 
     Vec3 jitteredPosInCell(size_t i, size_t j);
 

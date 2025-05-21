@@ -1,5 +1,6 @@
 #include "flipsmokesolver.h"
 
+#include "InversePoissonPreconditioner.h"
 #include "flipsolver2d.h"
 #include "grid2d.h"
 #include "mathfuncs.h"
@@ -432,69 +433,6 @@ PressureWeights FlipSmokeSolver::getPressureProjectionMatrix()
             }
 
             output.add(unit);
-        }
-    }
-
-    if(currRangeIdx != threadRanges.size())
-    {
-        output.endThreadDataRange();
-    }
-
-    return output;
-}
-
-InversePoissonPreconditioner FlipSmokeSolver::getIPPCoefficients(const PressureWeights &mat)
-{
-    const double scale = m_stepDt / (m_fluidDensity * m_dx * m_dx);
-
-    InversePoissonPreconditioner output(linearSize()*0.33, *this);
-
-    LinearIndexable2d& indexer = *dynamic_cast<LinearIndexable2d*>(this);
-
-    std::vector<Range> threadRanges = ThreadPool::i()->splitRange(linearSize());
-    size_t currRangeIdx = 0;
-
-    size_t matEntryIdx = 0;
-
-    for(ssize_t i = 0; i < m_sizeI; i++)
-    {
-        for(ssize_t j = 0; j < m_sizeJ; j++)
-        {
-            const ssize_t linIdx = indexer.linearIndex(i,j);
-
-            if(m_materialGrid.isSolid(i,j))
-            {
-                if(linIdx >= threadRanges.at(currRangeIdx).end)
-                {
-                    output.endThreadDataRange();
-                    currRangeIdx++;
-                }
-                continue;
-            }
-
-            IndexedIPPCoefficientUnit unit;
-            unit.unitIndex = linIdx;
-
-            const double invscale = scale/(mat.data().at(matEntryIdx).nonsolidNeighborCount*scale);
-
-            const ssize_t iNegLinIdx = indexer.linearIdxOfOffset(linIdx,-1,0);
-            const ssize_t iPosLinIdx = indexer.linearIdxOfOffset(linIdx,1,0);
-            const ssize_t jNegLinIdx = indexer.linearIdxOfOffset(linIdx,0,-1);
-            const ssize_t jPosLinIdx = indexer.linearIdxOfOffset(linIdx,0,1);
-
-            // unit.iNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(iNegLinIdx)*scale);
-            // unit.iPos = 1.0/(m_materialGrid.nonsolidNeighborCount(iPosLinIdx)*scale);
-            // unit.jNeg = 1.0/(m_materialGrid.nonsolidNeighborCount(jNegLinIdx)*scale);
-            // unit.jPos = 1.0/(m_materialGrid.nonsolidNeighborCount(jPosLinIdx)*scale);
-
-            if(linIdx >= threadRanges.at(currRangeIdx).end)
-            {
-                output.endThreadDataRange();
-                currRangeIdx++;
-            }
-
-            output.add(unit);
-            matEntryIdx++;
         }
     }
 
