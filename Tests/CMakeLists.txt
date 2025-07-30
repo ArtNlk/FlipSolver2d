@@ -11,13 +11,16 @@ FetchContent_MakeAvailable(Catch2)
 set(SOURCES
     AlwaysPass.cpp
     LightViscosityMatrixTest.cpp
-    IncompletePoissonTest.cpp)
+    IncompletePoissonTest.cpp
+    GeneralSparseMatrixTest.cpp)
 
 set(HEADERS)
 
 add_executable(UnitTests ${SOURCES} ${HEADERS})
 
+target_include_directories(UnitTests PRIVATE "../matrix")
 target_link_libraries(UnitTests Catch2::Catch2WithMain)
 target_link_libraries(UnitTests FlipSolver2d)
+target_link_libraries(UnitTests SimMatrixTools)
 target_link_libraries(UnitTests Eigen3::Eigen)
 target_include_directories(UnitTests PUBLIC ${Eigen3_SOURCE_DIR})

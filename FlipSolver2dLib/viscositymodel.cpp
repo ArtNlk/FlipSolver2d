@@ -2,6 +2,7 @@
 #include "Eigen/src/Core/Matrix.h"
 #include "IdentityPreconditioner.h"
 #include "lightviscosityweights.h"
+#include "linearindexable2d.h"
 
 int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                               const Grid2d<float>& viscosityGrid,
@@ -179,38 +180,44 @@ int HeavyViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                               float dx,
                               float density)
 {
-    Eigen::VectorXd rhs = getRhs(velocityGrid, density);
-    Eigen::VectorXd result;
+    std::vector<double> rhs;
+    fillRhs(rhs,velocityGrid,density);
+
+    std::vector<double> result;
     result.resize(rhs.size());
 
     auto viscosityMatrix = getMatrix(velocityGrid,
-                                   viscosityGrid,
-                                   materialGrid,
-                                   dt,
-                                   dx,
-                                   density);
+                                     viscosityGrid,
+                                     materialGrid,
+                                     dt,
+                                     dx,
+                                     density);
 
-    m_viscositySolver.setTolerance(1e-4);
-    //m_viscositySolver.setMaxIterations(500);
-    m_viscositySolver.compute(viscosityMatrix);
-    if(m_viscositySolver.info()!=Eigen::Success) {
-        std::cout << "Viscosity solver decomposition failed!\n";
+    IdentityPreconditioner precond;
+
+    int iters = m_solver.solve(viscosityMatrix,precond,result,rhs,600,1e-6);
+
+    if(iters == 600) {
+        std::cout << "Viscosity solver combined solving failed!\n";
         return -1;
     }
-
-    result = m_viscositySolver.solve(rhs);
-    if(m_viscositySolver.info()!=Eigen::Success) {
-        std::cout << "Viscosity solver U solving failed!\n";
-        return -1;
-    }
-    std::cout << "Viscosity done with " << m_viscositySolver.iterations() << " iterations\n" << std::endl;
+    std::cout << "Viscosity combined done with " << iters << " iterations\n";
 
     applyResult(velocityGrid, result);
 
-    return m_viscositySolver.iterations();
+    return iters;
+    // if(anyNanInf(velocityGrid.velocityGridU().data()))
+    // {
+    //     std::cout << "NaN or inf in U velocity after viscosity!\n" << std::flush;
+    // }
+
+    // if(anyNanInf(velocityGrid.velocityGridV().data()))
+    // {
+    //     std::cout << "NaN or inf in V velocity after viscosity!\n" << std::flush;
+    // }
 }
 
-ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid &velocityGrid,
+HeavyViscosityWeights HeavyViscosityModel::getMatrix(StaggeredVelocityGrid &velocityGrid,
                                     const Grid2d<float> &viscosityGrid,
                                     const MaterialGrid &materialGrid,
                                     float dt,
@@ -224,9 +231,7 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
     const size_t size = indexerU.linearSize() +
                         indexerV.linearSize();
 
-    Eigen::SparseMatrix<double,Eigen::RowMajor> output = Eigen::SparseMatrix<double>();
-    output.resize(size,size);
-    output.reserve(Eigen::VectorXi::Constant(size,10));
+    HeavyViscosityWeights output(indexer.linearSize() * 2 * 0.5);
 
     const float scaleTwoDt = 2*dt / (dx * dx);
     const float scaleTwoDx = dt / (2 * dx * dx);
@@ -245,16 +250,16 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
                 float fj = static_cast<float>(j);
 
                 //U component
-                output.coeffRef(idxU,idxU) += density;
+                output.data()[idxU]idxU) += density;
 
                 ssize_t uImOneLinearIdx = indexerU.linearIndex(i-1,j);
 
                 if(uImOneLinearIdx != -1)
                 {
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     uImOneLinearIdx) += -scaleTwoDt * viscosityGrid.getAt(i-1,j);
 
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     idxU) += scaleTwoDt * viscosityGrid.getAt(i-1,j);
                 }
 
@@ -262,10 +267,10 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
 
                 if(uIpOneLinearIdx != -1)
                 {
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     uIpOneLinearIdx) += -scaleTwoDt * viscosityGrid.getAt(i,j);
 
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     idxU) += scaleTwoDt * viscosityGrid.getAt(i,j);
                 }
 
@@ -278,16 +283,16 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
                 {
                     float lerpedViscosity = viscosityGrid.interpolateAt(fi-0.5f,fj-0.5f);
                     //lerpedViscosity = tempVisc;
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     uJmOneLinearIdx) += -scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     vBaseIndex + idxV) += scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     vBaseIndex + vImOneLinearIdx) += -scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(idxU,idxU) += scaleTwoDx * lerpedViscosity;
+                    output.data()[idxU]idxU) += scaleTwoDx * lerpedViscosity;
                 }
 
                 ssize_t uJpOneLinearIdx = indexerU.linearIndex(i,j+1);
@@ -300,16 +305,16 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
                 {
                     float lerpedViscosity = viscosityGrid.interpolateAt(fi-0.5f,fj+0.5f);
                     //lerpedViscosity = tempVisc;
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     uJpOneLinearIdx) += -scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     vBaseIndex + vJpOneLinearIdx) += -scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(idxU,
+                    output.data()[idxU]
                                     vBaseIndex + vImOneJpOneLinearIdx) += scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(idxU,idxU) += scaleTwoDx * lerpedViscosity;
+                    output.data()[idxU]idxU) += scaleTwoDx * lerpedViscosity;
                 }
             }
 
@@ -319,16 +324,16 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
                 float fi = static_cast<float>(i);
                 float fj = static_cast<float>(j);
                 ssize_t vBaseIndex = indexerU.linearSize();
-                output.coeffRef(vBaseIndex + idxV,vBaseIndex + idxV) += density;
+                output.data()[vBaseIndex + idxV]vBaseIndex + idxV) += density;
 
                 ssize_t vJmOneLinearIdx = indexerV.linearIndex(i,j-1);
 
                 if(vJmOneLinearIdx != -1)
                 {
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     vBaseIndex + vJmOneLinearIdx) += -scaleTwoDt * viscosityGrid.getAt(i,j-1);
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     vBaseIndex + idxV) += scaleTwoDt * viscosityGrid.getAt(i,j-1);
                 }
 
@@ -336,11 +341,11 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
 
                 if(vJpOneLinearIdx != -1)
                 {
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     vBaseIndex + vJpOneLinearIdx)
                         += -scaleTwoDt * viscosityGrid.getAt(i,j);
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     vBaseIndex + idxV)
                         += scaleTwoDt * viscosityGrid.getAt(i,j);
                 }
@@ -355,19 +360,19 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
                     float lerpedViscosity = viscosityGrid.interpolateAt(fi-0.5f,fj-0.5f);
                     //lerpedViscosity = tempVisc;
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     idxU) +=
                         scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     uJmOneLinearIdx) +=
                         -scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     vBaseIndex + vImOneLinearIdx) +=
                         -scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     vBaseIndex + idxV) +=
                         scaleTwoDx * lerpedViscosity;
                 }
@@ -383,19 +388,19 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
                     float lerpedViscosity = viscosityGrid.interpolateAt(fi+0.5f,fj-0.5f);
                     //lerpedViscosity = tempVisc;
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     uIpOneLinearIdx) +=
                         -scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     uIpOneJmOneLinearIdx) +=
                         scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     vBaseIndex + vIpOneLinearIdx) +=
                         -scaleTwoDx * lerpedViscosity;
 
-                    output.coeffRef(vBaseIndex + idxV,
+                    output.data()[vBaseIndex + idxV]
                                     vBaseIndex + idxV) +=
                         scaleTwoDx * lerpedViscosity;
                 }
@@ -405,16 +410,15 @@ ViscosityModel::MatrixType HeavyViscosityModel::getMatrix(StaggeredVelocityGrid 
 
     output.makeCompressed();
 
-    return output;
+    return output; //TEMP!
 }
 
-Eigen::VectorXd HeavyViscosityModel::getRhs(const StaggeredVelocityGrid &velocityGrid, float density)
+void HeavyViscosityModel::fillRhs(std::vector<double>& rhs, const StaggeredVelocityGrid &velocityGrid, float density)
 {
     const LinearIndexable2d& uIndexer = velocityGrid.velocityGridU();
     const LinearIndexable2d& vIndexer = velocityGrid.velocityGridV();
     ssize_t vBaseIndex = uIndexer.linearSize();
 
-    Eigen::VectorXd rhs;
     rhs.resize(uIndexer.linearSize() +
                vIndexer.linearSize());
 
@@ -439,12 +443,9 @@ Eigen::VectorXd HeavyViscosityModel::getRhs(const StaggeredVelocityGrid &velocit
             rhs[vBaseIndex + idxV] = density * v;
         }
     }
-
-    return rhs;
 }
 
-void HeavyViscosityModel::applyResult(StaggeredVelocityGrid &velocityGrid,
-                                      const Eigen::VectorXd &result)
+void HeavyViscosityModel::applyResult(StaggeredVelocityGrid &velocityGrid, const std::vector<double> &result)
 {
     const LinearIndexable2d& uIndexer = velocityGrid.velocityGridU();
     const LinearIndexable2d& vIndexer = velocityGrid.velocityGridV();

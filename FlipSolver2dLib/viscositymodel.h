@@ -6,6 +6,7 @@
 #include "materialgrid.h"
 #include "staggeredvelocitygrid.h"
 #include "lightviscosityweights.h"
+#include "heavyviscosityweights.h"
 
 #include <Eigen/Sparse>
 
@@ -25,7 +26,7 @@ public:
                      float dx,
                      float density) = 0;
 protected:
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Upper> m_viscositySolver;
+    LinearSolver m_solver;
 };
 
 class LightViscosityModel : public ViscosityModel
@@ -52,8 +53,6 @@ protected:
                  float density);
 
     void applyResult(Grid2d<float>& velocityGrid, const LinearIndexable2d& indexer, const std::vector<double>& result, float density);
-
-    LinearSolver m_solver;
 };
 
 class HeavyViscosityModel : public ViscosityModel
@@ -65,15 +64,15 @@ class HeavyViscosityModel : public ViscosityModel
                float dx,
                float density) override;
 
-    MatrixType getMatrix(StaggeredVelocityGrid& velocityGrid,
+    HeavyViscosityWeights getMatrix(StaggeredVelocityGrid& velocityGrid,
                    const Grid2d<float>& viscosityGrid,
                    const MaterialGrid& materialGrid,
                    float dt,
                    float dx,
                    float density);
 
-    Eigen::VectorXd getRhs(const StaggeredVelocityGrid& velocityGrid, float density);
+    void fillRhs(std::vector<double>& rhs, const StaggeredVelocityGrid& velocityGrid, float density);
 
-    void applyResult(StaggeredVelocityGrid& velocityGrid, const Eigen::VectorXd& result);
+    void applyResult(StaggeredVelocityGrid& velocityGrid, const std::vector<double>& result);
 };
 #endif // VISCOSITYMODEL_H

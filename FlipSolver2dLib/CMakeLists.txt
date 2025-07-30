@@ -1,4 +1,5 @@
 add_subdirectory("./threading")
+add_subdirectory("./matrix")
 
 set(HEADERS
     linearindexable2d.h
@@ -9,8 +10,6 @@ set(HEADERS
     sdfgrid.h
     linearsolver.h
     vmath.h
-    staticmatrix.h
-    dynamicmatrix.h
     logger.h
     geometry2d.h
     mathfuncs.h
@@ -27,7 +26,6 @@ set(HEADERS
     InversePoissonPreconditioner.h
     viscositymodel.h
     solvers.h
-    matrixweights.h
     lightviscosityweights.h
     IdentityPreconditioner.h)
 
@@ -39,8 +37,6 @@ set(SOURCES
     sdfgrid.cpp
     linearsolver.cpp
     vmath.cpp
-    staticmatrix.cpp
-    dynamicmatrix.cpp
     logger.cpp
     geometry2d.cpp
     mathfuncs.cpp
@@ -54,7 +50,6 @@ set(SOURCES
     nbflipsolver.cpp
     markerparticlesystem.cpp
     viscositymodel.cpp
-    matrixweights.cpp
     lightviscosityweights.cpp)
 
 set(SSE42_HEADERS
@@ -96,9 +91,12 @@ add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 add_library(FlipSolver2d STATIC
   ${HEADERS}
   ${SOURCES}
+  heavyviscosityweights.h heavyviscosityweights.cpp
 )
 target_include_directories(FlipSolver2d PUBLIC "./threading/")
+target_include_directories(FlipSolver2d PUBLIC "./matrix/")
 target_include_directories(FlipSolver2d PUBLIC ${Eigen3_SOURCE_DIR})
 target_link_libraries(FlipSolver2d PUBLIC SimThreadTools)
+target_link_libraries(FlipSolver2d PUBLIC SimMatrixTools)
 target_link_libraries(FlipSolver2d PUBLIC Eigen3::Eigen)
 target_link_libraries(FlipSolver2d PUBLIC OpenMP::OpenMP_CXX)

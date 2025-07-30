@@ -5,11 +5,9 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <string>
 
-class DynamicMatrix;
-
-class StaticMatrix;
+#include "staticmatrix.h"
+#include "dynamicmatrix.h"
 
 class Logger
 {
@@ -36,12 +34,6 @@ protected:
     std::string m_filePath;
     std::ofstream m_logFileStream;
 };
-
-void binDump(StaticMatrix & m, std::string path);
-
-Logger &operator<<(Logger &l, DynamicMatrix &m);
-
-Logger &operator<<(Logger &l, const StaticMatrix &m);
 
 Logger &operator<<(Logger &l, const std::vector<double> &v);
 
