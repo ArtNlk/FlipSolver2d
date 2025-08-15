@@ -16,7 +16,8 @@
     "picRatio": 0.03,
     "cflNumber": 5,
     "-scale": 0.1,
-    "viscosityEnabled": false,
+    "viscosityEnabled": true,
+    "heavyViscosity": true,
     "globalAcceleration": [9.8,0]
   },
   "solver": {

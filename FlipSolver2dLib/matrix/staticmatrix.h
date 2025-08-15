@@ -15,16 +15,18 @@ public:
         using DataUnit = DynamicMatrix<MaxRowSize>::SparseRowDataUnit;
         using IndexUnit = DynamicMatrix<MaxRowSize>::SparseRowIndexUnit;
         const size_t reserveSize = MaxRowSize * in.size() / 2;
-        StaticMatrix output(in.size());
+
+        StaticMatrix output;
+        output.m_size = in.size();
         output.m_indexes.reserve(reserveSize);
         output.m_values.reserve(reserveSize);
         output.m_rowStart.reserve(in.size() + 1);
 
         for (size_t rowIdx = 0; rowIdx < in.size(); rowIdx++) {
-            DataUnit& rowDataUnit = in.data()[rowIdx];
-            IndexUnit& rowIndexUnit = in.indexes()[rowIdx];
+            const DataUnit& rowDataUnit = in.data()[rowIdx];
+            const IndexUnit& rowIndexUnit = in.indexes()[rowIdx];
 
-            output.m_indexes.push_back(output.m_values.size());
+            output.m_rowStart.push_back(output.m_values.size());
 
             if (rowDataUnit.isEmpty())
             {
@@ -33,12 +35,12 @@ public:
 
             for(size_t rowElementIdx = 0; rowElementIdx < rowDataUnit.size(); rowElementIdx++)
             {
-                output.m_indexes.push_back(rowIndexUnit[rowElementIdx]);
-                output.m_values.push_back(rowDataUnit[rowElementIdx]);
+                output.m_indexes.push_back(rowIndexUnit.data()[rowElementIdx]);
+                output.m_values.push_back(rowDataUnit.data()[rowElementIdx]);
             }
         }
 
-        output.m_indexes.push_back(output.m_values.size());
+        output.m_rowStart.push_back(output.m_values.size());
 
         return output;
     }

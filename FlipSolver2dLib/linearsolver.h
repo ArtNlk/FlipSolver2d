@@ -3,8 +3,7 @@
 
 #include <vector>
 
-#include "PressureWeights.h"
-#include "InversePoissonPreconditioner.h"
+#include "matrixbase.h"
 
 #include "logger.h"
 #include "vmath.h"
@@ -14,9 +13,8 @@ class LinearSolver
 public:
     LinearSolver() = default;
 
-    template<class T, class U>
-    int solve(const MatrixWeights<T> &matrixIn,
-               const MatrixWeights<U> &precond,
+    int solve(const MatrixBase &matrixIn,
+               const MatrixBase &precond,
                std::vector<double> &result,
                const std::vector<double> &vec,
                int iterLimit = 20,

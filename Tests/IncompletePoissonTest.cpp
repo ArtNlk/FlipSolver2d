@@ -219,7 +219,7 @@ MaterialGrid getMaterialGrid(int sizeI, int sizeJ)
     return output;
 }
 
-void populateVectors(std::vector<double>& myVec, Eigen::VectorXd& eigenVec)
+static void populateVectors(std::vector<double>& myVec, Eigen::VectorXd& eigenVec)
 {
     std::uniform_real_distribution dist(0.0,100000.0);
 

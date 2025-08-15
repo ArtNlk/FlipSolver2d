@@ -64,7 +64,7 @@ class HeavyViscosityModel : public ViscosityModel
                float dx,
                float density) override;
 
-    HeavyViscosityWeights getMatrix(StaggeredVelocityGrid& velocityGrid,
+    StaticMatrix getMatrix(StaggeredVelocityGrid& velocityGrid,
                    const Grid2d<float>& viscosityGrid,
                    const MaterialGrid& materialGrid,
                    float dt,

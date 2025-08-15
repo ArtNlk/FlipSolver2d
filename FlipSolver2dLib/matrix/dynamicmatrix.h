@@ -21,7 +21,7 @@ public:
 
     size_t addElement(StorageType value)
     {
-        ASSERT(m_currentElementCount+1 < m_array.size());
+        ASSERT(m_currentElementCount+1 <= m_data.size());
 
         size_t newIdx = m_currentElementCount;
 
@@ -52,14 +52,19 @@ public:
         return m_data[arrayIndex];
     }
 
-    const std::array<SparseRowUnit, MaxRowSize>& data() const
+    const std::array<StorageType, MaxRowSize>& data() const
+    {
+        return m_data;
+    }
+
+    std::array<StorageType, MaxRowSize>& data()
     {
         return m_data;
     }
 
 private:
     size_t m_currentElementCount;
-    std::array<SparseRowUnit, MaxRowSize> m_data;
+    std::array<StorageType, MaxRowSize> m_data;
 };
 
 template<size_t MaxRowSize>
@@ -92,14 +97,17 @@ public:
 
     void addTo(size_t rowIndex, size_t columnIndex, double delta)
     {
-        for(size_t storeIndex = 0; storeIndex < m_indexes[rowIndex]; storeIndex++)
+        for(size_t storeIndex = 0; storeIndex < m_indexes[rowIndex].size(); storeIndex++)
         {
             if(m_indexes[rowIndex].data()[storeIndex] == columnIndex)
             {
                 m_data[rowIndex].data()[storeIndex] += delta;
-                break;
+                return;
             }
         }
+
+        //Value not found - insert
+        addValue(rowIndex, columnIndex, delta);
     }
 
     std::string toString()
