@@ -132,7 +132,8 @@ void FlipSolver::applyViscosity()
                             m_materialGrid,
                             m_stepDt,
                             m_dx,
-                            m_fluidDensity));
+                            m_fluidDensity,
+                            m_pcgIterLimit));
 }
 
 void FlipSolver::advect()

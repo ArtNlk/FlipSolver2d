@@ -10,7 +10,8 @@ int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                               const MaterialGrid& materialGrid,
                               float dt,
                               float dx,
-                              float density)
+                              float density,
+                              int maxIterations)
 {
     std::vector<double> rhs;
     std::vector<double> result;
@@ -30,8 +31,8 @@ int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
     IdentityPreconditioner precond;
 
     int iters = 0;
-    iters = m_solver.solve(viscosityMatrix,precond,result,rhs,600,1e-6);
-    if(iters == 600) {
+    iters = m_solver.solve(viscosityMatrix,precond,result,rhs,maxIterations,1e-6);
+    if(iters == maxIterations) {
         std::cout << "Viscosity solver U solving failed!\n";
         return -1;
     }
@@ -40,8 +41,8 @@ int LightViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
     applyResult(velocityGrid.velocityGridU(), viscosityGrid, result, density);
 
     fillRhs(rhs,velocityGrid.velocityGridV(),viscosityGrid,density);
-    iters = m_solver.solve(viscosityMatrix,precond,result,rhs,600,1e-6);
-    if(iters == 600) {
+    iters = m_solver.solve(viscosityMatrix,precond,result,rhs,maxIterations,1e-6);
+    if(iters == maxIterations) {
         std::cout << "Viscosity solver V solving failed!\n";
         return -1;
     }
@@ -179,7 +180,8 @@ int HeavyViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
                               const MaterialGrid& materialGrid,
                               float dt,
                               float dx,
-                              float density)
+                              float density,
+                              int maxIterations)
 {
     std::vector<double> rhs;
     fillRhs(rhs,velocityGrid,density);
@@ -196,9 +198,9 @@ int HeavyViscosityModel::apply(StaggeredVelocityGrid& velocityGrid,
 
     IdentityPreconditioner precond;
 
-    int iters = m_solver.solve(viscosityMatrix,precond,result,rhs,600,1e-6);
+    int iters = m_solver.solve(viscosityMatrix,precond,result,rhs,maxIterations,1e-6);
 
-    if(iters == 600) {
+    if(iters == maxIterations) {
         std::cout << "Viscosity solver combined solving failed!\n";
         return -1;
     }

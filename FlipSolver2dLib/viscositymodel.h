@@ -24,7 +24,8 @@ public:
                      const MaterialGrid& materialGrid,
                      float dt,
                      float dx,
-                     float density) = 0;
+                     float density,
+                     int maxIterations) = 0;
 protected:
     LinearSolver m_solver;
 };
@@ -37,7 +38,8 @@ public:
               const MaterialGrid &materialGrid,
               float dt,
               float dx,
-              float density) override;
+              float density,
+              int maxIterations) override;
 
     static LightViscosityWeights getMatrix(StaggeredVelocityGrid& velocityGrid,
                          const Grid2d<float>& viscosityGrid,
@@ -62,7 +64,8 @@ class HeavyViscosityModel : public ViscosityModel
                const MaterialGrid& materialGrid,
                float dt,
                float dx,
-               float density) override;
+               float density,
+               int maxIterations) override;
 
     StaticMatrix getMatrix(StaggeredVelocityGrid& velocityGrid,
                    const Grid2d<float>& viscosityGrid,
